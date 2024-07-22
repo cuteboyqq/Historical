@@ -16,23 +16,32 @@
 	Ubuntu : Ctrl + Alt + T
 	Windows 10/11 : Windows + R, type cmd and enter
 	
-3. In ternimal, go to Historical directory : [cmd] cd [cutomer directory]/Historical
-       3-1. Create env (Note: If you already have env, skip this to 3-2.)
+3. In ternimal, go to Historical directory : [cmd] cd [cutomer directory]/Historical 
+
+(HINT: 3-1. and 3-3. just for the first time, 3-2. need to do every time)
+
+       3-1. Create environment (Note: If you already have environment (env folder), skip this to 3-2.)
+       
        	[cmd] python -m venv env
        	or [cmd] python3.8 -m venv env
        	or [cmd] python3.9 -m venv env
+       	This command will create a 'env' folder for you to install library
            Based on your python version
            
+           
        3-2. Activate the environment
+       
 		Ubuntu 18.04/20.04/22.04
 			- [cmd] source env/bin/activate
 		Windows 10/11
 			-[cmd] env\Scripts\activate
 			
-	3-3. Install some library software (Note: If you already installed, skip this to 4.)
+			
+	3-3. Install some library software (Note: If you already installed the software library, skip this to 4.)
 		for example : 
 			[cmd] pip install opencv-python
 			[cmd] pip install matplotlib
+		
 		
 4. Start run Historical/main.py, go to the directory : [cmd] cd [customer directory]/Historical
 	4-1. [cmd] python main.py
