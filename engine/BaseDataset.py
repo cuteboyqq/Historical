@@ -1,4 +1,7 @@
 import cv2
+import matplotlib.pyplot as plt
+import csv
+import json
 
 class BaseDataset:
     def __init__(self,args):
@@ -37,6 +40,18 @@ class BaseDataset:
         self.resize = args.resize
         self.resize_w = args.resize_w
         self.resize_h = args.resize_h
+
+        #csv file list
+        self.csv_file_list = ['assets/csv_file/golden_date_ImageMode_10m.csv',
+                                'assets/csv_file/golden_date_ImageMode_20m.csv',
+                                'assets/csv_file/golden_date_ImageMode_30m.csv',
+                                'assets/csv_file/golden_date_ImageMode_40m.csv',
+                                'assets/csv_file/golden_date_ImageMode_50m.csv',]
+        self.list_label = ['GT_10m',
+                           'GT_20m',
+                           'GT_30m',
+                           'GT_40m',
+                           'GT_50m']
 
     def draw_tailing_obj(self,tailing_objs,im):
         distance_to_camera = tailing_objs[0].get('tailingObj.distanceToCamera', None)
@@ -111,5 +126,58 @@ class BaseDataset:
         if self.ADAS_LDW==True:
             cv2.putText(im, 'Departure Warning', (150,80), cv2.FONT_HERSHEY_SIMPLEX,0.8, (128, 0, 255), 2, cv2.LINE_AA)
 
+    def extract_distance_data(self,csv_file):
+        frame_ids = []
+        distances = []
+
+        with open(csv_file, 'r') as file:
+            reader = csv.reader(file, delimiter=',')
+            for row in reader:
+                # Debug print for each row
+                print(f"Row: {row}")
+
+                # Join the row into a single string
+                row_str = ','.join(row)
+                
+                # Find the position of 'json:'
+                json_start = row_str.find('json:')
+                if json_start != -1:
+                    json_data = row_str[json_start + 5:].strip()
+                    if json_data.startswith('"') and json_data.endswith('"'):
+                        json_data = json_data[1:-1]  # Remove enclosing double quotes
+                    
+                    # Replace any double quotes escaped with backslashes
+                    json_data = json_data.replace('\\"', '"')
+                    
+                    try:
+                        data = json.loads(json_data)
+                        print(f"Parsed JSON: {data}")
+
+                        for frame_id, frame_data in data['frame_ID'].items():
+                            frame_ids.append(int(frame_id))
+                            tailing_objs = frame_data.get('tailingObj', [])
+                            if tailing_objs:
+                                distance_to_camera = tailing_objs[0].get('tailingObj.distanceToCamera', None)
+                                if distance_to_camera is not None:
+                                    distances.append(distance_to_camera)
+                                else:
+                                    distances.append(float('nan'))  # Handle missing values
+                            else:
+                                distances.append(float('nan'))  # Handle missing values
+                    except json.JSONDecodeError as e:
+                        print(f"Error decoding JSON: {e}")
+                    except Exception as e:
+                        print(f"Unexpected error: {e}")
+
+        return frame_ids, distances
+    
+    def compare_distance_in_two_csv_file(self):
+        return NotImplemented
+    
+    def compare_distance_in_multiple_csv_file(self):
+        return NotImplemented
+
+    def draw_AI_result_to_images(self):
+        return NotImplemented
     
     
