@@ -8,7 +8,28 @@ from engine.BaseDataset import BaseDataset
 
 class Historical(BaseDataset):
 
-    def Draw_AI_result_to_images(self):
+    def compare_distance_in_two_csv_file(self):
+        return NotImplemented
+    
+    def compare_distance_in_multiple_csv_file(self):
+        i = 0
+        plt.figure(figsize=(200, 100))
+
+        for csv_file  in self.csv_file_list:
+            frame_ids, distances = self.extract_distance_data(csv_file)
+            plt.plot(frame_ids, distances, label=self.list_label[i])
+            i += 1
+
+        plt.xlabel('FrameID')
+        plt.ylabel('tailingObj.distanceToCamera')
+        plt.title('Distance to Camera over Frames')
+        plt.legend()
+        plt.grid(True)
+
+        plt.show()
+        
+
+    def draw_AI_result_to_images(self):
         frame_ids = []
         distances = []
 
