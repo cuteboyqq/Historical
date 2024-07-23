@@ -52,6 +52,9 @@ class BaseDataset:
                            'GT_30m',
                            'GT_40m',
                            'GT_50m']
+        
+        #plot label
+        self.plot_label = args.plot_label
 
     def draw_tailing_obj(self,tailing_objs,im):
         distance_to_camera = tailing_objs[0].get('tailingObj.distanceToCamera', None)
@@ -113,7 +116,7 @@ class BaseDataset:
         print(f'vanishlineY:{vanishlineY}')
         x2 = im.shape[1]
         cv2.line(im, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
-        cv2.putText(im, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 0), 1, cv2.LINE_AA)
+        cv2.putText(im, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
 
 
     def draw_ADAS_objs(self,ADAS_objs,im):
@@ -122,9 +125,9 @@ class BaseDataset:
         print(f'ADAS_FCW:{self.ADAS_FCW}')
         print(f'ADAS_LDW:{self.ADAS_LDW}')
         if self.ADAS_FCW==True:
-            cv2.putText(im, 'Collision Warning', (150,50), cv2.FONT_HERSHEY_SIMPLEX,0.8, (0, 128, 255), 2, cv2.LINE_AA)
+            cv2.putText(im, 'Collision Warning', (150,50), cv2.FONT_HERSHEY_SIMPLEX,1.3, (0, 128, 255), 2, cv2.LINE_AA)
         if self.ADAS_LDW==True:
-            cv2.putText(im, 'Departure Warning', (150,80), cv2.FONT_HERSHEY_SIMPLEX,0.8, (128, 0, 255), 2, cv2.LINE_AA)
+            cv2.putText(im, 'Departure Warning', (150,80), cv2.FONT_HERSHEY_SIMPLEX,1.3, (128, 0, 255), 2, cv2.LINE_AA)
 
     def extract_distance_data(self,csv_file):
         frame_ids = []
