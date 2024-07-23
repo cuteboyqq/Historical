@@ -7,6 +7,18 @@ from engine.BaseDataset import BaseDataset
 
 
 class Historical(BaseDataset):
+    def plot_distance_in_one_csv_file(self):
+        plt.figure(figsize=(200, 100))
+        frame_ids, distances = self.extract_distance_data(self.csv_file)
+        plt.plot(frame_ids, distances, label=self.plot_label)
+        plt.xlabel('FrameID')
+        plt.ylabel('tailingObj.distanceToCamera')
+        plt.title('Distance to Camera over Frames')
+        plt.legend()
+        plt.grid(True)
+
+        plt.show()
+
 
     def compare_distance_in_two_csv_file(self):
         return NotImplemented
@@ -67,7 +79,7 @@ class Historical(BaseDataset):
                             im = cv2.imread(im_path)
 
 
-                            cv2.putText(im, 'frame_ID:'+str(frame_id), (10,10), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 0), 1, cv2.LINE_AA)
+                            cv2.putText(im, 'frame_ID:'+str(frame_id), (10,10), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
                             tailing_objs = frame_data.get('tailingObj', [])
                             vanish_objs = frame_data.get('vanishLineY', [])
                             ADAS_objs = frame_data.get('ADAS', [])
@@ -98,7 +110,7 @@ class Historical(BaseDataset):
                                     im = cv2.resize(im, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
                                 cv2.imshow("im",im)
                                 if self.ADAS_FCW==True or self.ADAS_LDW==True:
-                                    cv2.waitKey((self.sleep) * 5)
+                                    cv2.waitKey((self.sleep) * 15)
                                 else:
                                     cv2.waitKey(self.sleep)
                                 # cv2.destroyAllWindows()
@@ -119,7 +131,7 @@ class Historical(BaseDataset):
         if self.show_distanceplot:
             # Plotting the data
             plt.figure(figsize=(200, 100))
-            plt.plot(self.frame_ids, self.distances, label='distance')
+            plt.plot(self.frame_ids, self.distances, label=self.plot_label)
 
             plt.xlabel('FrameID')
             plt.ylabel('tailingObj.distanceToCamera')
