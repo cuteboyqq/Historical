@@ -2,18 +2,24 @@ import cv2
 import matplotlib.pyplot as plt
 import csv
 import json
+import os
 
 class BaseDataset:
     def __init__(self,args):
         # Input settings
         self.im_dir = args.im_dir
+        self.im_folder = None
         self.save_imdir = args.save_imdir
         self.image_basename = args.image_basename
-        self.csv_file = args.csv_file
+        self.csv_file_path = args.csv_file
+        self.csv_file = os.path.basename(self.csv_file_path)
         self.image_format = args.image_format
+        self.tftp_ip = args.tftp_ip
 
         # Enable / Disable save AI result images
         self.save_airesultimage = args.save_airesultimage
+        self.save_rawvideo = args.save_rawvideo
+        self.save_rawvideopath = args.save_rawvideopath
      
         # How fast of show the images
         self.sleep = args.sleep
@@ -105,7 +111,7 @@ class BaseDataset:
                 else:
                     # Draw bounding box
                     if label == "VEHICLE":
-                        color=(255,128,0)
+                        color=(255,0,0)
                     elif label=="HUMAN":
                         color=(0,128,255)
                     cv2.rectangle(im, (x1, y1), (x2, y2), color=color, thickness=1)
@@ -183,4 +189,44 @@ class BaseDataset:
     def draw_AI_result_to_images(self):
         return NotImplemented
     
+    '''
+    -------------------------------------
+    FUNC:save_rawimages_to_videoclip
+        Purpose: 
+            Convert Raw images to raw video clip
+    ------------------------------------
+    '''
+    def save_rawimages_to_videoclip(self):
+        video_dir = self.save_rawvideopath.split(os.path.basename(self.save_rawvideopath))[0]
+        print(video_dir)
+        os.makedirs(video_dir,exist_ok=True)
+        # Get list of image files, assuming they are named RawFrame_[index].png
+        images = [img for img in os.listdir(self.im_dir) if img.endswith(".png")]
+        images.sort(key=lambda x: int(x.split('_')[1].split('.')[0]))  # Sort by index
+
+        # Check if there are images in the folder
+        if not images:
+            print("No images found in the folder.")
+            exit()
+
+        # Read the first image to get the size (width and height)
+        frame = cv2.imread(os.path.join(self.im_dir, images[0]))
+        height, width, layers = frame.shape
+
+        # Define the codec and create a VideoWriter object
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # or use 'XVID' for .avi files
+        video = cv2.VideoWriter(self.save_rawvideopath, fourcc, 7.0, (width, height))
+
+        # Read each image and write it to the video file
+        for image in images:
+            img_path = os.path.join(self.im_dir, image)
+            img = cv2.imread(img_path)
+            video.write(img)
+
+        # Release the video writer object
+        video.release()
+        cv2.destroyAllWindows()
+
+        print(f"Video saved as {self.save_rawvideopath}")
+            
     
