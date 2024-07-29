@@ -20,6 +20,7 @@ class Connection():
         self.password = args.password
         self.remote_path = args.remote_path
         self.local_path = args.local_path
+        self.tftpserver_dir = args.tftpserver_dir
 
     # Function to transfer file using SCP
     def transfer_file(self):

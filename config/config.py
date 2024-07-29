@@ -9,6 +9,7 @@ USERNAME = 'root' # Camera user name
 PASSWOED = 'ALUDS$#q' #Camera password
 REMOTEPATH = '/logging/video-adas/117_video-adas_2024-07-26.csv' # LI80 Camera csv file
 LOCALPATH = 'JSON_log.csv' # Local computer csf file
+TFTP_SERVER_DIR = '/home/ali/Public/tftp'
 '''
 ---------------------------------------------------------
 Parameter setting , set all the parameters here~~~~
@@ -19,11 +20,11 @@ Parameter setting , set all the parameters here~~~~
 # F = False
 
 # Enable/Disable show obj on the image
-SHOW_AI_RESULT_IMAGE = True
-SHOW_DETECT_OBJS = True
-SHOW_TAILING_OBJS = True
-SHOW_VANISH_LINE = True
-SHOW_ADAS_RESULT = True
+SHOW_AI_RESULT_IMAGE = True # True/False = Enable/disable show AI result images
+SHOW_DETECT_OBJS = True # True/False = Enable/disable show detection objects
+SHOW_TAILING_OBJS = True # True/False = Enable/disable show tailing objects
+SHOW_VANISH_LINE = True # True/False = Enable/disable show vanishing line
+SHOW_ADAS_RESULT = True # True/False = Enable/disable show ADAS result
 
 # Enable / Disable = True / False
 SAVE_AI_RESULT_IMAGE = True
@@ -32,11 +33,11 @@ SAVE_RAW_VIDEO = True
 
 # Resize show images
 DO_RESIZE = True
-RESIZE_WIDTH = 1600
-RESIZE_HEIGHT = 900
+RESIZE_WIDTH = 1280
+RESIZE_HEIGHT = 720
 
 # Sleep how much ms on cv2.waitKey (WAIT_KEY_VALUE value smaller, play stream will faster)
-WAIT_KEY_VALUE = 100
+WAIT_KEY_VALUE = 50
 
 # Paths to your CSV files
 CSV_FILE = 'assets/csv_file/117_video-adas_2024-07-26.csv' #live mode
@@ -101,6 +102,7 @@ def get_connection_args():
     parser.add_argument('-username','--user-name',type=str,help='user name',default=USERNAME)
     parser.add_argument('-password','--password',type=str,help='json log csv file',default=PASSWOED)
     parser.add_argument('-remotepath','--remote-path',help='remote path',default=REMOTEPATH)
-    parser.add_argument('-localpath','--local_path',help='show ai result images',default=LOCALPATH)
+    parser.add_argument('-localpath','--local-path',help='show ai result images',default=LOCALPATH)
+    parser.add_argument('-tftpserverdir','--tftpserver-dir',help='show ai result images',default=TFTP_SERVER_DIR)
 
     return parser.parse_args()

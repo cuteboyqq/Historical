@@ -6,8 +6,38 @@ import cv2
 from engine.BaseDataset import BaseDataset
 from utils.connection import Connection
 from config.config import get_connection_args
+import logging
+# # Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Historical(BaseDataset):
+    def __init__(self,args):
+        super().__init__(args)
+        self.tftpserver_dir = None
+        self.current_dir = os.getcwd() # .../Historical
+        # self.logging = logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        con_args = get_connection_args()
+        self.Connect = Connection(con_args)
+        self.tftpserver_dir = con_args.tftpserver_dir
+        self.im_folder = os.path.basename(self.im_dir)
+
+        self.get_raw_images_remote_commands = ("cd /mnt/mmc/adas/debug/raw_images/ && "
+                                                f"tar cvf {self.im_folder}.tar {self.im_folder}/ && "
+                                                f"tftp -l {self.im_folder}.tar -p {self.tftp_ip} && "
+                                                f"rm {self.im_folder}.tar")
+        
+        self.get_raw_images_local_commands = ( f"cd {self.tftpserver_dir} && "
+                                                f"sudo chmod 777 {self.im_folder}.tar && "
+                                                f"tar -xvf {self.im_folder}.tar && "
+                                                f"sudo chmod 777 -R {self.im_folder} && "
+                                                f"mv {self.im_folder} {self.current_dir}/assets/images")
+       
+        self.get_csv_file_remote_commands = ("cd /logging/video-adas && "
+                                            f"tftp -l {self.csv_file} -p {self.tftp_ip}")
+        
+        self.get_csv_file_local_commands = (f"cd {self.tftpserver_dir} && "
+                                            f"mv {self.csv_file} {self.current_dir}/assets/csv_file")
+        
     def plot_distance_in_one_csv_file(self):
         plt.figure(figsize=(200, 100))
         frame_ids, distances = self.extract_distance_data(self.csv_file_path)
@@ -79,14 +109,12 @@ class Historical(BaseDataset):
                             print(im_path)
                             im = cv2.imread(im_path)
 
-
                             cv2.putText(im, 'frame_ID:'+str(frame_id), (10,10), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
                             tailing_objs = frame_data.get('tailingObj', [])
                             vanish_objs = frame_data.get('vanishLineY', [])
                             ADAS_objs = frame_data.get('ADAS', [])
                             detect_objs = frame_data.get('detectObj', {})
 
-                            
                             #---- Draw tailing obj----------
                             if tailing_objs and self.show_tailingobjs:
                                 self.draw_tailing_obj(tailing_objs,im)
@@ -145,82 +173,30 @@ class Historical(BaseDataset):
 
         return frame_ids, distances
     
-
     def visualize_hisotircal_main(self):
-        args = get_connection_args()
-        Connect = Connection(args)
-        HAVE_LOCAL_IMAGES = False
-        self.im_folder = os.path.basename(self.im_dir)
-        # self.csv_file = os.path.basename(self.csv_file_path)
-        #check local images exit or not
-        if os.path.exists(self.im_dir):
-            HAVE_LOCAL_IMAGES = True
-        else:
-            HAVE_LOCAL_IMAGES = False
-
-        print(f"HAVE_LOCAL_IMAGES:{HAVE_LOCAL_IMAGES}")
+        HAVE_LOCAL_IMAGES = os.path.exists(self.im_dir)
+        logging.info(f"HAVE_LOCAL_IMAGES: {HAVE_LOCAL_IMAGES}")
+        
+        # If local have no raw images or CSV file, download from camera device using SSH
         if not HAVE_LOCAL_IMAGES:
-
-            if os.path.exists(f'/home/ali/Public/tftp/{self.im_folder}.tar'):
-                print(f"tar file :{self.im_folder}.tar exists in tftp folder, mv to the assets/images/")
-                local_commands = (
-                    "cd /home/ali/Public/tftp && "
-                    f"sudo chmod 777 {self.im_folder}.tar && "
-                    f"tar -xvf {self.im_folder}.tar && "
-                    f"sudo chmod 777 -R {self.im_folder} && "
-                    f"mv {self.im_folder} /home/ali/Projects/GitHub_Code/ali/Historical/assets/images"
-                )
-                Connect.execute_local_command(local_commands)
+            tar_path = f'{self.tftpserver_dir}{os.sep}{self.im_folder}.tar'
             
-            else:
-                print(f"tar file :{self.im_folder}.tar does not exists in tftp folder")
-                print("Start to download raw images from the LI80 camera....")
-                # Combine commands into a single string separated by &&
-                remote_commands = (
-                    "cd /mnt/mmc/adas/debug/raw_images/ && "
-                    f"tar cvf {self.im_folder}.tar {self.im_folder}/ && "
-                    f"tftp -l {self.im_folder}.tar -p {self.tftp_ip} && "
-                    f"rm {self.im_folder}.tar"
-                )
-
-                
-
-                # Execute commands on the camera
-                Connect.execute_remote_command_with_progress(remote_commands)
-
-                local_commands = (
-                    "cd /home/ali/Public/tftp && "
-                    f"sudo chmod 777 {self.im_folder}.tar && "
-                    f"tar -xvf {self.im_folder}.tar && "
-                    f"sudo chmod 777 -R {self.im_folder} && "
-                    f"mv {self.im_folder} /home/ali/Projects/GitHub_Code/ali/Historical/assets/images"
-                )
-
-                # Wait for transfer to complete (if needed) and then execute local commands
-                Connect.execute_local_command(local_commands)
-        else:
-            print(f"HAVE_LOCAL_IMAGES:{HAVE_LOCAL_IMAGES}")
-
+            if not os.path.exists(tar_path):
+                logging.info(f"tar file: {self.im_folder}.tar does not exist in tftp folder")
+                logging.info("Start to download raw images from the LI80 camera...")
+                self.Connect.execute_remote_command_with_progress(self.get_raw_images_remote_commands)  # Execute commands on the camera
+            
+            self.logging.info(f"tar file: {self.im_folder}.tar exists in tftp folder, moving to the assets/images/")
+            self.Connect.execute_local_command(self.get_raw_images_local_commands) # Execut command on the local computer
 
         if not os.path.exists(self.csv_file_path):
-            print(self.csv_file)
-            remote_commands = (
-                "cd /logging/video-adas && "
-                f"tftp -l {self.csv_file} -p {self.tftp_ip}"
-            )
-            Connect.execute_remote_command_with_progress(remote_commands)
-            local_commands = (
-                    "cd /home/ali/Public/tftp && "
-                    f"mv {self.csv_file} /home/ali/Projects/GitHub_Code/ali/Historical/assets/csv_file"
-            )
-            Connect.execute_local_command(local_commands)
-        # Transfer and process images
-        # transfer_images()
-        # Transfer CSV file
-        # remote_csv_path = '/logging/video-adas/117_video-adas_2024-07-26.csv'
-        # local_csv_path = 'JSON_log.csv'
-        # self.csv_file = local_csv_path
+            logging.info(self.csv_file)
+            self.Connect.execute_remote_command_with_progress(self.get_csv_file_remote_commands) # Execute commands on the camera
+            self.Connect.execute_local_command(self.get_csv_file_local_commands) # Execut command on the local computer
+    
+        # Start to darw AI result after local have raw images and CSV file
         self.draw_AI_result_to_images()
+
 
 
 

@@ -3,9 +3,13 @@ import matplotlib.pyplot as plt
 import csv
 import json
 import os
-
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 class BaseDataset:
     def __init__(self,args):
+
+        # self.logging = logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
         # Input settings
         self.im_dir = args.im_dir
         self.im_folder = None
@@ -69,11 +73,11 @@ class BaseDataset:
         tailingObj_y1 = tailing_objs[0].get('tailingObj.y1', None)
         tailingObj_x2 = tailing_objs[0].get('tailingObj.x2', None)
         tailingObj_y2 = tailing_objs[0].get('tailingObj.y2', None)
-        print(f"tailingObj_id:{tailingObj_id}")
-        print(f"tailingObj_x1:{tailingObj_x1}")
-        print(f"tailingObj_y1:{tailingObj_y1}")
-        print(f"tailingObj_x2:{tailingObj_x2}")
-        print(f"tailingObj_y2:{tailingObj_y2}")
+        logging.info(f"tailingObj_id:{tailingObj_id}")
+        logging.info(f"tailingObj_x1:{tailingObj_x1}")
+        logging.info(f"tailingObj_y1:{tailingObj_y1}")
+        logging.info(f"tailingObj_x2:{tailingObj_x2}")
+        logging.info(f"tailingObj_y2:{tailingObj_y2}")
         tailingObj_label = tailing_objs[0].get('tailingObj.label', None)
 
         self.tailingObj_x1 = tailingObj_x1
@@ -119,7 +123,7 @@ class BaseDataset:
 
     def draw_vanish_objs(self,vanish_objs,im):
         vanishlineY = vanish_objs[0].get('vanishlineY', None)
-        print(f'vanishlineY:{vanishlineY}')
+        logging.info(f'vanishlineY:{vanishlineY}')
         x2 = im.shape[1]
         cv2.line(im, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
         cv2.putText(im, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
@@ -128,8 +132,8 @@ class BaseDataset:
     def draw_ADAS_objs(self,ADAS_objs,im):
         self.ADAS_FCW = ADAS_objs[0].get('FCW',None)
         self.ADAS_LDW = ADAS_objs[0].get('LDW',None)
-        print(f'ADAS_FCW:{self.ADAS_FCW}')
-        print(f'ADAS_LDW:{self.ADAS_LDW}')
+        logging.info(f'ADAS_FCW:{self.ADAS_FCW}')
+        logging.info(f'ADAS_LDW:{self.ADAS_LDW}')
         if self.ADAS_FCW==True:
             cv2.putText(im, 'Collision Warning', (150,50), cv2.FONT_HERSHEY_SIMPLEX,1.3, (0, 128, 255), 2, cv2.LINE_AA)
         if self.ADAS_LDW==True:
@@ -143,7 +147,7 @@ class BaseDataset:
             reader = csv.reader(file, delimiter=',')
             for row in reader:
                 # Debug print for each row
-                print(f"Row: {row}")
+                logging.info(f"Row: {row}")
 
                 # Join the row into a single string
                 row_str = ','.join(row)
@@ -160,7 +164,7 @@ class BaseDataset:
                     
                     try:
                         data = json.loads(json_data)
-                        print(f"Parsed JSON: {data}")
+                        logging.info(f"Parsed JSON: {data}")
 
                         for frame_id, frame_data in data['frame_ID'].items():
                             frame_ids.append(int(frame_id))
@@ -174,9 +178,9 @@ class BaseDataset:
                             else:
                                 distances.append(float('nan'))  # Handle missing values
                     except json.JSONDecodeError as e:
-                        print(f"Error decoding JSON: {e}")
+                        logging.info(f"Error decoding JSON: {e}")
                     except Exception as e:
-                        print(f"Unexpected error: {e}")
+                        logging.info(f"Unexpected error: {e}")
 
         return frame_ids, distances
     
