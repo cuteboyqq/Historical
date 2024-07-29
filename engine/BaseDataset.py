@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import csv
 import json
 import os
+from PIL import Image, ImageDraw
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 class BaseDataset:
@@ -39,6 +40,7 @@ class BaseDataset:
         self.show_tailingobjs = args.show_tailingobjs
         self.show_vanishline = args.show_vanishline
         self.show_adasobjs = args.show_adasobjs
+        self.showtailobjBB_corner = args.showtailobjBB_corner
 
         self.tailingObj_x1 = None
         self.tailingObj_y1 = None
@@ -84,8 +86,33 @@ class BaseDataset:
         self.tailingObj_y1 = tailingObj_y1
 
         # Draw bounding box on the image
-        cv2.rectangle(im, (tailingObj_x1, tailingObj_y1), (tailingObj_x2, tailingObj_y2), color=(0,255,255), thickness=2)
-        
+        if self.showtailobjBB_corner:
+            top_left = (tailingObj_x1, tailingObj_y1)
+            bottom_right = (tailingObj_x2, tailingObj_y2)
+            top_right = (tailingObj_x2,tailingObj_y1)
+            bottom_left = (tailingObj_x1,tailingObj_y2) 
+            BB_width = abs(tailingObj_x2 - tailingObj_x1)
+            BB_height = abs(tailingObj_y2 - tailingObj_y1)
+            divide_length = 5
+            thickness = 3
+            color = (0,255,255)
+            # Draw each side of the rectangle
+            cv2.line(im, top_left, (top_left[0]+int(BB_width/divide_length), top_left[1]), color, thickness)
+            cv2.line(im, top_left, (top_left[0], top_left[1] + int(BB_height/divide_length)), color, thickness)
+
+            cv2.line(im, bottom_right,(bottom_right[0] - int(BB_width/divide_length),bottom_right[1]), color, thickness)
+            cv2.line(im, bottom_right,(bottom_right[0],bottom_right[1] - int(BB_height/divide_length) ), color, thickness)
+
+
+            cv2.line(im, top_right, ((top_right[0]-int(BB_width/divide_length)), top_right[1]), color, thickness)
+            cv2.line(im, top_right, (top_right[0], (top_right[1]+int(BB_height/divide_length))), color, thickness)
+
+            cv2.line(im, bottom_left, ((bottom_left[0]+int(BB_width/divide_length)), bottom_left[1]), color, thickness)
+            cv2.line(im, bottom_left, (bottom_left[0], (bottom_left[1]-int(BB_height/divide_length))), color, thickness)
+        else:
+            cv2.rectangle(im, (tailingObj_x1, tailingObj_y1), (tailingObj_x2, tailingObj_y2), color=(0,255,255), thickness=2)
+
+
         # if tailingObj_label=='VEHICLE':
             # Put text on the image
         # if not self.show_detectobjs:
@@ -115,7 +142,7 @@ class BaseDataset:
                 else:
                     # Draw bounding box
                     if label == "VEHICLE":
-                        color=(255,0,0)
+                        color=(255,150,0)
                     elif label=="HUMAN":
                         color=(0,128,255)
                     cv2.rectangle(im, (x1, y1), (x2, y2), color=color, thickness=1)

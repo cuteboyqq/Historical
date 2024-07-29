@@ -9,7 +9,8 @@ import re
 import json
 import cv2
 import pandas as pd
-
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Connection():
 
@@ -18,30 +19,30 @@ class Connection():
         self.port = args.port
         self.username = args.user_name
         self.password = args.password
-        self.remote_path = args.remote_path
-        self.local_path = args.local_path
+        # self.remote_path = args.remote_path
+        # self.local_path = args.local_path
         self.tftpserver_dir = args.tftpserver_dir
 
     # Function to transfer file using SCP
-    def transfer_file(self):
-        try:
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            print(f"Connecting to {self.hostname}...")
-            ssh.connect(self.hostname, self.port, self.username, self.password)
-            print("Connected!")
+    # def transfer_file(self):
+    #     try:
+    #         ssh = paramiko.SSHClient()
+    #         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    #         print(f"Connecting to {self.hostname}...")
+    #         ssh.connect(self.hostname, self.port, self.username, self.password)
+    #         print("Connected!")
 
-            with SCPClient(ssh.get_transport()) as scp:
-                scp.get(self.remote_path, self.local_path)
+    #         with SCPClient(ssh.get_transport()) as scp:
+    #             scp.get(self.remote_path, self.local_path)
 
-            ssh.close()
-            print(f"File transferred successfully to {self.local_path}")
-        except paramiko.ssh_exception.AuthenticationException as auth_err:
-            print(f"Authentication failed: {auth_err}")
-        except paramiko.ssh_exception.SSHException as ssh_err:
-            print(f"SSH error: {ssh_err}")
-        except Exception as e:
-            print(f"An error occurred: {e}")
+    #         ssh.close()
+    #         print(f"File transferred successfully to {self.local_path}")
+    #     except paramiko.ssh_exception.AuthenticationException as auth_err:
+    #         print(f"Authentication failed: {auth_err}")
+    #     except paramiko.ssh_exception.SSHException as ssh_err:
+    #         print(f"SSH error: {ssh_err}")
+    #     except Exception as e:
+    #         print(f"An error occurred: {e}")
 
 
     def execute_remote_command_with_progress(self,command):
@@ -59,44 +60,43 @@ class Connection():
                 while not stdout.channel.exit_status_ready():
                     line = stdout.readline().strip()
                     if line:
-                        # Update progress bar description or postfix with current status
                         pbar.set_description(f"Progress: {line}")
-                        # Simulate progress increment; adjust this based on your actual progress
                         pbar.update(1)
-                    time.sleep(1)  # Adjust the sleep interval as needed
-
+                    time.sleep(1) 
                 # Print final output
                 final_output = stdout.read().strip()
                 final_errors = stderr.read().strip()
-                print("Final Output:")
-                print(final_output)
-                print("Final Errors:")
-                print(final_errors)
+                logging.info(f"Final Output: {final_output}")
+                logging.error(f"Final Errors: {final_errors}")
 
             ssh.close()
         except paramiko.ssh_exception.AuthenticationException as auth_err:
-            print(f"Authentication failed: {auth_err}")
+            logging.error(f"Authentication failed: {auth_err}")
+        
         except paramiko.ssh_exception.SSHException as ssh_err:
-            print(f"SSH error: {ssh_err}")
+            logging.error(f"SSH error: {ssh_err}")
+          
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logging.error(f"An error occurred: {e}")
+            
     
     # Execute local commands
     # Function to execute a command locally
     def execute_local_command(self,command):
         try:
             result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            print(f"Command executed: {command}")
-            print("Output:")
-            print(result.stdout.decode())
-            print("Errors:")
-            print(result.stderr.decode())
+            logging.info(f"Command executed: {command}")
+            logging.info("Output:")
+            logging.info(result.stdout.decode())
+            logging.info("Errors:")
+            logging.info(result.stderr.decode())
         except subprocess.CalledProcessError as e:
-            print(f"An error occurred: {e}")
-            print("Output:")
-            print(e.stdout.decode())
-            print("Errors:")
-            print(e.stderr.decode())
+            logging.info(f"An error occurred: {e}")
+            logging.info("Output:")
+            logging.info(e.stdout.decode())
+            logging.info("Errors:")
+            logging.info(e.stderr.decode())
+            
 
     
 
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     # Transfer and process images
     # transfer_images()
     # Transfer CSV file
-    Con.transfer_file()
+    # Con.transfer_file()
 
     # while True:
     #     # # Parse CSV and draw bounding boxes
