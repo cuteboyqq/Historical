@@ -55,7 +55,7 @@ SHOW_DETECT_OBJS = True        # Show detection objects
 SHOW_TAILING_OBJS = True        # Show tailing objects
 SHOW_VANISH_LINE = True         # Show vanishing line
 SHOW_ADAS_RESULT = True         # Show ADAS result
-SHOW_TAILING_OBJS_BB_CORNER = True # Show tailing object bounding box with corner only
+SHOW_TAILING_OBJS_BB_CORNER = True# Show tailing object bounding box with corner only
 SHOW_DISTANCE_PLOT = True       # Show distance plot
 
 DO_RESIZE = True              # Resized AI result images

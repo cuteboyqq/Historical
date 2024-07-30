@@ -342,57 +342,59 @@ class BaseDataset:
                     x2 = image.shape[1]
                     cv2.line(image, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
                     cv2.putText(image, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
-            
-            for obj in tailing_objs:
-                tailingObj_x1, tailingObj_y1 = obj["tailingObj.x1"], obj["tailingObj.y1"]
-                tailingObj_x2, tailingObj_y2 = obj["tailingObj.x2"], obj["tailingObj.y2"]
-                distance = obj["tailingObj.distanceToCamera"]
-                label = obj["tailingObj.label"]
-                distance_to_camera = obj['tailingObj.distanceToCamera']
-                tailingObj_id = obj['tailingObj.id']
-                tailingObj_label = obj['tailingObj.label']
-                # cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                im = image
-                if self.showtailobjBB_corner and self.show_tailingobjs:
-                    top_left = (tailingObj_x1, tailingObj_y1)
-                    bottom_right = (tailingObj_x2, tailingObj_y2)
-                    top_right = (tailingObj_x2,tailingObj_y1)
-                    bottom_left = (tailingObj_x1,tailingObj_y2) 
-                    BB_width = abs(tailingObj_x2 - tailingObj_x1)
-                    BB_height = abs(tailingObj_y2 - tailingObj_y1)
-                    divide_length = 5
-                   
-                    if distance>=10:
-                        color = (0,255,255)
-                        thickness = 3
-                        text_thickness = 0.40
-                    elif distance>=7 and distance<10:
-                        color = (0,100,255)
-                        thickness = 5
-                        text_thickness = 0.46
-                    elif distance<7:
-                        color = (0,25,255)
-                        thickness = 7
-                        text_thickness = 0.50
-                    # Draw each side of the rectangle
-                    cv2.line(im, top_left, (top_left[0]+int(BB_width/divide_length), top_left[1]), color, thickness)
-                    cv2.line(im, top_left, (top_left[0], top_left[1] + int(BB_height/divide_length)), color, thickness)
+            if self.show_tailingobjs:
+                for obj in tailing_objs:
+                    tailingObj_x1, tailingObj_y1 = obj["tailingObj.x1"], obj["tailingObj.y1"]
+                    tailingObj_x2, tailingObj_y2 = obj["tailingObj.x2"], obj["tailingObj.y2"]
+                    distance = obj["tailingObj.distanceToCamera"]
+                    label = obj["tailingObj.label"]
+                    distance_to_camera = obj['tailingObj.distanceToCamera']
+                    tailingObj_id = obj['tailingObj.id']
+                    tailingObj_label = obj['tailingObj.label']
+                    # cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                    im = image
+                    text_thickness = 0.45
+                    color = (0,255,255)
+                    if self.showtailobjBB_corner and self.show_tailingobjs:
+                        top_left = (tailingObj_x1, tailingObj_y1)
+                        bottom_right = (tailingObj_x2, tailingObj_y2)
+                        top_right = (tailingObj_x2,tailingObj_y1)
+                        bottom_left = (tailingObj_x1,tailingObj_y2) 
+                        BB_width = abs(tailingObj_x2 - tailingObj_x1)
+                        BB_height = abs(tailingObj_y2 - tailingObj_y1)
+                        divide_length = 5
+                    
+                        if distance>=10:
+                            color = (0,255,255)
+                            thickness = 3
+                            text_thickness = 0.40
+                        elif distance>=7 and distance<10:
+                            color = (0,100,255)
+                            thickness = 5
+                            text_thickness = 0.46
+                        elif distance<7:
+                            color = (0,25,255)
+                            thickness = 7
+                            text_thickness = 0.50
+                        # Draw each side of the rectangle
+                        cv2.line(im, top_left, (top_left[0]+int(BB_width/divide_length), top_left[1]), color, thickness)
+                        cv2.line(im, top_left, (top_left[0], top_left[1] + int(BB_height/divide_length)), color, thickness)
 
-                    cv2.line(im, bottom_right,(bottom_right[0] - int(BB_width/divide_length),bottom_right[1]), color, thickness)
-                    cv2.line(im, bottom_right,(bottom_right[0],bottom_right[1] - int(BB_height/divide_length) ), color, thickness)
+                        cv2.line(im, bottom_right,(bottom_right[0] - int(BB_width/divide_length),bottom_right[1]), color, thickness)
+                        cv2.line(im, bottom_right,(bottom_right[0],bottom_right[1] - int(BB_height/divide_length) ), color, thickness)
 
 
-                    cv2.line(im, top_right, ((top_right[0]-int(BB_width/divide_length)), top_right[1]), color, thickness)
-                    cv2.line(im, top_right, (top_right[0], (top_right[1]+int(BB_height/divide_length))), color, thickness)
+                        cv2.line(im, top_right, ((top_right[0]-int(BB_width/divide_length)), top_right[1]), color, thickness)
+                        cv2.line(im, top_right, (top_right[0], (top_right[1]+int(BB_height/divide_length))), color, thickness)
 
-                    cv2.line(im, bottom_left, ((bottom_left[0]+int(BB_width/divide_length)), bottom_left[1]), color, thickness)
-                    cv2.line(im, bottom_left, (bottom_left[0], (bottom_left[1]-int(BB_height/divide_length))), color, thickness)
-                elif not self.showtailobjBB_corner and self.show_tailingobjs:
-                    cv2.rectangle(im, (tailingObj_x1, tailingObj_y1), (tailingObj_x2, tailingObj_y2), color=(0,255,255), thickness=2)
-                    cv2.putText(image, f"{label} ({distance:.2f}m)", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-                if self.show_tailingobjs:
-                    cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
-                    cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
+                        cv2.line(im, bottom_left, ((bottom_left[0]+int(BB_width/divide_length)), bottom_left[1]), color, thickness)
+                        cv2.line(im, bottom_left, (bottom_left[0], (bottom_left[1]-int(BB_height/divide_length))), color, thickness)
+                    elif not self.showtailobjBB_corner and self.show_tailingobjs:
+                        cv2.rectangle(im, (tailingObj_x1, tailingObj_y1), (tailingObj_x2, tailingObj_y2), color=(0,255,255), thickness=2)
+                        # cv2.putText(image, f"{label} ({distance:.2f}m)", (tailingObj_x1, tailingObj_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                    if self.show_tailingobjs:
+                        cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
+                        cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
             if self.show_detectobjs:
                 for obj in detect_objs:
                     x1, y1 = obj["detectObj.x1"], obj["detectObj.y1"]
