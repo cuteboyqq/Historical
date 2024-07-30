@@ -5,6 +5,7 @@ import json
 import os
 from PIL import Image, ImageDraw
 import logging
+from utils.saver import ImageSaver
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 class BaseDataset:
     def __init__(self,args):
@@ -23,9 +24,14 @@ class BaseDataset:
 
         # Enable / Disable save AI result images
         self.save_airesultimage = args.save_airesultimage
+        if self.save_airesultimage:
+            os.makedirs(self.save_imdir,exist_ok=True)
+
         self.save_rawvideo = args.save_rawvideo
         self.save_rawvideopath = args.save_rawvideopath
-     
+        self.save_jsonlogpath = args.save_jsonlogpath
+        self.save_jsonlog = args.save_jsonlog
+
         # How fast of show the images
         self.sleep = args.sleep
 
@@ -68,6 +74,8 @@ class BaseDataset:
         #plot label
         self.plot_label = args.plot_label
 
+        self.img_saver = ImageSaver()
+
     def draw_tailing_obj(self,tailing_objs,im):
         distance_to_camera = tailing_objs[0].get('tailingObj.distanceToCamera', None)
         tailingObj_id = tailing_objs[0].get('tailingObj.id', None)
@@ -75,11 +83,11 @@ class BaseDataset:
         tailingObj_y1 = tailing_objs[0].get('tailingObj.y1', None)
         tailingObj_x2 = tailing_objs[0].get('tailingObj.x2', None)
         tailingObj_y2 = tailing_objs[0].get('tailingObj.y2', None)
-        logging.info(f"tailingObj_id:{tailingObj_id}")
-        logging.info(f"tailingObj_x1:{tailingObj_x1}")
-        logging.info(f"tailingObj_y1:{tailingObj_y1}")
-        logging.info(f"tailingObj_x2:{tailingObj_x2}")
-        logging.info(f"tailingObj_y2:{tailingObj_y2}")
+        # logging.info(f"tailingObj_id:{tailingObj_id}")
+        # logging.info(f"tailingObj_x1:{tailingObj_x1}")
+        # logging.info(f"tailingObj_y1:{tailingObj_y1}")
+        # logging.info(f"tailingObj_x2:{tailingObj_x2}")
+        # logging.info(f"tailingObj_y2:{tailingObj_y2}")
         tailingObj_label = tailing_objs[0].get('tailingObj.label', None)
 
         self.tailingObj_x1 = tailingObj_x1
@@ -96,6 +104,20 @@ class BaseDataset:
             divide_length = 5
             thickness = 3
             color = (0,255,255)
+
+            if distance_to_camera>=10:
+                color = (0,255,255)
+                thickness = 3
+                text_thickness = 0.40
+            elif distance_to_camera>=7 and distance_to_camera<10:
+                color = (0,100,255)
+                thickness = 5
+                text_thickness = 0.46
+            elif distance_to_camera<7:
+                color = (0,25,255)
+                thickness = 7
+                text_thickness = 0.50
+
             # Draw each side of the rectangle
             cv2.line(im, top_left, (top_left[0]+int(BB_width/divide_length), top_left[1]), color, thickness)
             cv2.line(im, top_left, (top_left[0], top_left[1] + int(BB_height/divide_length)), color, thickness)
@@ -116,8 +138,8 @@ class BaseDataset:
         # if tailingObj_label=='VEHICLE':
             # Put text on the image
         # if not self.show_detectobjs:
-        cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 255, 255), 1, cv2.LINE_AA)
-        cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
+        cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.1, color, 1, cv2.LINE_AA)
 
         if distance_to_camera is not None:
             self.distances.append(distance_to_camera)
@@ -296,11 +318,24 @@ class BaseDataset:
             detect_objs = log_data["frame_ID"][frame_ID]["detectObj"]["VEHICLE"]
             tailing_objs = log_data["frame_ID"][frame_ID]["tailingObj"]
             vanishline_objs = log_data["frame_ID"][frame_ID]["vanishLineY"]
+            ADAS_objs = log_data["frame_ID"][frame_ID]["ADAS"]
 
             image_path = f"{self.im_dir}/{self.image_basename}{frame_ID}.png"
             print(image_path)
             image = cv2.imread(image_path)
             cv2.putText(image, 'frame_ID:'+str(frame_ID), (10,10), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
+
+            if self.show_adasobjs:
+                for obj in ADAS_objs:
+                    self.ADAS_FCW = obj["FCW"]
+                    self.ADAS_LDW = obj["LDW"]
+                    logging.info(f'ADAS_FCW:{self.ADAS_FCW}')
+                    logging.info(f'ADAS_LDW:{self.ADAS_LDW}')
+                    if self.ADAS_FCW==True or self.ADAS_FCW==1 or self.ADAS_FCW=="true":
+                        cv2.putText(im, 'Collision Warning', (150,50), cv2.FONT_HERSHEY_SIMPLEX,1.3, (0, 128, 255), 2, cv2.LINE_AA)
+                    if self.ADAS_LDW==True or self.ADAS_LDW==1 or self.ADAS_FCW=="true":
+                        cv2.putText(im, 'Departure Warning', (150,80), cv2.FONT_HERSHEY_SIMPLEX,1.3, (128, 0, 255), 2, cv2.LINE_AA)
+
             if self.show_vanishline:
                 for obj in vanishline_objs:
                     vanishlineY = obj["vanishlineY"]
@@ -326,8 +361,19 @@ class BaseDataset:
                     BB_width = abs(tailingObj_x2 - tailingObj_x1)
                     BB_height = abs(tailingObj_y2 - tailingObj_y1)
                     divide_length = 5
-                    thickness = 3
-                    color = (0,255,255)
+                   
+                    if distance>=10:
+                        color = (0,255,255)
+                        thickness = 3
+                        text_thickness = 0.40
+                    elif distance>=7 and distance<10:
+                        color = (0,100,255)
+                        thickness = 5
+                        text_thickness = 0.46
+                    elif distance<7:
+                        color = (0,25,255)
+                        thickness = 7
+                        text_thickness = 0.50
                     # Draw each side of the rectangle
                     cv2.line(im, top_left, (top_left[0]+int(BB_width/divide_length), top_left[1]), color, thickness)
                     cv2.line(im, top_left, (top_left[0], top_left[1] + int(BB_height/divide_length)), color, thickness)
@@ -345,8 +391,8 @@ class BaseDataset:
                     cv2.rectangle(im, (tailingObj_x1, tailingObj_y1), (tailingObj_x2, tailingObj_y2), color=(0,255,255), thickness=2)
                     cv2.putText(image, f"{label} ({distance:.2f}m)", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
                 if self.show_tailingobjs:
-                    cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 255, 255), 1, cv2.LINE_AA)
-                    cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
+                    cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
+                    cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
             if self.show_detectobjs:
                 for obj in detect_objs:
                     x1, y1 = obj["detectObj.x1"], obj["detectObj.y1"]
@@ -360,9 +406,21 @@ class BaseDataset:
                 image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
             if self.show_airesultimage:
                 cv2.imshow("Annotated Image", image)
-                cv2.waitKey(self.sleep)  # Display the image for a short time
+                if self.ADAS_LDW or self.ADAS_FCW:
+                    cv2.waitKey(self.sleep*5)  # Display the image for a short time
+                else:
+                    cv2.waitKey(self.sleep)
             if self.save_airesultimage:
-                cv2.imwrite(f'{self.save_imdir}/frame_{frame_ID}.jpg',image)
+                self.img_saver.save_image(image,frame_ID)
+                # cv2.imwrite(f'{self.save_imdir}/frame_{frame_ID}.jpg',image)
+
+            if self.save_jsonlog:
+                # Save the JSON log to a CSV file
+                with open(f'{self.save_jsonlogpath}', mode='a', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow([json.dumps(log_data)])  # Save frame_ID and JSON log
+                    # writer.writerow([frame_ID, json.dumps(log_data)])  # Save frame_ID and JSON log
+
         except KeyError as e:
             print(f"KeyError: {e} - The key might be missing in the JSON data.")
         except json.JSONDecodeError as e:

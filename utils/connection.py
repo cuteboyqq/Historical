@@ -12,6 +12,7 @@ import pandas as pd
 import logging
 import socket
 from engine.BaseDataset import BaseDataset
+
 global index
 index  = 0
 
@@ -55,6 +56,10 @@ class Connection(BaseDataset):
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            logging.info(f'hostname:{self.hostname}')
+            logging.info(f'port:{self.port}')
+            logging.info(f'username:{self.username}')
+            logging.info(f'password:{self.password}')
             ssh.connect(self.hostname, self.port, self.username, self.password)
             print(f"Connected to {self.hostname}")
 
@@ -132,7 +137,7 @@ class Connection(BaseDataset):
             print(f"Successfully received the complete image data. Total bytes: {len(buffer)}")
 
             # Save the image to a file
-            image_path = f'assets/images/received/received_image_{index}.png'
+            image_path = f'{self.im_dir}/{self.image_basename}{index}.{self.image_format}'
             with open(image_path, 'wb') as file:
                 file.write(buffer)
 
@@ -202,7 +207,7 @@ class Connection(BaseDataset):
 
         server_socket.listen(5)
         print(f"Server started on {self.tftp_ip}:{self.port}")
-        os.makedirs('assets/images/received', exist_ok=True)
+        os.makedirs(f'{self.im_dir}', exist_ok=True)
 
         while True:
             client_socket, addr = server_socket.accept()
