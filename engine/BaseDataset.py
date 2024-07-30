@@ -259,5 +259,116 @@ class BaseDataset:
         cv2.destroyAllWindows()
 
         print(f"Video saved as {self.save_rawvideopath}")
+    
+
+    '''
+    ------------------------------------------
+    FUNC: process_json_log
+        input : json_log only one frame
+        # Example usage
+        json_log = {
+            "frame_ID": {
+                "89": {
+                    "ADAS": [{"FCW": false, "LDW": false}],
+                    "detectObj": {
+                        "VEHICLE": [
+                            {"detectObj.confidence": 0.8481980562210083, "detectObj.label": "VEHICLE", "detectObj.x1": 269, "detectObj.x2": 312, "detectObj.y1": 160, "detectObj.y2": 203},
+                            {"detectObj.confidence": 0.8470443487167358, "detectObj.label": "VEHICLE", "detectObj.x1": 78, "detectObj.x2": 143, "detectObj.y1": 154, "detectObj.y2": 207}
+                        ]
+                    },
+                    "tailingObj": [
+                        {"tailingObj.distanceToCamera": 27.145750045776367, "tailingObj.id": 3, "tailingObj.label": "VEHICLE", "tailingObj.x1": 230, "tailingObj.x2": 257, "tailingObj.y1": 166, "tailingObj.y2": 193}
+                    ],
+                    "vanishLineY": [{"vanishlineY": 171}]
+                }
+            }
+        }
+        Purpose : Process just one frame JSON log
+    ------------------------------------------
+    '''
+    def process_json_log(self,json_log):
+        try:
+            log_data = json.loads(json_log)
+            print("Received JSON:", json.dumps(log_data, indent=4))  # Print formatted JSON
+
+            frame_ID = list(log_data["frame_ID"].keys())[0]  # Extract the first frame_ID key
+            
+            detect_objs = log_data["frame_ID"][frame_ID]["detectObj"]["VEHICLE"]
+            tailing_objs = log_data["frame_ID"][frame_ID]["tailingObj"]
+            vanishline_objs = log_data["frame_ID"][frame_ID]["vanishLineY"]
+
+            image_path = f"{self.im_dir}/{self.image_basename}{frame_ID}.png"
+            print(image_path)
+            image = cv2.imread(image_path)
+            cv2.putText(image, 'frame_ID:'+str(frame_ID), (10,10), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
+            if self.show_vanishline:
+                for obj in vanishline_objs:
+                    vanishlineY = obj["vanishlineY"]
+                    x2 = image.shape[1]
+                    cv2.line(image, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
+                    cv2.putText(image, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
+            
+            for obj in tailing_objs:
+                tailingObj_x1, tailingObj_y1 = obj["tailingObj.x1"], obj["tailingObj.y1"]
+                tailingObj_x2, tailingObj_y2 = obj["tailingObj.x2"], obj["tailingObj.y2"]
+                distance = obj["tailingObj.distanceToCamera"]
+                label = obj["tailingObj.label"]
+                distance_to_camera = obj['tailingObj.distanceToCamera']
+                tailingObj_id = obj['tailingObj.id']
+                tailingObj_label = obj['tailingObj.label']
+                # cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                im = image
+                if self.showtailobjBB_corner and self.show_tailingobjs:
+                    top_left = (tailingObj_x1, tailingObj_y1)
+                    bottom_right = (tailingObj_x2, tailingObj_y2)
+                    top_right = (tailingObj_x2,tailingObj_y1)
+                    bottom_left = (tailingObj_x1,tailingObj_y2) 
+                    BB_width = abs(tailingObj_x2 - tailingObj_x1)
+                    BB_height = abs(tailingObj_y2 - tailingObj_y1)
+                    divide_length = 5
+                    thickness = 3
+                    color = (0,255,255)
+                    # Draw each side of the rectangle
+                    cv2.line(im, top_left, (top_left[0]+int(BB_width/divide_length), top_left[1]), color, thickness)
+                    cv2.line(im, top_left, (top_left[0], top_left[1] + int(BB_height/divide_length)), color, thickness)
+
+                    cv2.line(im, bottom_right,(bottom_right[0] - int(BB_width/divide_length),bottom_right[1]), color, thickness)
+                    cv2.line(im, bottom_right,(bottom_right[0],bottom_right[1] - int(BB_height/divide_length) ), color, thickness)
+
+
+                    cv2.line(im, top_right, ((top_right[0]-int(BB_width/divide_length)), top_right[1]), color, thickness)
+                    cv2.line(im, top_right, (top_right[0], (top_right[1]+int(BB_height/divide_length))), color, thickness)
+
+                    cv2.line(im, bottom_left, ((bottom_left[0]+int(BB_width/divide_length)), bottom_left[1]), color, thickness)
+                    cv2.line(im, bottom_left, (bottom_left[0], (bottom_left[1]-int(BB_height/divide_length))), color, thickness)
+                elif not self.showtailobjBB_corner and self.show_tailingobjs:
+                    cv2.rectangle(im, (tailingObj_x1, tailingObj_y1), (tailingObj_x2, tailingObj_y2), color=(0,255,255), thickness=2)
+                    cv2.putText(image, f"{label} ({distance:.2f}m)", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                if self.show_tailingobjs:
+                    cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 255, 255), 1, cv2.LINE_AA)
+                    cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
+            if self.show_detectobjs:
+                for obj in detect_objs:
+                    x1, y1 = obj["detectObj.x1"], obj["detectObj.y1"]
+                    x2, y2 = obj["detectObj.x2"], obj["detectObj.y2"]
+                    confidence = obj["detectObj.confidence"]
+                    label = obj["detectObj.label"]
+                    if tailingObj_x1!=x1 and tailingObj_y1!=y1:
+                        cv2.rectangle(image, (x1, y1), (x2, y2), (255, 200, 0), 1)
+                        cv2.putText(image, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 200, 0), 1)
+            if self.resize:
+                image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
+            if self.show_airesultimage:
+                cv2.imshow("Annotated Image", image)
+                cv2.waitKey(self.sleep)  # Display the image for a short time
+            if self.save_airesultimage:
+                cv2.imwrite(f'{self.save_imdir}/frame_{frame_ID}.jpg',image)
+        except KeyError as e:
+            print(f"KeyError: {e} - The key might be missing in the JSON data.")
+        except json.JSONDecodeError as e:
+            print(f"JSONDecodeError: {e} - The JSON data might be malformed.")
+        except Exception as e:
+            print(f"Error: {e} - An unexpected error occurred.")
+    
             
     

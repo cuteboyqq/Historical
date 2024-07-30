@@ -9,7 +9,7 @@ Connection parameters
 ----------------------------------------------
 '''
 CAMERA_HOSTNAME = '192.168.1.1'                                    # Camera address
-CAMERA_PORT = 22                                                   # Camera port
+CAMERA_PORT = 5000                                                   # Camera port
 CAMERA_USERNAME = 'root'                                           # Camera user name
 CAMERA_PASSWOED = 'ALUDS$#q'                                       # Camera password
 TFTP_SERVER_DIR = '/home/ali/Public/tftp'                   # TFTP server directory
@@ -31,12 +31,12 @@ Set Input Raw Images Directory (LOCAL_IMG_DIR) & JSON Log CSV File (LOCAL_CSV_FI
         The camera must be connected to the local computer via a Type-C to USB cable, micro-USB to USB cable, or over WiFi using SSH.
 '''
 LOCAL_CSV_FILE = 'assets/csv_file/117_video-adas_2024-07-31.csv'    # Local Paths to your CSV files
-LOCAL_IMG_DIR = "assets/images/2024-7-31-15-57"                     # Local directory to the RawFrame images
+LOCAL_IMG_DIR = "assets/images/received"                     # Local directory to the RawFrame images
 '''
 -------------------------------------------------------------------------------------
 '''
 
-IMAGE_BASE_NAME = "RawFrame_"                                                   # Basname of the images
+IMAGE_BASE_NAME = "received_image_"                                                   # Basname of the images
 IMAGE_FORMAT = "png"                                                            # Image foramt
 SAVE_LOCAL_IM_DIR = "/home/ali/Projects/GitHub_Code/ali/Historical/AI_result_image"   # Directory of saving the AI result images
 PLOT_LABEL = "DISTANCE"                                                         # Label for the plot
@@ -57,9 +57,9 @@ SAVE_AI_RESULT_IMAGE = True     # Save AI result image
 SHOW_DISTANCE_PLOT = True       # Show distance plot
 SAVE_RAW_VIDEO = True           # Convert raw images inot raw videos
 
-DO_RESIZE = True                # Resized AI result images
-RESIZE_WIDTH = 1600             # Resized widt
-RESIZE_HEIGHT = 900             # Resized hright
+DO_RESIZE = True              # Resized AI result images
+RESIZE_WIDTH =  1000         # Resized widt
+RESIZE_HEIGHT = 600            # Resized hright
 
 # Sleep how much ms on cv2.waitKey (WAIT_KEY_VALUE value smaller, play stream will faster)
 WAIT_KEY_VALUE = 50
@@ -101,6 +101,13 @@ def get_args():
     parser.add_argument('-camerarawimagedir','--camerarawimage-dir',help='show ai result images',default=CAMERA_RAW_IMAGE_DIR)
     parser.add_argument('-cameracsvfiledir','--cameracsvfile-dir',help='show ai result images',default=CAMERA_CSV_FILE_DIR)
 
+    parser.add_argument('-hostname','--host-name',help='host name',default=CAMERA_HOSTNAME)
+    parser.add_argument('-port','--port',help='port',type=int, default=CAMERA_PORT)
+    parser.add_argument('-username','--user-name',type=str,help='user name',default=CAMERA_USERNAME)
+    parser.add_argument('-password','--password',type=str,help='json log csv file',default=CAMERA_PASSWOED)
+    # parser.add_argument('-remotepath','--remote-path',help='remote path',default=REMOTEPATH)
+    # parser.add_argument('-localpath','--local-path',help='show ai result images',default=LOCALPATH)
+    parser.add_argument('-tftpserverdir','--tftpserver-dir',help='show ai result images',default=TFTP_SERVER_DIR)
    
     return parser.parse_args()
 

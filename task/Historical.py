@@ -19,9 +19,9 @@ class Historical(BaseDataset):
         self.camera_csvfile_dir = args.cameracsvfile_dir
         self.current_dir = os.getcwd() # .../Historical
         # self.logging = logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-        con_args = get_connection_args()
-        self.Connect = Connection(con_args)
-        self.tftpserver_dir = con_args.tftpserver_dir
+        # con_args = get_connection_args()
+        self.Connect = Connection(args)
+        self.tftpserver_dir = args.tftpserver_dir
         self.im_folder = os.path.basename(self.im_dir)
 
         self.get_raw_images_remote_commands = ( f"cd {self.camera_rawimages_dir} && "
@@ -73,6 +73,7 @@ class Historical(BaseDataset):
         plt.grid(True)
 
         plt.show()
+
     
     def visualize_hisotircal_main(self):
         HAVE_LOCAL_IMAGES = os.path.exists(self.im_dir)
