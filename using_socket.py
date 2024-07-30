@@ -4,7 +4,8 @@ import cv2
 
 import json
 import cv2
-
+global index
+index  = 0
 def process_json_log(json_log):
     try:
         log_data = json.loads(json_log)
@@ -113,6 +114,60 @@ def get_local_ip():
     local_ip = socket.gethostbyname(hostname)
     return local_ip
 
+def receive_image_and_log(client_socket):
+    global index
+
+    try:
+        # Receive the size of the image
+        size_data = client_socket.recv(4)
+        if not size_data:
+            print("Failed to receive image size.")
+            return
+
+        size = int.from_bytes(size_data, byteorder='big')
+        print(f"Expected image size: {size} bytes")
+
+        # Receive the image data
+        buffer = b''
+        while len(buffer) < size:
+            data = client_socket.recv(min(size - len(buffer), 4096))
+            if not data:
+                break
+            buffer += data
+
+        if len(buffer) != size:
+            print(f"Failed to receive the complete image data. Received {len(buffer)} bytes out of {size}")
+            return
+
+        print(f"Successfully received the complete image data. Total bytes: {len(buffer)}")
+
+        # Save the image to a file
+        image_path = f'assets/images/received/received_image_{index}.png'
+        with open(image_path, 'wb') as file:
+            file.write(buffer)
+
+        # Read the remaining data for JSON log
+        json_data = b''
+        while True:
+            data = client_socket.recv(4096)
+            if not data:
+                break
+            json_data += data
+            if b'\r\n\r\n' in data:
+                break
+
+        json_data = json_data.decode('utf-8')
+
+        # Process the JSON log
+        process_json_log(json_data)
+
+        index += 1
+
+    except Exception as e:
+        print(f"Error: {e} - An unexpected error occurred.")
+
+
+
 import os
 def start_server():
     host = '192.168.1.10'  # Bind to localhost
@@ -138,9 +193,37 @@ def start_server():
         print(f"Connection from {addr}")
         json_log = client_socket.recv(4096).decode('utf-8')
         process_json_log(json_log)
+        # receive_image_and_log(client_socket)
+        client_socket.close()
+
+
+def start_server_ver2():
+    host = '192.168.1.10'  # Bind to localhost
+    port = 5000  # Non-privileged port number
+
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    try:
+        server_socket.bind((host, port))
+    except PermissionError as e:
+        print(f"PermissionError: {e}")
+        return
+    except Exception as e:
+        print(f"Error: {e}")
+        return
+
+    server_socket.listen(5)
+    print(f"Server started on {host}:{port}")
+    os.makedirs('assets/images/received', exist_ok=True)
+
+    while True:
+        client_socket, addr = server_socket.accept()
+        print(f"Connection from {addr}")
+        receive_image_and_log(client_socket)
         client_socket.close()
 
 
 
 if __name__ == "__main__":
-    start_server()
+    start_server_ver2()

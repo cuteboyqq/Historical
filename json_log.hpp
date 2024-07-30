@@ -39,7 +39,7 @@ public:
     JSON_LOG(std::string file, ADAS_Config_S* m_config);
     ~JSON_LOG();
 
-    void logInfo(WNC_ADAS_Results adasResult, std::vector<BoundingBox> m_humanBBoxList,
+    std::string logInfo(WNC_ADAS_Results adasResult, std::vector<BoundingBox> m_humanBBoxList,
                  std::vector<BoundingBox> m_vehicleBBoxList, std::vector<BoundingBox> m_roadSignBBoxList,
                  Object& m_tailingObject, int m_frameIdx);
 

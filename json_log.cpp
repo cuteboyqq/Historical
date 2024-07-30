@@ -36,9 +36,9 @@ JSON_LOG::~JSON_LOG()
 {
 }
 
-void JSON_LOG::logInfo(WNC_ADAS_Results adasResult, std::vector<BoundingBox> m_humanBBoxList,
-                       std::vector<BoundingBox> m_vehicleBBoxList, std::vector<BoundingBox> m_roadSignBBoxList,
-                       Object& m_tailingObject, int m_frameIdx)
+std::string JSON_LOG::logInfo(WNC_ADAS_Results adasResult, std::vector<BoundingBox> m_humanBBoxList,
+                              std::vector<BoundingBox> m_vehicleBBoxList, std::vector<BoundingBox> m_roadSignBBoxList,
+                              Object& m_tailingObject, int m_frameIdx)
 {
     auto logger = spdlog::get(
 #ifdef SPDLOG_USE_SYSLOG
@@ -133,11 +133,11 @@ void JSON_LOG::logInfo(WNC_ADAS_Results adasResult, std::vector<BoundingBox> m_h
         jsonData["frame_ID"][std::to_string(m_frameIdx)]["tailingObj"].push_back(track);
         jsonDataCurrentFrame["frame_ID"][std::to_string(m_frameIdx)]["tailingObj"].push_back(track);
     }
-
+    std::string jsonCurrentFrameString;
     // Convert the JSON object to a string with indentation
     if (m_bShowJson)
     {
-        std::string jsonCurrentFrameString = jsonDataCurrentFrame.dump();
+        jsonCurrentFrameString = jsonDataCurrentFrame.dump();
 #ifndef SPDLOG_USE_SYSLOG
         logger->debug("====================================================================================");
 #endif
@@ -145,16 +145,16 @@ void JSON_LOG::logInfo(WNC_ADAS_Results adasResult, std::vector<BoundingBox> m_h
 #ifndef SPDLOG_USE_SYSLOG
         logger->debug("====================================================================================");
 #endif
-        if (m_sendJSONLog)
-        {
-            send_json_log(jsonCurrentFrameString.c_str(), m_serverIP.c_str(), m_port);
-        }
+        // if (m_sendJSONLog)
+        // {
+        //     send_json_log(jsonCurrentFrameString.c_str(), m_serverIP.c_str(), m_port);
+        // }
     }
     std::string jsonString = jsonData.dump(4);
     if (m_bSaveToJSONFile)
         _saveJsonLogFile(jsonString);
 
-    return;
+    return jsonCurrentFrameString;
 }
 
 // Alsiter add 2024-07-29
