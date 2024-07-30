@@ -83,11 +83,11 @@ class BaseDataset:
         tailingObj_y1 = tailing_objs[0].get('tailingObj.y1', None)
         tailingObj_x2 = tailing_objs[0].get('tailingObj.x2', None)
         tailingObj_y2 = tailing_objs[0].get('tailingObj.y2', None)
-        # logging.info(f"tailingObj_id:{tailingObj_id}")
-        # logging.info(f"tailingObj_x1:{tailingObj_x1}")
-        # logging.info(f"tailingObj_y1:{tailingObj_y1}")
-        # logging.info(f"tailingObj_x2:{tailingObj_x2}")
-        # logging.info(f"tailingObj_y2:{tailingObj_y2}")
+        logging.info(f"tailingObj_id:{tailingObj_id}")
+        logging.info(f"tailingObj_x1:{tailingObj_x1}")
+        logging.info(f"tailingObj_y1:{tailingObj_y1}")
+        logging.info(f"tailingObj_x2:{tailingObj_x2}")
+        logging.info(f"tailingObj_y2:{tailingObj_y2}")
         tailingObj_label = tailing_objs[0].get('tailingObj.label', None)
 
         self.tailingObj_x1 = tailingObj_x1
@@ -428,6 +428,9 @@ class BaseDataset:
             print(f"JSONDecodeError: {e} - The JSON data might be malformed.")
         except Exception as e:
             print(f"Error: {e} - An unexpected error occurred.")
+
+
+    
     
             
     

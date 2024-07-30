@@ -12,6 +12,7 @@ if __name__=="__main__":
     COVERT_TO_RAW_VIDEO=False
     SEMI_ONLINE_DRAW_AI_RESULT_ON_IMAGES = False
     ONLINE_DRAW_AI_RESULT_ON_IMAGES = True
+    OFFLINE_DRAW_AI_RESULT_ON_IMAGES = False
 
     if DRAW_AI_RESULT_ON_IMAGES:
         # frame_ids_1, distances_1 = history.draw_AI_result_to_images()
@@ -31,5 +32,8 @@ if __name__=="__main__":
     if ONLINE_DRAW_AI_RESULT_ON_IMAGES:
         connect = Connection(args)
         connect.start_server_ver2()
+
+    if OFFLINE_DRAW_AI_RESULT_ON_IMAGES:
+        history.parse_live_mode_historical_csv_file()
     
  

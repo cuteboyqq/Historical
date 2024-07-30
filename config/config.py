@@ -31,7 +31,7 @@ Set Input Raw Images Directory (LOCAL_IMG_DIR) & JSON Log CSV File (LOCAL_CSV_FI
     Connection Requirements:
         The camera must be connected to the local computer via a Type-C to USB cable, micro-USB to USB cable, or over WiFi using SSH.
 '''
-LOCAL_CSV_FILE = 'assets/csv_file/118_video-adas_2024-08-02.csv'    # Local Paths to your CSV files
+LOCAL_CSV_FILE = 'assets/csv_file/json_logs.csv'    # Local Paths to your CSV files
 LOCAL_RAW_IMG_DIR = "assets/images/2024-8-3-17-40"                     # Local directory to the RawFrame images
 '''
 -------------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ RESIZE_WIDTH =  1280         # Resized widt
 RESIZE_HEIGHT = 720           # Resized hright
 
 # Sleep how much ms on cv2.waitKey (WAIT_KEY_VALUE value smaller, play stream will faster)
-WAIT_KEY_VALUE = 10
+WAIT_KEY_VALUE = 50
 
 '''
 ----------------------------------------------------------------------------------

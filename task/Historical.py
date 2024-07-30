@@ -8,6 +8,7 @@ from utils.connection import Connection
 import numpy as np
 from config.config import get_connection_args
 import logging
+import pandas as pd
 # # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -199,9 +200,143 @@ class Historical(BaseDataset):
 
         return frame_ids, distances
     
+
+    def draw_bounding_boxes(self,frame_ID, tailing_objs,detect_objs,vanish_objs,ADAS_objs):
+        image_path = os.path.join(self.im_dir, f'{self.image_basename}{frame_ID}.png')
+        image = cv2.imread(image_path)
+
+        if image is None:
+            print(f"Image not found: {image_path}")
+            return
+        
+        cv2.putText(image, 'frame_ID:'+str(frame_ID), (10,10), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
+        logging.info("============================")
+        logging.info(f"frame_ID:{frame_ID}")
+        if tailing_objs and self.show_tailingobjs:
+        
+            for obj in tailing_objs:
+                tailingObj_x1, tailingObj_y1 = obj["tailingObj.x1"], obj["tailingObj.y1"]
+                tailingObj_x2, tailingObj_y2 = obj["tailingObj.x2"], obj["tailingObj.y2"]
+                distance = obj["tailingObj.distanceToCamera"]
+                tailingObj_label = obj["tailingObj.label"]
+                distance_to_camera = obj['tailingObj.distanceToCamera']
+                tailingObj_id = obj['tailingObj.id']
+                tailingObj_label = obj['tailingObj.label']
+                # cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                logging.info(f"tailingObj_label:{tailingObj_label}")
+                logging.info(f"tailingObj_id:{tailingObj_id}")
+                logging.info(f"tailingObj_x1:{tailingObj_x1}")
+                logging.info(f"tailingObj_y1:{tailingObj_y1}")
+                logging.info(f"tailingObj_x2:{tailingObj_x2}")
+                logging.info(f"tailingObj_y2:{tailingObj_y2}")
+
+                im = image
+                if self.showtailobjBB_corner and self.show_tailingobjs:
+                    top_left = (tailingObj_x1, tailingObj_y1)
+                    bottom_right = (tailingObj_x2, tailingObj_y2)
+                    top_right = (tailingObj_x2,tailingObj_y1)
+                    bottom_left = (tailingObj_x1,tailingObj_y2) 
+                    BB_width = abs(tailingObj_x2 - tailingObj_x1)
+                    BB_height = abs(tailingObj_y2 - tailingObj_y1)
+                    divide_length = 5
+                    
+                    if distance>=10:
+                        color = (0,255,255)
+                        thickness = 3
+                        text_thickness = 0.40
+                    elif distance>=7 and distance<10:
+                        color = (0,100,255)
+                        thickness = 5
+                        text_thickness = 0.46
+                    elif distance<7:
+                        color = (0,25,255)
+                        thickness = 7
+                        text_thickness = 0.50
+                    # Draw each side of the rectangle
+                    cv2.line(im, top_left, (top_left[0]+int(BB_width/divide_length), top_left[1]), color, thickness)
+                    cv2.line(im, top_left, (top_left[0], top_left[1] + int(BB_height/divide_length)), color, thickness)
+
+                    cv2.line(im, bottom_right,(bottom_right[0] - int(BB_width/divide_length),bottom_right[1]), color, thickness)
+                    cv2.line(im, bottom_right,(bottom_right[0],bottom_right[1] - int(BB_height/divide_length) ), color, thickness)
+
+
+                    cv2.line(im, top_right, ((top_right[0]-int(BB_width/divide_length)), top_right[1]), color, thickness)
+                    cv2.line(im, top_right, (top_right[0], (top_right[1]+int(BB_height/divide_length))), color, thickness)
+
+                    cv2.line(im, bottom_left, ((bottom_left[0]+int(BB_width/divide_length)), bottom_left[1]), color, thickness)
+                    cv2.line(im, bottom_left, (bottom_left[0], (bottom_left[1]-int(BB_height/divide_length))), color, thickness)
+                elif not self.showtailobjBB_corner and self.show_tailingobjs:
+                    cv2.rectangle(im, (tailingObj_x1, tailingObj_y1), (tailingObj_x2, tailingObj_y2), color=(0,255,255), thickness=2)
+                    cv2.putText(image, f"{label} ({distance:.2f}m)", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+                if self.show_tailingobjs:
+                    cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
+                    cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
+
+        if detect_objs and self.show_detectobjs:
+    
+            for obj in detect_objs:
+                x1, y1 = obj["detectObj.x1"], obj["detectObj.y1"]
+                x2, y2 = obj["detectObj.x2"], obj["detectObj.y2"]
+                confidence = obj["detectObj.confidence"]
+                label = obj["detectObj.label"]
+                if tailingObj_x1!=x1 and tailingObj_y1!=y1:
+                    cv2.rectangle(image, (x1, y1), (x2, y2), (255, 200, 0), 1)
+                    cv2.putText(image, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 200, 0), 1)
+        
+        if vanish_objs and self.show_vanishline:
+            vanishlineY = vanish_objs[0].get('vanishlineY', None)
+            logging.info(f'vanishlineY:{vanishlineY}')
+            x2 = im.shape[1]
+            cv2.line(im, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
+            cv2.putText(im, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
+
+        if self.show_adasobjs:
+            self.ADAS_FCW = ADAS_objs[0].get('FCW',None)
+            self.ADAS_LDW = ADAS_objs[0].get('LDW',None)
+            logging.info(f'ADAS_FCW:{self.ADAS_FCW}')
+            logging.info(f'ADAS_LDW:{self.ADAS_LDW}')
+            if self.ADAS_FCW==True:
+                cv2.putText(im, 'Collision Warning', (150,50), cv2.FONT_HERSHEY_SIMPLEX,1.3, (0, 128, 255), 2, cv2.LINE_AA)
+            if self.ADAS_LDW==True:
+                cv2.putText(im, 'Departure Warning', (150,80), cv2.FONT_HERSHEY_SIMPLEX,1.3, (128, 0, 255), 2, cv2.LINE_AA)
+
+        if self.resize:
+            image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
+        if self.show_airesultimage:
+            cv2.imshow("Annotated Image", image)
+            if self.ADAS_LDW or self.ADAS_FCW:
+                cv2.waitKey(self.sleep*5)  # Display the image for a short time
+            else:
+                cv2.waitKey(self.sleep)
+
+    
+    
     
 
+    def parse_live_mode_historical_csv_file(self):
+    
+        # Read the CSV file
+        print(self.csv_file)
+        df = pd.read_csv(self.csv_file_path)
 
+        # Iterate over each row in the CSV file
+        for index, row in df.iterrows():
+            try:
+                json_data = json.loads(row[0])  # Assuming the JSON is in the first column
+                for frame_id, frame_data in json_data["frame_ID"].items():
+                    tailing_objs = frame_data.get("tailingObj", [])
+                    detect_objs = frame_data.get("detectObj", {}).get("VEHICLE", []) + frame_data.get("detectObj", {}).get("HUMAN", [])
+                    vanish_objs = frame_data.get("vanishLineY", [])
+                    ADAS_objs = frame_data.get("ADAS",[])
+                    if tailing_objs:
+                        self.draw_bounding_boxes(frame_id, tailing_objs,detect_objs,vanish_objs,ADAS_objs)
+            except json.JSONDecodeError as e:
+                print(f"Error decoding JSON on row {index}: {e}")
+            except KeyError as e:
+                print(f"Key error on row {index}: {e}")
+            except Exception as e:
+                print(f"Unexpected error on row {index}: {e}")
 
 
     
