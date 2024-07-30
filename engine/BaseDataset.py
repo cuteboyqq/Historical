@@ -415,10 +415,11 @@ class BaseDataset:
                 # cv2.imwrite(f'{self.save_imdir}/frame_{frame_ID}.jpg',image)
 
             if self.save_jsonlog:
-                # Save the JSON log to a CSV file
-                with open(f'{self.save_jsonlogpath}', mode='a', newline='') as file:
-                    writer = csv.writer(file)
-                    writer.writerow([json.dumps(log_data)])  # Save frame_ID and JSON log
+                self.img_saver.save_json_log(log_data)
+                # # Save the JSON log to a CSV file
+                # with open(f'{self.save_jsonlogpath}', mode='a', newline='') as file:
+                #     writer = csv.writer(file)
+                #     writer.writerow([json.dumps(log_data)])  # Save frame_ID and JSON log
                     # writer.writerow([frame_ID, json.dumps(log_data)])  # Save frame_ID and JSON log
 
         except KeyError as e:

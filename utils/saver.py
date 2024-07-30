@@ -7,14 +7,30 @@ class ImageSaver:
     def __init__(self, base_dir='runs'):
         self.base_dir = base_dir
         self.current_dir = self._get_next_directory()
+       
+        self.current_csv_dir = self._get_next_csv_directory()
         self._create_directory(self.current_dir)
+        self._create_directory(self.current_csv_dir)
     
-    def _get_next_directory(self):
+    def _get_next_directory(self,):
         """Determine the next available directory."""
         i = 1
         cout = 0
         while True:
             dir_name = f'predict{i}'
+            path = os.path.join(self.base_dir, dir_name)
+            if not os.path.exists(path):
+                return path
+            cout += 1
+            if cout % 3 == 0:
+                i += 1
+    
+    def _get_next_csv_directory(self,):
+        """Determine the next available directory."""
+        i = 1
+        cout = 0
+        while True:
+            dir_name = f'predict_csv{i}'
             path = os.path.join(self.base_dir, dir_name)
             if not os.path.exists(path):
                 return path
@@ -33,12 +49,12 @@ class ImageSaver:
         cv2.imwrite(image_path, image)
         print(f"Image saved to {image_path}")
 
-    def save_json_log(self, json_log, frame_ID):
+    def save_json_log(self, json_log):
         """Save the JSON log to a CSV file."""
-        csv_path = os.path.join(self.current_dir, 'json_logs.csv')
+        csv_path = os.path.join(self.current_csv_dir, 'json_logs.csv')
         with open(csv_path, mode='a', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow([frame_ID, json.dumps(json_log)])
+            writer.writerow([json.dumps(json_log)])
         print(f"JSON log saved to {csv_path}")
 
 # Usage example
