@@ -5,6 +5,7 @@ import json
 import os
 from PIL import Image, ImageDraw
 import logging
+import numpy as np
 from utils.saver import ImageSaver
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 class BaseDataset:
@@ -34,6 +35,8 @@ class BaseDataset:
 
         # How fast of show the images
         self.sleep = args.sleep
+        self.sleep_zeroonadas = args.sleep_zeroonadas
+        self.sleep_onadas = args.sleep_onadas
 
         # Enable / disable plot frame-distance
         self.show_distanceplot = args.show_distanceplot
@@ -83,11 +86,11 @@ class BaseDataset:
         tailingObj_y1 = tailing_objs[0].get('tailingObj.y1', None)
         tailingObj_x2 = tailing_objs[0].get('tailingObj.x2', None)
         tailingObj_y2 = tailing_objs[0].get('tailingObj.y2', None)
-        logging.info(f"tailingObj_id:{tailingObj_id}")
-        logging.info(f"tailingObj_x1:{tailingObj_x1}")
-        logging.info(f"tailingObj_y1:{tailingObj_y1}")
-        logging.info(f"tailingObj_x2:{tailingObj_x2}")
-        logging.info(f"tailingObj_y2:{tailingObj_y2}")
+        # logging.info(f"tailingObj_id:{tailingObj_id}")
+        # logging.info(f"tailingObj_x1:{tailingObj_x1}")
+        # logging.info(f"tailingObj_y1:{tailingObj_y1}")
+        # logging.info(f"tailingObj_x2:{tailingObj_x2}")
+        # logging.info(f"tailingObj_y2:{tailingObj_y2}")
         tailingObj_label = tailing_objs[0].get('tailingObj.label', None)
 
         self.tailingObj_x1 = tailingObj_x1
@@ -249,7 +252,7 @@ class BaseDataset:
             Convert Raw images to raw video clip
     ------------------------------------
     '''
-    def save_rawimages_to_videoclip(self):
+    def convert_rawimages_to_videoclip(self):
         video_dir = self.save_rawvideopath.split(os.path.basename(self.save_rawvideopath))[0]
         print(video_dir)
         os.makedirs(video_dir,exist_ok=True)
@@ -311,7 +314,8 @@ class BaseDataset:
     def process_json_log(self,json_log):
         try:
             log_data = json.loads(json_log)
-            print("Received JSON:", json.dumps(log_data, indent=4))  # Print formatted JSON
+            print("Received JSON:", json.dumps(log_data))  # Print formatted JSON
+            # print("Received JSON:", json.dumps(log_data, indent=4))  # Print formatted JSON
 
             frame_ID = list(log_data["frame_ID"].keys())[0]  # Extract the first frame_ID key
             
@@ -319,6 +323,7 @@ class BaseDataset:
             tailing_objs = log_data["frame_ID"][frame_ID]["tailingObj"]
             vanishline_objs = log_data["frame_ID"][frame_ID]["vanishLineY"]
             ADAS_objs = log_data["frame_ID"][frame_ID]["ADAS"]
+            lane_info = log_data["frame_ID"][frame_ID]["LaneInfo"]
 
             image_path = f"{self.im_dir}/{self.image_basename}{frame_ID}.png"
             print(image_path)
@@ -332,9 +337,9 @@ class BaseDataset:
                     logging.info(f'ADAS_FCW:{self.ADAS_FCW}')
                     logging.info(f'ADAS_LDW:{self.ADAS_LDW}')
                     if self.ADAS_FCW==True or self.ADAS_FCW==1 or self.ADAS_FCW=="true":
-                        cv2.putText(im, 'Collision Warning', (150,50), cv2.FONT_HERSHEY_SIMPLEX,1.3, (0, 128, 255), 2, cv2.LINE_AA)
+                        cv2.putText(image, 'Forward Collision', (80,80), cv2.FONT_HERSHEY_SIMPLEX,1.3, (0, 0, 255), 2, cv2.LINE_AA)
                     if self.ADAS_LDW==True or self.ADAS_LDW==1 or self.ADAS_FCW=="true":
-                        cv2.putText(im, 'Departure Warning', (150,80), cv2.FONT_HERSHEY_SIMPLEX,1.3, (128, 0, 255), 2, cv2.LINE_AA)
+                        cv2.putText(image, 'Lane Departure', (80,100), cv2.FONT_HERSHEY_SIMPLEX,1.3, (0, 0, 255), 2, cv2.LINE_AA)
 
             if self.show_vanishline:
                 for obj in vanishline_objs:
@@ -376,7 +381,7 @@ class BaseDataset:
                             color = (0,25,255)
                             thickness = 7
                             text_thickness = 0.50
-                        # Draw each side of the rectangle
+                        # Draw corner of the rectangle
                         cv2.line(im, top_left, (top_left[0]+int(BB_width/divide_length), top_left[1]), color, thickness)
                         cv2.line(im, top_left, (top_left[0], top_left[1] + int(BB_height/divide_length)), color, thickness)
 
@@ -404,12 +409,62 @@ class BaseDataset:
                     if tailingObj_x1!=x1 and tailingObj_y1!=y1:
                         cv2.rectangle(image, (x1, y1), (x2, y2), (255, 200, 0), 1)
                         cv2.putText(image, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 200, 0), 1)
+
+
+            # Draw lane lines if LaneInfo is present
+            if lane_info and lane_info[0]["isDetectLine"]:
+                pLeftCarhood = (lane_info[0]["pLeftCarhood.x"], lane_info[0]["pLeftCarhood.y"])
+                pLeftFar = (lane_info[0]["pLeftFar.x"], lane_info[0]["pLeftFar.y"])
+                pRightCarhood = (lane_info[0]["pRightCarhood.x"], lane_info[0]["pRightCarhood.y"])
+                pRightFar = (lane_info[0]["pRightFar.x"], lane_info[0]["pRightFar.y"])
+
+                width_Cardhood = abs(pRightCarhood[0] - pLeftCarhood[0])
+                width_Far = abs(pRightFar[0] - pLeftFar[0])
+
+                pLeftCarhood_mainlane = (pLeftCarhood[0]+int(width_Cardhood/4.0),pLeftCarhood[1])
+                pLeftFar_mainlane = (pLeftFar[0]+int(width_Far/4.0),pLeftFar[1])
+                pRightCarhood_mainlane = (pRightCarhood[0]-int(width_Cardhood/4.0),pRightCarhood[1])
+                pRightFar_mainlane = (pRightFar[0]-int(width_Far/4.0),pRightFar[1])               
+                # Create an array of points to define the polygon
+                points = np.array([pLeftCarhood, pLeftFar, pRightFar, pRightCarhood], dtype=np.int32)
+                points_mainlane = np.array([pLeftCarhood_mainlane,
+                                            pLeftFar_mainlane,
+                                            pRightFar_mainlane,
+                                            pRightCarhood_mainlane], dtype=np.int32)
+                # Reshape points array for polylines function
+                points = points.reshape((-1, 1, 2))
+
+                # Create an overlay for the filled polygon
+                overlay = image.copy()
+                cv2.fillPoly(overlay, [points_mainlane], color=(0, 255, 0))  # Green filled polygon
+
+                # Blend the overlay with the original image
+                alpha = 0.35  # Transparency factor
+                cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
+
+                # Optionally, draw the polygon border
+                # cv2.polylines(image, [points], isClosed=True, color=(0, 0, 0), thickness=2)  # Black border
+
+                # Draw for direction
+                # pmiddleFar_mainlane = (int((pLeftFar[0]+pRightFar[0])/2.0),int((pLeftFar[1]+pRightFar[1])/2.0))
+                # pmiddleCarhood_mainlane = (int((pLeftCarhood[0]+pRightCarhood[0])/2.0),int((pLeftCarhood[1]+pRightCarhood[1])/2.0))
+                # cv2.line(image, pmiddleFar_mainlane, pmiddleCarhood_mainlane, (0, 255, 255), 1)  # Blue line
+
+
+                # Draw left lane line
+                cv2.line(image, pLeftCarhood, pLeftFar, (255, 0, 0), 2)  # Blue line
+                # Draw right lane line
+                cv2.line(image, pRightCarhood, pRightFar, (0, 0, 255), 2)  # Red line
+        
             if self.resize:
                 image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
             if self.show_airesultimage:
                 cv2.imshow("Annotated Image", image)
                 if self.ADAS_LDW or self.ADAS_FCW:
-                    cv2.waitKey(self.sleep*5)  # Display the image for a short time
+                    if self.sleep_zeroonadas:
+                        cv2.waitKey(0)  # Display the image for a short time
+                    else:
+                        cv2.waitKey(self.sleep_onadas)
                 else:
                     cv2.waitKey(self.sleep)
             if self.save_airesultimage:

@@ -29,6 +29,7 @@ class Connection(BaseDataset):
         # self.remote_path = args.remote_path
         # self.local_path = args.local_path
         self.tftpserver_dir = args.tftpserver_dir
+        self.server_port = args.server_port
 
     # Function to transfer file using SCP
     # def transfer_file(self):
@@ -52,7 +53,46 @@ class Connection(BaseDataset):
     #         print(f"An error occurred: {e}")
 
 
-    def execute_remote_command_with_progress(self,command):
+    # def execute_remote_command_with_progress(self,command):
+    #     try:
+    #         ssh = paramiko.SSHClient()
+    #         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    #         logging.info(f'hostname:{self.hostname}')
+    #         logging.info(f'port:{self.port}')
+    #         logging.info(f'username:{self.username}')
+    #         logging.info(f'password:{self.password}')
+    #         ssh.connect(self.hostname, self.port, self.username, self.password)
+    #         print(f"Connected to {self.hostname}")
+
+    #         # Execute the command
+    #         stdin, stdout, stderr = ssh.exec_command(command)
+
+    #         # Initialize progress bar
+    #         with tqdm(total=100, desc="Processing", unit="%", dynamic_ncols=True) as pbar:
+    #             while not stdout.channel.exit_status_ready():
+    #                 line = stdout.readline().strip()
+    #                 if line:
+    #                     pbar.set_description(f"Progress: {line}")
+    #                     pbar.update(1)
+    #                 time.sleep(1) 
+    #             # Print final output
+    #             final_output = stdout.read().strip()
+    #             final_errors = stderr.read().strip()
+    #             logging.info(f"Final Output: {final_output}")
+    #             logging.error(f"Final Errors: {final_errors}")
+
+    #         ssh.close()
+    #     except paramiko.ssh_exception.AuthenticationException as auth_err:
+    #         logging.error(f"Authentication failed: {auth_err}")
+        
+    #     except paramiko.ssh_exception.SSHException as ssh_err:
+    #         logging.error(f"SSH error: {ssh_err}")
+          
+    #     except Exception as e:
+    #         logging.error(f"An error occurred: {e}")
+    
+
+    def execute_remote_command_with_progress(self, command):
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -86,10 +126,12 @@ class Connection(BaseDataset):
         
         except paramiko.ssh_exception.SSHException as ssh_err:
             logging.error(f"SSH error: {ssh_err}")
-          
+        
         except Exception as e:
             logging.error(f"An error occurred: {e}")
-            
+
+
+
     
     # Execute local commands
     # Function to execute a command locally
@@ -170,7 +212,7 @@ class Connection(BaseDataset):
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         try:
-            server_socket.bind((self.tftp_ip, self.port))
+            server_socket.bind((self.tftp_ip, self.server_port))
         except PermissionError as e:
             print(f"PermissionError: {e}")
             return
@@ -179,7 +221,7 @@ class Connection(BaseDataset):
             return
 
         server_socket.listen(5)
-        print(f"Server started on {self.tftp_ip}:{self.port}")
+        print(f"Server started on {self.tftp_ip}:{self.server_port}")
         os.makedirs('AI_result_images',exist_ok=True)
         while True:
             client_socket, addr = server_socket.accept()
@@ -197,7 +239,7 @@ class Connection(BaseDataset):
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         try:
-            server_socket.bind((self.tftp_ip, self.port))
+            server_socket.bind((self.tftp_ip, self.server_port))
         except PermissionError as e:
             print(f"PermissionError: {e}")
             return
@@ -206,7 +248,7 @@ class Connection(BaseDataset):
             return
 
         server_socket.listen(5)
-        print(f"Server started on {self.tftp_ip}:{self.port}")
+        print(f"Server started on {self.tftp_ip}:{self.server_port}")
         os.makedirs(f'{self.im_dir}', exist_ok=True)
 
         while True:
