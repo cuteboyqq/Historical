@@ -80,7 +80,9 @@ class Historical(BaseDataset):
                   jsonlog_from=None,
                   plot_distance=False,
                   gen_raw_video=False,
-                  save_raw_image_dir=None):
+                  save_raw_image_dir=None,
+                  extract_video_to_frames=None,
+                  crop=False):
         
         if mode=="offline" and jsonlog_from=="camera":
             self.visualize_offline_from_camera()
@@ -96,6 +98,8 @@ class Historical(BaseDataset):
             self.plot_distance_in_one_csv_file()
         elif gen_raw_video:
             self.convert_rawimages_to_videoclip()
+        elif extract_video_to_frames is not None:
+            self.video_extract_frame(extract_video_to_frames,crop)
 
     def visualize_offline_from_camera(self):
         HAVE_LOCAL_IMAGES = os.path.exists(self.im_dir)
@@ -163,6 +167,7 @@ class Historical(BaseDataset):
                             vanish_objs = frame_data.get('vanishLineY', [])
                             ADAS_objs = frame_data.get('ADAS', [])
                             detect_objs = frame_data.get('detectObj', {})
+                            lane_info = frame_data.get("LaneInfo",[])
 
                             #---- Draw tailing obj----------
                             if tailing_objs and self.show_tailingobjs:
@@ -181,6 +186,10 @@ class Historical(BaseDataset):
                             # -------Draw ADAS objs-----------------
                             if ADAS_objs and self.show_adasobjs:
                                 self.draw_ADAS_objs(ADAS_objs,im)
+
+                            # Draw lane lines if LaneInfo is present
+                            if lane_info and lane_info[0]["isDetectLine"] and self.show_laneline:
+                                self.draw_laneline_objs(lane_info,im)
 
                             if self.show_airesultimage:
                                 # 按下任意鍵則關閉所有視窗
@@ -301,49 +310,8 @@ class Historical(BaseDataset):
 
 
         # Draw lane lines if LaneInfo is present
-        if lane_info and lane_info[0]["isDetectLine"]:
-            pLeftCarhood = (lane_info[0]["pLeftCarhood.x"], lane_info[0]["pLeftCarhood.y"])
-            pLeftFar = (lane_info[0]["pLeftFar.x"], lane_info[0]["pLeftFar.y"])
-            pRightCarhood = (lane_info[0]["pRightCarhood.x"], lane_info[0]["pRightCarhood.y"])
-            pRightFar = (lane_info[0]["pRightFar.x"], lane_info[0]["pRightFar.y"])
-
-            width_Cardhood = abs(pRightCarhood[0] - pLeftCarhood[0])
-            width_Far = abs(pRightFar[0] - pLeftFar[0])
-
-            pLeftCarhood_mainlane = (pLeftCarhood[0]+int(width_Cardhood/4.0),pLeftCarhood[1])
-            pLeftFar_mainlane = (pLeftFar[0]+int(width_Far/4.0),pLeftFar[1])
-            pRightCarhood_mainlane = (pRightCarhood[0]-int(width_Cardhood/4.0),pRightCarhood[1])
-            pRightFar_mainlane = (pRightFar[0]-int(width_Far/4.0),pRightFar[1])               
-            # Create an array of points to define the polygon
-            points = np.array([pLeftCarhood, pLeftFar, pRightFar, pRightCarhood], dtype=np.int32)
-            points_mainlane = np.array([pLeftCarhood_mainlane,
-                                        pLeftFar_mainlane,
-                                        pRightFar_mainlane,
-                                        pRightCarhood_mainlane], dtype=np.int32)
-            # Reshape points array for polylines function
-            points = points.reshape((-1, 1, 2))
-
-            # Create an overlay for the filled polygon
-            overlay = image.copy()
-            cv2.fillPoly(overlay, [points_mainlane], color=(0, 255, 0))  # Green filled polygon
-
-            # Blend the overlay with the original image
-            alpha = 0.35  # Transparency factor
-            cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
-
-            # Optionally, draw the polygon border
-            # cv2.polylines(image, [points], isClosed=True, color=(0, 0, 0), thickness=2)  # Black border
-
-            # Draw for direction
-            # pmiddleFar_mainlane = (int((pLeftFar[0]+pRightFar[0])/2.0),int((pLeftFar[1]+pRightFar[1])/2.0))
-            # pmiddleCarhood_mainlane = (int((pLeftCarhood[0]+pRightCarhood[0])/2.0),int((pLeftCarhood[1]+pRightCarhood[1])/2.0))
-            # cv2.line(image, pmiddleFar_mainlane, pmiddleCarhood_mainlane, (0, 255, 255), 1)  # Blue line
-
-
-            # Draw left lane line
-            cv2.line(image, pLeftCarhood, pLeftFar, (255, 0, 0), 2)  # Blue line
-            # Draw right lane line
-            cv2.line(image, pRightCarhood, pRightFar, (0, 0, 255), 2)  # Red line
+        if lane_info and lane_info[0]["isDetectLine"] and self.show_laneline:
+            self.draw_laneline_objs(lane_info,im)
 
         if detect_objs and self.show_detectobjs:
     
@@ -402,8 +370,8 @@ class Historical(BaseDataset):
                     vanish_objs = frame_data.get("vanishLineY", [])
                     ADAS_objs = frame_data.get("ADAS",[])
                     lane_info = frame_data.get("LaneInfo",[])
-                    if tailing_objs:
-                        self.draw_bounding_boxes(frame_id, tailing_objs,detect_objs,vanish_objs,ADAS_objs,lane_info)
+                    # if tailing_objs:
+                    self.draw_bounding_boxes(frame_id, tailing_objs,detect_objs,vanish_objs,ADAS_objs,lane_info)
             except json.JSONDecodeError as e:
                 print(f"Error decoding JSON on row {index}: {e}")
             except KeyError as e:

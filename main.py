@@ -12,7 +12,7 @@ Online Mode:
 
     To run in historical mode with online visualization:
 
-    1. The online JSON log CSV file will be saved in the local directory: runs/predict[number]/.
+    1. The online JSON log CSV file will be saved in the local directory: runs/predict_csv[number]/.
     2. The online raw images will be saved in the local directory: LOCAL_RAW_IMG_DIR.
 
 Offline Mode:
@@ -27,15 +27,15 @@ if __name__=="__main__":
     args = get_args()
     history = Historical(args)
 
-    OFFLINE_JSONLOG_FROM_CAMERA = False
+    
     PLOT_DISTANCE = False
     COVERT_TO_RAW_VIDEO=False
-    SEMI_ONLINE = False
-    ONLINE = True
-    OFFLINE_JSONLOG_FROM_ONLINE = False
+    VIDEO_EXTRACT_FRAME = False
 
-    if OFFLINE_JSONLOG_FROM_CAMERA:
-        history.visualize(mode="offline",jsonlog_from="camera")
+    MODE = "online" # online / semi-online / offline
+    JSONLOG_FROM = None # /camera / online / None
+
+    history.visualize(mode=MODE,jsonlog_from=JSONLOG_FROM)
 
     if PLOT_DISTANCE:
         history.visualize(plot_distance=True)
@@ -43,12 +43,8 @@ if __name__=="__main__":
     if COVERT_TO_RAW_VIDEO:
         history.visualize(gen_raw_video=True)
 
-    if SEMI_ONLINE:
-        history.visualize(mode="semi-online")
-    if ONLINE:
-        history.visualize(mode="online")
-
-    if OFFLINE_JSONLOG_FROM_ONLINE:
-        history.visualize(mode="offline",jsonlog_from="online")
+     
+    if VIDEO_EXTRACT_FRAME:
+        history.visualize(extract_video_to_frames="assets/videos/Test5.mp4",crop=True)
     
  

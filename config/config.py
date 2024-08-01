@@ -1,4 +1,32 @@
 '''
+Online Mode:
+    Input for raw images is set in the camera configuration file located at /customer/adas/config/config.txt.
+
+    To run in historical mode with online visualization:
+
+    1. The online JSON log CSV file will be saved in the local directory: runs/predict[number]/.
+    2. The online raw images will be saved in the local directory: LOCAL_RAW_IMG_DIR.
+    
+Offline Mode:
+    This mode retrieves historical JSON logs and raw images from the camera to the local computer if they do not already exist locally. 
+    The visualization of the JSON logs will be performed on the local computer.
+
+    1. The offline input JSON log CSV file is located in the directory: LOCAL_CSV_FILE.
+    2. The offline input raw images are located in the directory: LOCAL_RAW_IMG_DIR.
+'''
+'''
+Set Input Raw Images Directory (LOCAL_IMG_DIR) & JSON Log CSV File (LOCAL_CSV_FILE)
+    Notes:
+       If local copies of the raw images and JSON log CSV file are not available, 
+       the system will attempt to connect to the camera and download these files 
+       using the provided CAMERA_HOSTNAME, CAMERA_USERNAME, and CAMERA_PASSWORD, 
+       among other necessary credentials.
+       Users can specify the LOCAL_CSV_FILE and LOCAL_IMG_DIR even if these files do not currently exist.
+
+    Connection Requirements:
+        The camera must be connected to the local computer via a Type-C to USB cable, micro-USB to USB cable, or over WiFi using SSH.
+'''
+'''
 ---------------------------------------------------------
 Parameter setting , set all the parameters here~~~~
 ---------------------------------------------------------
@@ -21,38 +49,10 @@ CAMERA_CSV_FILE_DIR = '/logging/video-adas'                 # Camera save csv fi
 # LOCALPATH = 'JSON_log.csv' # Local computer csf file
 '''
 -------------------------------------------------------------------------------------
-Set Input Raw Images Directory (LOCAL_IMG_DIR) & JSON Log CSV File (LOCAL_CSV_FILE)
-    Notes:
-       If local copies of the raw images and JSON log CSV file are not available, 
-       the system will attempt to connect to the camera and download these files 
-       using the provided CAMERA_HOSTNAME, CAMERA_USERNAME, and CAMERA_PASSWORD, 
-       among other necessary credentials.
-       Users can specify the LOCAL_CSV_FILE and LOCAL_IMG_DIR even if these files do not currently exist.
-
-    Connection Requirements:
-        The camera must be connected to the local computer via a Type-C to USB cable, micro-USB to USB cable, or over WiFi using SSH.
 '''
-LOCAL_CSV_FILE = 'assets/csv_file/119_video-adas_2024-08-04.csv' # Local Paths to your CSV files / Offline input CSV file path, 
+LOCAL_CSV_FILE = 'assets/csv_file/120_video-adas_2024-08-01.csv' # Local Paths to your CSV files / Offline input CSV file path, 
                                                                  # and this csv file comes from camera or online
-LOCAL_RAW_IMG_DIR = "assets/images/2024-8-1-00-07"  # Local directory to the RawFrame images / Online save raw image directory
-
-'''
-Online Mode:
-    Input for raw images is set in the camera configuration file located at /customer/adas/config/config.txt.
-
-    To run in historical mode with online visualization:
-
-    1. The online JSON log CSV file will be saved in the local directory: runs/predict[number]/.
-    2. The online raw images will be saved in the local directory: LOCAL_RAW_IMG_DIR.
-    
-Offline Mode:
-    This mode retrieves historical JSON logs and raw images from the camera to the local computer if they do not already exist locally. 
-    The visualization of the JSON logs will be performed on the local computer.
-
-    1. The offline input JSON log CSV file is located in the directory: LOCAL_CSV_FILE.
-    2. The offline input raw images are located in the directory: LOCAL_RAW_IMG_DIR.
-'''
-
+LOCAL_RAW_IMG_DIR = "assets/images/2024-8-1-19-46"  # Local directory to the RawFrame images / Online save raw image directory
 '''
 -------------------------------------------------------------------------------------
 '''
@@ -73,12 +73,13 @@ SHOW_DETECT_OBJS = True        # Show detection objects
 SHOW_TAILING_OBJS = True        # Show tailing objects
 SHOW_VANISH_LINE = True         # Show vanishing line
 SHOW_ADAS_RESULT = True         # Show ADAS result
+SHOW_LANE_INFO = True           # Show lane line information
 SHOW_TAILING_OBJS_BB_CORNER = True# Show tailing object bounding box with corner only
 SHOW_DISTANCE_PLOT = True       # Show distance plot
 
-DO_RESIZE = False              # Resized AI result images
+DO_RESIZE = True              # Resized AI result images
 RESIZE_WIDTH =  1280         # Resized widt
-RESIZE_HEIGHT = 720          # Resized hright
+RESIZE_HEIGHT = 720         # Resized hright
 
 # Sleep how much ms on cv2.waitKey (WAIT_KEY_VALUE value smaller, play stream will faster)
 WAIT_KEY_VALUE = 50                 # waitKey value on show images
@@ -121,6 +122,7 @@ def get_args():
     parser.add_argument('-showvanishline','--show-vanishline',type=bool,help='show vanishing line',default=SHOW_VANISH_LINE)
     parser.add_argument('-showadasobjs','--show-adasobjs',type=bool,help='show ADAS result',default=SHOW_ADAS_RESULT)
     parser.add_argument('-showtailobjBBcorner','--showtailobjBB-corner',type=bool,help='show tailobj bounding box corner',default=SHOW_TAILING_OBJS_BB_CORNER)
+    parser.add_argument('-showlaneline','--show-laneline',type=bool,help='show lane line information',default=SHOW_LANE_INFO)
     parser.add_argument('-plotlabel','--plot-label',help='plot label',default=PLOT_LABEL)
 
     parser.add_argument('-camerarawimagedir','--camerarawimage-dir',help='show ai result images',default=CAMERA_RAW_IMAGE_DIR)

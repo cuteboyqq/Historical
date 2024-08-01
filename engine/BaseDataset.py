@@ -7,6 +7,7 @@ from PIL import Image, ImageDraw
 import logging
 import numpy as np
 from utils.saver import ImageSaver
+import glob
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 class BaseDataset:
     def __init__(self,args):
@@ -50,6 +51,7 @@ class BaseDataset:
         self.show_vanishline = args.show_vanishline
         self.show_adasobjs = args.show_adasobjs
         self.showtailobjBB_corner = args.showtailobjBB_corner
+        self.show_laneline = args.show_laneline
 
         self.tailingObj_x1 = None
         self.tailingObj_y1 = None
@@ -78,6 +80,54 @@ class BaseDataset:
         self.plot_label = args.plot_label
 
         self.img_saver = ImageSaver()
+
+
+        # Video extract frames parameters
+        self.skip_frame = 1
+        self.crop = True
+        self.crop_top = 0.3
+        self.crop_left = 0.1
+        self.crop_right = 0.9
+
+        self.model_w = 576
+        self.model_h = 320
+
+    def video_extract_frame(self,video_path,crop):
+        vidcap = cv2.VideoCapture(video_path)
+        success,image = vidcap.read()
+        count = 0
+
+        if crop is None:
+            crop = self.crop
+
+        while success:
+            if count% (self.skip_frame)==0:
+                filename_ = self.image_basename + str(count) + ".jpg"
+                # img_path = os.path.join(save_dir,filename_)               
+                # cv2.imwrite(img_path,image)
+                if crop:
+                    # Get the dimensions of the image
+                    height, width = image.shape[:2]
+
+                    # Calculate the cropping coordinates
+                    top_crop = int(height * self.crop_top)
+                    left_crop = int(width * self.crop_left)
+                    right_crop = int(width * self.crop_right)
+
+                    # Crop the image
+                    image = image[top_crop:, left_crop:right_crop]
+
+                if self.resize:
+                    image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
+                self.img_saver.save_image(image,count)
+                print('save frame ',count)
+            success,image = vidcap.read()
+            count += 1
+
+    # def videos_extract_frame(self):
+    #     video_path_list = glob.glob(os.path.join(self.video_dir,"*.mkv"))
+    #     for i in range(len(video_path_list)):
+    #         self.video_extract_frame(video_path_list[i])
 
     def draw_tailing_obj(self,tailing_objs,im):
         distance_to_camera = tailing_objs[0].get('tailingObj.distanceToCamera', None)
@@ -191,6 +241,49 @@ class BaseDataset:
         if self.ADAS_LDW==True:
             cv2.putText(im, 'Departure Warning', (150,80), cv2.FONT_HERSHEY_SIMPLEX,1.3, (128, 0, 255), 2, cv2.LINE_AA)
 
+    def draw_laneline_objs(self,lane_info,im):
+        pLeftCarhood = (lane_info[0]["pLeftCarhood.x"], lane_info[0]["pLeftCarhood.y"])
+        pLeftFar = (lane_info[0]["pLeftFar.x"], lane_info[0]["pLeftFar.y"])
+        pRightCarhood = (lane_info[0]["pRightCarhood.x"], lane_info[0]["pRightCarhood.y"])
+        pRightFar = (lane_info[0]["pRightFar.x"], lane_info[0]["pRightFar.y"])
+
+        width_Cardhood = abs(pRightCarhood[0] - pLeftCarhood[0])
+        width_Far = abs(pRightFar[0] - pLeftFar[0])
+
+        pLeftCarhood_mainlane = (pLeftCarhood[0]+int(width_Cardhood/4.0),pLeftCarhood[1])
+        pLeftFar_mainlane = (pLeftFar[0]+int(width_Far/4.0),pLeftFar[1])
+        pRightCarhood_mainlane = (pRightCarhood[0]-int(width_Cardhood/4.0),pRightCarhood[1])
+        pRightFar_mainlane = (pRightFar[0]-int(width_Far/4.0),pRightFar[1])               
+        # Create an array of points to define the polygon
+        points = np.array([pLeftCarhood, pLeftFar, pRightFar, pRightCarhood], dtype=np.int32)
+        points_mainlane = np.array([pLeftCarhood_mainlane,
+                                    pLeftFar_mainlane,
+                                    pRightFar_mainlane,
+                                    pRightCarhood_mainlane], dtype=np.int32)
+        # Reshape points array for polylines function
+        points = points.reshape((-1, 1, 2))
+
+        # Create an overlay for the filled polygon
+        overlay = im.copy()
+        cv2.fillPoly(overlay, [points_mainlane], color=(0, 255, 0))  # Green filled polygon
+
+        # Blend the overlay with the original image
+        alpha = 0.35  # Transparency factor
+        cv2.addWeighted(overlay, alpha, im, 1 - alpha, 0, im)
+
+        # Optionally, draw the polygon border
+        # cv2.polylines(image, [points], isClosed=True, color=(0, 0, 0), thickness=2)  # Black border
+
+        # Draw for direction
+        # pmiddleFar_mainlane = (int((pLeftFar[0]+pRightFar[0])/2.0),int((pLeftFar[1]+pRightFar[1])/2.0))
+        # pmiddleCarhood_mainlane = (int((pLeftCarhood[0]+pRightCarhood[0])/2.0),int((pLeftCarhood[1]+pRightCarhood[1])/2.0))
+        # cv2.line(image, pmiddleFar_mainlane, pmiddleCarhood_mainlane, (0, 255, 255), 1)  # Blue line
+
+        # Draw left lane line
+        cv2.line(im, pLeftCarhood, pLeftFar, (255, 0, 0), 2)  # Blue line
+        # Draw right lane line
+        cv2.line(im, pRightCarhood, pRightFar, (0, 0, 255), 2)  # Red line
+
     def extract_distance_data(self,csv_file):
         frame_ids = []
         distances = []
@@ -252,7 +345,11 @@ class BaseDataset:
             Convert Raw images to raw video clip
     ------------------------------------
     '''
-    def convert_rawimages_to_videoclip(self):
+    def convert_rawimages_to_videoclip(self,im_dir=None):
+
+        if im_dir is None:
+            im_dir = self.im_dir
+
         video_dir = self.save_rawvideopath.split(os.path.basename(self.save_rawvideopath))[0]
         print(video_dir)
         os.makedirs(video_dir,exist_ok=True)
@@ -266,7 +363,7 @@ class BaseDataset:
             exit()
 
         # Read the first image to get the size (width and height)
-        frame = cv2.imread(os.path.join(self.im_dir, images[0]))
+        frame = cv2.imread(os.path.join(im_dir, images[0]))
         height, width, layers = frame.shape
 
         # Define the codec and create a VideoWriter object
@@ -275,7 +372,7 @@ class BaseDataset:
 
         # Read each image and write it to the video file
         for image in images:
-            img_path = os.path.join(self.im_dir, image)
+            img_path = os.path.join(im_dir, image)
             img = cv2.imread(img_path)
             video.write(img)
 
@@ -328,6 +425,8 @@ class BaseDataset:
             image_path = f"{self.im_dir}/{self.image_basename}{frame_ID}.png"
             print(image_path)
             image = cv2.imread(image_path)
+            image = cv2.resize(image, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
+
             cv2.putText(image, 'frame_ID:'+str(frame_ID), (10,10), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
 
             if self.show_adasobjs:
@@ -485,6 +584,7 @@ class BaseDataset:
             print(f"JSONDecodeError: {e} - The JSON data might be malformed.")
         except Exception as e:
             print(f"Error: {e} - An unexpected error occurred.")
+    
 
 
     

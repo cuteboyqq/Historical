@@ -204,10 +204,48 @@ class Connection(BaseDataset):
             print(f"Error: {e} - An unexpected error occurred.")
 
     
-    def start_server(self):
-        # host = '192.168.1.10'  # Bind to localhost
-        # port = 5000  # Non-privileged port number
+    # def start_server(self):
+    #     # host = '192.168.1.10'  # Bind to localhost
+    #     # port = 5000  # Non-privileged port number
 
+    #     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    #     try:
+    #         server_socket.bind((self.tftp_ip, self.server_port))
+    #     except PermissionError as e:
+    #         print(f"PermissionError: {e}")
+    #         return
+    #     except Exception as e:
+    #         print(f"Error: {e}")
+    #         return
+
+    #     server_socket.listen(5)
+    #     print(f"Server started on {self.tftp_ip}:{self.server_port}")
+    #     os.makedirs('AI_result_images',exist_ok=True)
+    #     while True:
+    #         client_socket, addr = server_socket.accept()
+    #         print(f"Connection from {addr}")
+
+    #         # Read the remaining data for JSON log
+    #         json_data = b''
+    #         while True:
+    #             data = client_socket.recv(4096)
+    #             if not data:
+    #                 break
+    #             json_data += data
+    #             if b'\r\n\r\n' in data:
+    #                 break
+
+    #         json_data = json_data.decode('utf-8')
+
+    #         # json_log = client_socket.recv(4096).decode('utf-8')
+    #         self.process_json_log(json_data)
+    #         client_socket.close()
+
+
+
+    def start_server(self):
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -222,12 +260,29 @@ class Connection(BaseDataset):
 
         server_socket.listen(5)
         print(f"Server started on {self.tftp_ip}:{self.server_port}")
-        os.makedirs('AI_result_images',exist_ok=True)
+        os.makedirs('AI_result_images', exist_ok=True)
         while True:
             client_socket, addr = server_socket.accept()
             print(f"Connection from {addr}")
-            json_log = client_socket.recv(4096).decode('utf-8')
-            self.process_json_log(json_log)
+
+            # Read the remaining data for JSON log
+            json_data = b''
+            while True:
+                data = client_socket.recv(4096)
+                if not data:
+                    break
+                json_data += data
+                if b'\r\n\r\n' in data:
+                    break
+
+            try:
+                json_data = json_data.decode('utf-8')
+                self.process_json_log(json_data)
+            except UnicodeDecodeError as e:
+                print(f"UnicodeDecodeError: {e} - Raw data: {json_data}")
+            except Exception as e:
+                print(f"Error: {e}")
+
             client_socket.close()
 
     
