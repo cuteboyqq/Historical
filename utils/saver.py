@@ -7,36 +7,29 @@ class ImageSaver:
     def __init__(self, base_dir='runs'):
         self.base_dir = base_dir
         self.current_dir = self._get_next_directory()
-       
         self.current_csv_dir = self._get_next_csv_directory()
         self._create_directory(self.current_dir)
         self._create_directory(self.current_csv_dir)
     
-    def _get_next_directory(self,):
+    def _get_next_directory(self):
         """Determine the next available directory."""
         i = 1
-        cout = 0
         while True:
             dir_name = f'predict{i}'
             path = os.path.join(self.base_dir, dir_name)
             if not os.path.exists(path):
                 return path
-            cout += 1
-            if cout % 3 == 0:
-                i += 1
+            i += 1
     
-    def _get_next_csv_directory(self,):
+    def _get_next_csv_directory(self):
         """Determine the next available directory."""
         i = 1
-        cout = 0
         while True:
             dir_name = f'predict_csv{i}'
             path = os.path.join(self.base_dir, dir_name)
             if not os.path.exists(path):
                 return path
-            cout += 1
-            if cout % 3 == 0:
-                i += 1
+            i += 1
 
     def _create_directory(self, path):
         """Create the directory if it does not exist."""
@@ -57,9 +50,10 @@ class ImageSaver:
             writer.writerow([json.dumps(json_log)])
         print(f"JSON log saved to {csv_path}")
 
+
 # Usage example
-if __name__ == "__main__":
-    image_saver = ImageSaver()
+# if __name__ == "__main__":
+#     image_saver = ImageSaver()
 
     # Example usage:
     # image = cv2.imread('example.png')  # Load or generate your image

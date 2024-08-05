@@ -6,7 +6,7 @@ import cv2
 from engine.BaseDataset import BaseDataset
 from utils.connection import Connection
 import numpy as np
-from config.config import get_connection_args
+# from config.config import get_connection_args
 import logging
 import pandas as pd
 # # Configure logging
@@ -16,7 +16,7 @@ class Historical(BaseDataset):
     def __init__(self,args):
         super().__init__(args)
         self.tftpserver_dir = None
-        self.camera_rawimages_dir = args.camerarawimage_dir
+        self.camera_rawimages_dir = args.camerarawimages_dir
         self.camera_csvfile_dir = args.cameracsvfile_dir
         self.current_dir = os.getcwd() # .../Historical
         # self.logging = logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -41,6 +41,9 @@ class Historical(BaseDataset):
         
         self.get_csv_file_local_commands = ( f"cd {self.tftpserver_dir} && "
                                              f"mv {self.csv_file} {self.current_dir}/assets/csv_file")
+        
+        self.display_parameters()
+        
         
     def plot_distance_in_one_csv_file(self):
         plt.figure(figsize=(200, 100))
@@ -82,24 +85,49 @@ class Historical(BaseDataset):
                   gen_raw_video=False,
                   save_raw_image_dir=None,
                   extract_video_to_frames=None,
-                  crop=False):
-        
+                  crop=False,
+                  raw_images_dir=None):
         if mode=="offline" and jsonlog_from=="camera":
+           
+            logging.INFO("Start run offline mode, json log from camera...")
             self.visualize_offline_from_camera()
         elif mode=="offline" and jsonlog_from=="online":
+          
+            logging.INFO("Start run offline mode, json log from online...")
             self.parse_live_mode_historical_csv_file()
         elif mode=="semi-online":
-            self.Connect.start_server()
+            logging.info("Start run semi-online mode, waiting for client (Camera start run historical mode)")
+            self.visualize_semi_online()
         elif mode=="online":
+            logging.info("Start run online mode of visualize historical mode, waiting for client (Camera start run historical mode)")
             if save_raw_image_dir is not None:
                 self.im_dir = save_raw_image_dir
             self.Connect.start_server_ver2()
         elif plot_distance:
             self.plot_distance_in_one_csv_file()
         elif gen_raw_video:
-            self.convert_rawimages_to_videoclip()
+            self.convert_rawimages_to_videoclip(im_dir=raw_images_dir)
         elif extract_video_to_frames is not None:
             self.video_extract_frame(extract_video_to_frames,crop)
+
+
+    def visualize_semi_online(self):
+        HAVE_LOCAL_IMAGES = os.path.exists(self.im_dir)
+        logging.info(f"HAVE_LOCAL_IMAGES: {HAVE_LOCAL_IMAGES}")
+        # If local have no raw images or CSV file, download from camera device using SSH
+        if not HAVE_LOCAL_IMAGES:
+            tar_path = f'{self.tftpserver_dir}{os.sep}{self.im_folder}.tar'
+            
+            if not os.path.exists(tar_path):
+                logging.info(f"tar file: {self.im_folder}.tar does not exist in tftp folder")
+                logging.info("Start to download raw images from the LI80 camera...")
+                self.Connect.execute_remote_command_with_progress(self.get_raw_images_remote_commands)  # Execute commands on the camera
+            
+            logging.info(f"tar file: {self.im_folder}.tar exists in tftp folder, moving to the assets/images/")
+            self.Connect.execute_local_command(self.get_raw_images_local_commands) # Execut command on the local computer
+        
+        self.Connect.start_server()
+
 
     def visualize_offline_from_camera(self):
         HAVE_LOCAL_IMAGES = os.path.exists(self.im_dir)
@@ -211,7 +239,7 @@ class Historical(BaseDataset):
                                 if not os.path.exists(save_im_path):
                                     cv2.imwrite(save_im_path,im)
                                 else:
-                                    print(f'image exists :{save_im_path}')
+                                    logging.info(f'image exists :{save_im_path}')
                                 
                     except json.JSONDecodeError as e:
                         logging.error(f"Error decoding JSON: {e}")
@@ -238,16 +266,37 @@ class Historical(BaseDataset):
     def draw_bounding_boxes(self,frame_ID, tailing_objs,detect_objs,vanish_objs,ADAS_objs,lane_info):
         image_path = os.path.join(self.im_dir, f'{self.image_basename}{frame_ID}.png')
         image = cv2.imread(image_path)
+        image = cv2.resize(image, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
 
         if image is None:
-            print(f"Image not found: {image_path}")
+            logging.info(f"Image not found: {image_path}")
             return
         
         cv2.putText(image, 'frame_ID:'+str(frame_ID), (10,10), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
         logging.info("============================")
         logging.info(f"frame_ID:{frame_ID}")
         if tailing_objs and self.show_tailingobjs:
-        
+            custom_text_thickness = 0.45
+            if self.tailingobjs_text_size is not None:
+                custom_text_thickness = self.tailingobjs_text_size
+            else:
+                custom_text_thickness = 0.45
+
+
+            custom_color = (0,255,255)
+            if self.tailingobjs_BB_colorB is not None and \
+                self.tailingobjs_BB_colorG is not None and \
+                self.tailingobjs_BB_colorR is not None:
+                custom_color = (self.tailingobjs_BB_colorB,self.tailingobjs_BB_colorG,self.tailingobjs_BB_colorR)
+            else:
+                custom_color = (0,255,255)
+
+            custom_thickness = 2
+            if self.tailingobjs_BB_thickness is not None:
+                custom_thickness = self.tailingobjs_BB_thickness
+            else:
+                custom_thickness = 2
+
             for obj in tailing_objs:
                 tailingObj_x1, tailingObj_y1 = obj["tailingObj.x1"], obj["tailingObj.y1"]
                 tailingObj_x2, tailingObj_y2 = obj["tailingObj.x2"], obj["tailingObj.y2"]
@@ -264,7 +313,10 @@ class Historical(BaseDataset):
                 logging.info(f"tailingObj_x2:{tailingObj_x2}")
                 logging.info(f"tailingObj_y2:{tailingObj_y2}")
 
+                
                 im = image
+
+
                 if self.showtailobjBB_corner and self.show_tailingobjs:
                     top_left = (tailingObj_x1, tailingObj_y1)
                     bottom_right = (tailingObj_x2, tailingObj_y2)
@@ -275,17 +327,18 @@ class Historical(BaseDataset):
                     divide_length = 5
                     
                     if distance>=10:
-                        color = (0,255,255)
-                        thickness = 3
+                        color = (0,255,255)                
+                        thickness = 3                  
                         text_thickness = 0.40
                     elif distance>=7 and distance<10:
                         color = (0,100,255)
                         thickness = 5
-                        text_thickness = 0.46
+                        text_thickness = 0.45
                     elif distance<7:
                         color = (0,25,255)
                         thickness = 7
                         text_thickness = 0.50
+
                     # Draw each side of the rectangle
                     cv2.line(im, top_left, (top_left[0]+int(BB_width/divide_length), top_left[1]), color, thickness)
                     cv2.line(im, top_left, (top_left[0], top_left[1] + int(BB_height/divide_length)), color, thickness)
@@ -300,12 +353,16 @@ class Historical(BaseDataset):
                     cv2.line(im, bottom_left, ((bottom_left[0]+int(BB_width/divide_length)), bottom_left[1]), color, thickness)
                     cv2.line(im, bottom_left, (bottom_left[0], (bottom_left[1]-int(BB_height/divide_length))), color, thickness)
                 elif not self.showtailobjBB_corner and self.show_tailingobjs:
-                    cv2.rectangle(im, (tailingObj_x1, tailingObj_y1), (tailingObj_x2, tailingObj_y2), color=(0,255,255), thickness=2)
-                    cv2.putText(image, f"{tailingObj_label} ({distance:.2f}m)", (tailingObj_x1, tailingObj_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                    cv2.rectangle(im, (tailingObj_x1, tailingObj_y1), (tailingObj_x2, tailingObj_y2), custom_color, custom_thickness)
+                    # cv2.putText(image, f"{tailingObj_label} ({distance:.2f}m)", (tailingObj_x1, tailingObj_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
                 if self.show_tailingobjs:
-                    cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
-                    cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
+                    if not self.showtailobjBB_corner:
+                        cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, custom_text_thickness, custom_color, 1, cv2.LINE_AA)
+                        cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,custom_text_thickness+0.05, custom_color, 1, cv2.LINE_AA)
+                    else:
+                        cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
+                        cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
                 
 
 
@@ -346,18 +403,21 @@ class Historical(BaseDataset):
         if self.show_airesultimage:
             cv2.imshow("Annotated Image", image)
             if self.ADAS_LDW or self.ADAS_FCW:
-                cv2.waitKey(self.sleep*5)  # Display the image for a short time
+                if self.sleep_zeroonadas:
+                    cv2.waitKey(0)  # Display the image for a short time
+                else:
+                    cv2.waitKey(self.sleep_onadas)
             else:
                 cv2.waitKey(self.sleep)
-
-    
-    
-    
+        
+        if self.save_airesultimage:
+            self.img_saver.save_image(image,frame_ID)
+            
 
     def parse_live_mode_historical_csv_file(self):
     
         # Read the CSV file
-        print(self.csv_file)
+        logging.info(self.csv_file)
         df = pd.read_csv(self.csv_file_path)
 
         # Iterate over each row in the CSV file
@@ -373,11 +433,11 @@ class Historical(BaseDataset):
                     # if tailing_objs:
                     self.draw_bounding_boxes(frame_id, tailing_objs,detect_objs,vanish_objs,ADAS_objs,lane_info)
             except json.JSONDecodeError as e:
-                print(f"Error decoding JSON on row {index}: {e}")
+                logging.error(f"Error decoding JSON on row {index}: {e}")
             except KeyError as e:
-                print(f"Key error on row {index}: {e}")
+                logging.error(f"Key error on row {index}: {e}")
             except Exception as e:
-                print(f"Unexpected error on row {index}: {e}")
+                logging.error(f"Unexpected error on row {index}: {e}")
 
 
     

@@ -1,4 +1,4 @@
-from config.config import get_connection_args
+# from config.config import get_connection_args
 from tqdm import tqdm
 import paramiko
 import time
@@ -151,18 +151,78 @@ class Connection(BaseDataset):
             logging.info(e.stderr.decode())
 
 
-    def receive_image_and_log(self,client_socket):
+    # def receive_image_and_log(self,client_socket):
+    #     global index
+
+    #     try:
+    #         # Receive the size of the image
+    #         size_data = client_socket.recv(4)
+    #         if not size_data:
+    #             logging.error("Failed to receive image size.")
+    #             return
+
+    #         size = int.from_bytes(size_data, byteorder='big')
+    #         logging.info(f"Expected image size: {size} bytes")
+
+    #         # Receive the image data
+    #         buffer = b''
+    #         while len(buffer) < size:
+    #             data = client_socket.recv(min(size - len(buffer), 4096))
+    #             if not data:
+    #                 break
+    #             buffer += data
+
+    #         if len(buffer) != size:
+    #             logging.error(f"Failed to receive the complete image data. Received {len(buffer)} bytes out of {size}")
+    #             return
+
+    #         logging.info(f"Successfully received the complete image data. Total bytes: {len(buffer)}")
+
+    #         # Save the image to a file
+    #         image_path = f'{self.im_dir}/{self.image_basename}{index}.{self.image_format}'
+    #         with open(image_path, 'wb') as file:
+    #             file.write(buffer)
+
+    #         # Read the remaining data for JSON log
+    #         json_data = b''
+    #         while True:
+    #             data = client_socket.recv(4096)
+    #             if not data:
+    #                 break
+    #             json_data += data
+    #             if b'\r\n\r\n' in data:
+    #                 break
+
+    #         json_data = json_data.decode('utf-8')
+
+    #         # Process the JSON log
+    #         self.process_json_log(json_data)
+
+    #         index += 1
+
+    #     except Exception as e:
+    #         logging.error(f"Error: {e} - An unexpected error occurred.")
+    def receive_image_and_log(self, client_socket):
         global index
 
         try:
+            # Receive the frame_index
+            frame_index_data = client_socket.recv(4)
+            if not frame_index_data:
+                logging.error("Failed to receive frame index.")
+                return
+
+            frame_index = int.from_bytes(frame_index_data, byteorder='big')
+            logging.info(f"Received frame index: {frame_index}")
+
             # Receive the size of the image
             size_data = client_socket.recv(4)
             if not size_data:
-                print("Failed to receive image size.")
+                logging.error("Failed to receive image size.")
                 return
 
             size = int.from_bytes(size_data, byteorder='big')
-            print(f"Expected image size: {size} bytes")
+            logging.info(f"Expected image size: {size} bytes")
 
             # Receive the image data
             buffer = b''
@@ -173,13 +233,15 @@ class Connection(BaseDataset):
                 buffer += data
 
             if len(buffer) != size:
-                print(f"Failed to receive the complete image data. Received {len(buffer)} bytes out of {size}")
+                logging.error(f"Failed to receive the complete image data. Received {len(buffer)} bytes out of {size}")
                 return
 
-            print(f"Successfully received the complete image data. Total bytes: {len(buffer)}")
+            logging.info(f"Successfully received the complete image data. Total bytes: {len(buffer)}")
 
             # Save the image to a file
-            image_path = f'{self.im_dir}/{self.image_basename}{index}.{self.image_format}'
+            image_path = f'{self.im_dir}/{self.image_basename}{frame_index}.{self.image_format}'
+
+            # if self.save_rawimages:
             with open(image_path, 'wb') as file:
                 file.write(buffer)
 
@@ -197,13 +259,10 @@ class Connection(BaseDataset):
 
             # Process the JSON log
             self.process_json_log(json_data)
-
-            index += 1
-
+           
         except Exception as e:
-            print(f"Error: {e} - An unexpected error occurred.")
+            logging.error(f"Error: {e} - An unexpected error occurred.")
 
-    
     # def start_server(self):
     #     # host = '192.168.1.10'  # Bind to localhost
     #     # port = 5000  # Non-privileged port number
@@ -252,18 +311,18 @@ class Connection(BaseDataset):
         try:
             server_socket.bind((self.tftp_ip, self.server_port))
         except PermissionError as e:
-            print(f"PermissionError: {e}")
+            logging.error(f"PermissionError: {e}")
             return
         except Exception as e:
-            print(f"Error: {e}")
+            logging.error(f"Error: {e}")
             return
 
         server_socket.listen(5)
-        print(f"Server started on {self.tftp_ip}:{self.server_port}")
-        os.makedirs('AI_result_images', exist_ok=True)
+        logging.info(f"Server started on {self.tftp_ip}:{self.server_port}")
+        # os.makedirs('AI_result_images', exist_ok=True)
         while True:
             client_socket, addr = server_socket.accept()
-            print(f"Connection from {addr}")
+            logging.info(f"Connection from {addr}")
 
             # Read the remaining data for JSON log
             json_data = b''
@@ -279,9 +338,9 @@ class Connection(BaseDataset):
                 json_data = json_data.decode('utf-8')
                 self.process_json_log(json_data)
             except UnicodeDecodeError as e:
-                print(f"UnicodeDecodeError: {e} - Raw data: {json_data}")
+                logging.error(f"UnicodeDecodeError: {e} - Raw data: {json_data}")
             except Exception as e:
-                print(f"Error: {e}")
+                logging.error(f"Error: {e}")
 
             client_socket.close()
 
@@ -296,86 +355,100 @@ class Connection(BaseDataset):
         try:
             server_socket.bind((self.tftp_ip, self.server_port))
         except PermissionError as e:
-            print(f"PermissionError: {e}")
+            logging.info(f"PermissionError: {e}")
             return
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             return
 
         server_socket.listen(5)
-        print(f"Server started on {self.tftp_ip}:{self.server_port}")
+        logging.info(f"Server started on {self.tftp_ip}:{self.server_port}")
         os.makedirs(f'{self.im_dir}', exist_ok=True)
 
         while True:
             client_socket, addr = server_socket.accept()
-            print(f"Connection from {addr}")
+            logging.info(f"Connection from {addr}")
             self.receive_image_and_log(client_socket)
             client_socket.close()
+        # while True:
+        #     client_socket, addr = server_socket.accept()
+        #     print(f"Connection from {addr}")
+            
+        #     while True:
+        #         try:
+        #             self.receive_image_and_log(client_socket)
+        #         except ConnectionResetError:
+        #             print(f"Connection lost with {addr}")
+        #             break
+        #         except Exception as e:
+        #             print(f"Error during transfer: {e}")
+        #             break
 
+        #     client_socket.close()
             
 
     
 
-if __name__ == "__main__":
-    args = get_connection_args()
-    Con = Connection(args)
-    HAVE_LOCAL_IMAGES = False
-    #check local images exit or not
-    if os.path.exists('/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/2024-7-26-16-28'):
-        HAVE_LOCAL_IMAGES = True
-    else:
-        HAVE_LOCAL_IMAGES = False
+# if __name__ == "__main__":
+#     args = get_connection_args()
+#     Con = Connection(args)
+#     HAVE_LOCAL_IMAGES = False
+#     #check local images exit or not
+#     if os.path.exists('/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/2024-7-26-16-28'):
+#         HAVE_LOCAL_IMAGES = True
+#     else:
+#         HAVE_LOCAL_IMAGES = False
 
-    print(f"HAVE_LOCAL_IMAGES:{HAVE_LOCAL_IMAGES}")
-    if not HAVE_LOCAL_IMAGES:
+#     print(f"HAVE_LOCAL_IMAGES:{HAVE_LOCAL_IMAGES}")
+#     if not HAVE_LOCAL_IMAGES:
 
-        if os.path.exists('/home/ali/Public/tftp/2024-7-26-16-28.tar'):
-            print("tar file :2024-7-26-16-28.tar exists in tftp folder, mv to the assets/images/")
-            local_commands = (
-            "cd /home/ali/Public/tftp && "
-            "sudo chmod 777 2024-7-26-16-28.tar && "
-            "tar -xvf 2024-7-26-16-28.tar && "
-            "chmod 777 -R 2024-7-26-16-28 && "
-            "mv 2024-7-26-16-28 /home/ali/Projects/GitHub_Code/ali/Historical/assets/images"
-            )
-            Con.execute_local_command(local_commands)
+#         if os.path.exists('/home/ali/Public/tftp/2024-7-26-16-28.tar'):
+#             print("tar file :2024-7-26-16-28.tar exists in tftp folder, mv to the assets/images/")
+#             local_commands = (
+#             "cd /home/ali/Public/tftp && "
+#             "sudo chmod 777 2024-7-26-16-28.tar && "
+#             "tar -xvf 2024-7-26-16-28.tar && "
+#             "chmod 777 -R 2024-7-26-16-28 && "
+#             "mv 2024-7-26-16-28 /home/ali/Projects/GitHub_Code/ali/Historical/assets/images"
+#             )
+#             Con.execute_local_command(local_commands)
         
-        else:
-            print("tar file :2024-7-26-16-28.tar does not exists in tftp folder")
-            print("Start to download raw images from the LI80 camera....")
-            # Combine commands into a single string separated by &&
-            remote_commands = (
-                "cd /mnt/mmc/adas/debug/raw_images/ && "
-                "tar cvf 2024-7-26-16-28.tar 2024-7-26-16-28/ && "
-                "tftp -l 2024-7-26-16-28.tar -p 192.168.1.10 && "
-                "rm 2024-7-26-16-28.tar"
-            )
+#         else:
+#             print("tar file :2024-7-26-16-28.tar does not exists in tftp folder")
+#             print("Start to download raw images from the LI80 camera....")
+#             # Combine commands into a single string separated by &&
+#             remote_commands = (
+#                 "cd /mnt/mmc/adas/debug/raw_images/ && "
+#                 "tar cvf 2024-7-26-16-28.tar 2024-7-26-16-28/ && "
+#                 "tftp -l 2024-7-26-16-28.tar -p 192.168.1.10 && "
+#                 "rm 2024-7-26-16-28.tar"
+#             )
 
             
 
-            # Execute commands on the camera
-            Con.execute_remote_command_with_progress(remote_commands)
+#             # Execute commands on the camera
+#             Con.execute_remote_command_with_progress(remote_commands)
 
-            local_commands = (
-                "cd /home/ali/Public/tftp && "
-                "sudo chmod 777 2024-7-26-16-28.tar && "
-                "tar -xvf 2024-7-26-16-28.tar && "
-                "chmod 777 -R 2024-7-26-16-28 && "
-                "mv 2024-7-26-16-28 /home/ali/Projects/GitHub_Code/ali/Historical/assets/images"
-            )
+#             local_commands = (
+#                 "cd /home/ali/Public/tftp && "
+#                 "sudo chmod 777 2024-7-26-16-28.tar && "
+#                 "tar -xvf 2024-7-26-16-28.tar && "
+#                 "chmod 777 -R 2024-7-26-16-28 && "
+#                 "mv 2024-7-26-16-28 /home/ali/Projects/GitHub_Code/ali/Historical/assets/images"
+#             )
 
-            # Wait for transfer to complete (if needed) and then execute local commands
-            Con.execute_local_command(local_commands)
-    else:
-        print(f"HAVE_LOCAL_IMAGES:{HAVE_LOCAL_IMAGES}")
+#             # Wait for transfer to complete (if needed) and then execute local commands
+#             Con.execute_local_command(local_commands)
+#     else:
+#         print(f"HAVE_LOCAL_IMAGES:{HAVE_LOCAL_IMAGES}")
 
-    # Transfer and process images
-    # transfer_images()
-    # Transfer CSV file
-    # Con.transfer_file()
+#     # Transfer and process images
+#     # transfer_images()
+#     # Transfer CSV file
+#     # Con.transfer_file()
 
-    # while True:
-    #     # # Parse CSV and draw bounding boxes
-    #     parse_and_draw()
-    #     time.sleep(60)  # Adjust the interval as needed
-    # parse_and_draw()
+#     # while True:
+#     #     # # Parse CSV and draw bounding boxes
+#     #     parse_and_draw()
+#     #     time.sleep(60)  # Adjust the interval as needed
+#     # parse_and_draw()

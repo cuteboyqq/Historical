@@ -1,0 +1,85 @@
+# config.yaml
+
+# Model configuration
+MODEL:
+  INPUT_WIDTH: 576 # Model input image width  
+  INPUT_HEIGHT: 320 # Model input image height
+
+# Mode configuration
+MODE:
+  VISUALIZE_HISTORICAL_MODE: online # Mode of run visualize historical mode ('online' / 'offline' / None)
+
+# JSON log configuration
+JSONLOG:
+  FROM: None # Where is the  JSON log from  ('online' / 'camera' / None)
+
+# Camera configuration
+CAMERA:
+  HOSTNAME: '192.168.1.1'  # Hostname or IP address of the camera
+  PORT: 22  # Port number for connecting to the camera
+  USERNAME: 'root'  # Username for camera access
+  PASSWORD: 'ALUDS$#q'  # Password for camera access
+  RAW_IMAGE_DIR: '/mnt/mmc/adas/debug/raw_images'  # Directory on the camera where raw images are stored
+  CSV_FILE_DIR: '/logging/video-adas'  # Directory on the camera where CSV files are stored
+
+# Server configuration
+SERVER:
+  PORT: 3501  # Port number for the local server
+  TFTP_DIR: '/home/ali/Public/tftp'  # Directory on the server for TFTP file transfers
+  TFTP_IP: '192.168.1.11'  # IP address of the TFTP server
+
+# Local configuration
+LOCAL:
+  CSV_FILE: 'assets/csv_file/json_logs.csv'  # Path to the local CSV file
+  RAW_IMG_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/2024-8-5-12-58'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
+  SAVE_RAW_VIDEO_PATH: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/videos/The Bronx to Brooklyn via FDR Drive.mp4'  # Path to save the raw video file
+
+# Image configuration
+IMAGE:
+  BASE_NAME: 'RawFrame_'  # Base name for image files
+  FORMAT: 'png'  # Format of the image files
+
+# Display settings
+DISPLAY:
+  SHOW_AI_RESULT_IMAGE: true  # Flag to show AI result images
+  SHOW_DETECT_OBJS: true  # Flag to display detected objects
+  SHOW_TAILING_OBJS: true  # Flag to display tailing objects
+  SHOW_VANISH_LINE: true  # Flag to show vanishing line
+  SHOW_ADAS_RESULT: true  # Flag to show ADAS results
+  SHOW_LANE_INFO: true  # Flag to display lane line information
+  SHOW_TAILING_OBJS_BB_CORNER: true  # Flag to show bounding box corners for trailing objects
+  SHOW_DISTANCE_PLOT: true  # Flag to display distance plot
+
+# Tailing object configuation
+TAILING_OBJ:
+  BOUDINGBOX_THINKNESS: 2 # Tailing obj bounding box thickness 
+  BOUDINGBOX_COLOR_B: 0   # Tailing obj bounding box color Blue 
+  BOUDINGBOX_COLOR_G: 255 # Tailing obj bounding box color Green 
+  BOUDINGBOX_COLOR_R: 255 # Tailing obj bounding box color Red 
+  TEXT_SIZE: 0.60 # Tailing obj text size 
+    
+# Resize settings
+RESIZE:
+  ENABLED: false  # Flag to enable or disable image resizing
+  WIDTH: 1280  # Width of the resized images
+  HEIGHT: 720  # Height of the resized images
+
+# Wait settings
+WAIT:
+  VALUE: 1  # Wait time in milliseconds for image display
+  ZERO_ON_ADAS_EVENT: false  # Flag to set wait time to zero when ADAS event occurs
+  ON_ADAS_EVENT: 1  # Wait time in milliseconds when an ADAS event occurs
+
+# Plot settings
+PLOT:
+  RUN:  false
+  LABEL: 'DISTANCE'  # Label for the distance plot
+
+# Save settings
+SAVE:
+  RAW_IMAGES: false     # Flasg to save raw images
+  AI_RESULT_IMAGE: false  # Flag to save AI result images
+  RAW_VIDEO: false  # Flag to save raw video
+  JSON_LOG: false  # Flag to save JSON log
+  EXTRACT_FRAME: false # Flag to save frames extracted from the video stream
+

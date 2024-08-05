@@ -8,16 +8,44 @@ import logging
 import numpy as np
 from utils.saver import ImageSaver
 import glob
+import yaml
+from config.args import Args
+import colorlog
+
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Create a named logger
+# logger = logging.getLogger('my_application')
+# # logger.setLevel(logging.DEBUG)  # Set the logging level to DEBUG or as needed
+
+# # Create a stream handler
+# handler = logging.StreamHandler()
+
+# # Create a color formatter
+# formatter = colorlog.ColoredFormatter(
+#     '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+#     # Define colors for different log levels
+#     log_colors={
+#         'DEBUG': 'cyan',
+#         'INFO': 'green',
+#         'WARNING': 'yellow',
+#         'ERROR': 'red',
+#         'CRITICAL': 'bold_red',
+#     }
+# )
+# handler.setFormatter(formatter)
+
+# # Add the handler to the logger
+# logger.addHandler(handler)
+
+
 class BaseDataset:
     def __init__(self,args):
 
         # self.logging = logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
         # Input settings
         self.im_dir = args.im_dir
         self.im_folder = None
-        self.save_imdir = args.save_imdir
         self.image_basename = args.image_basename
         self.csv_file_path = args.csv_file
         self.csv_file = os.path.basename(self.csv_file_path)
@@ -26,13 +54,11 @@ class BaseDataset:
 
         # Enable / Disable save AI result images
         self.save_airesultimage = args.save_airesultimage
-        if self.save_airesultimage:
-            os.makedirs(self.save_imdir,exist_ok=True)
 
         self.save_rawvideo = args.save_rawvideo
         self.save_rawvideopath = args.save_rawvideopath
-        self.save_jsonlogpath = args.save_jsonlogpath
         self.save_jsonlog = args.save_jsonlog
+        self.save_rawimages = args.save_rawimages
 
         # How fast of show the images
         self.sleep = args.sleep
@@ -52,6 +78,12 @@ class BaseDataset:
         self.show_adasobjs = args.show_adasobjs
         self.showtailobjBB_corner = args.showtailobjBB_corner
         self.show_laneline = args.show_laneline
+
+        self.tailingobjs_BB_thickness = args.tailingobjs_BB_thickness
+        self.tailingobjs_BB_colorB = args.tailingobjs_BB_colorB
+        self.tailingobjs_BB_colorG = args.tailingobjs_BB_colorG
+        self.tailingobjs_BB_colorR = args.tailingobjs_BB_colorR
+        self.tailingobjs_text_size = args.tailingobjs_text_size
 
         self.tailingObj_x1 = None
         self.tailingObj_y1 = None
@@ -83,14 +115,44 @@ class BaseDataset:
 
 
         # Video extract frames parameters
-        self.skip_frame = 1
+        self.skip_frame = 10
         self.crop = True
         self.crop_top = 0.3
         self.crop_left = 0.1
         self.crop_right = 0.9
 
-        self.model_w = 576
-        self.model_h = 320
+        self.model_w = args.model_w
+        self.model_h = args.model_h
+
+
+    def display_parameters(self):
+        logging.info(f"IMAGE DIRECTORY: {self.im_dir}")
+        # logging.info(f"SAVE IMAGE DIRECTORY: {self.save_imdir}")
+        logging.info(f"IMAGE BASENAME: {self.image_basename}")
+        logging.info(f"CSV FILE PATH: {self.csv_file_path}")
+        logging.info(f"IMAGE FORMAT: {self.image_format}")
+        logging.info(f"TFTP IP: {self.tftp_ip}")
+        logging.info(f"SAVE AI RESULT IMAGE: {self.save_airesultimage}")
+        logging.info(f"SAVE RAW VIDEO: {self.save_rawvideo}")
+        logging.info(f"SAVE RAW VIDEO PATH: {self.save_rawvideopath}")
+        # logging.info(f"SAVE JSON LOG PATH: {self.save_jsonlogpath}")
+        logging.info(f"SAVE JSON LOG: {self.save_jsonlog}")
+        logging.info(f"SLEEP: {self.sleep}")
+        logging.info(f"SLEEP ZERO ON ADAS: {self.sleep_zeroonadas}")
+        logging.info(f"SLEEP ON ADAS: {self.sleep_onadas}")
+        logging.info(f"SHOW DISTANCE PLOT: {self.show_distanceplot}")
+        logging.info(f"SHOW AI RESULT IMAGE: {self.show_airesultimage}")
+        logging.info(f"SHOW DETECT OBJS: {self.show_detectobjs}")
+        logging.info(f"SHOW TAILING OBJS: {self.show_tailingobjs}")
+        logging.info(f"SHOW VANISH LINE: {self.show_vanishline}")
+        logging.info(f"SHOW ADAS OBJS: {self.show_adasobjs}")
+        logging.info(f"SHOW TAIL OBJ BB CORNER: {self.showtailobjBB_corner}")
+        logging.info(f"SHOW LANE LINE: {self.show_laneline}")
+        logging.info(f"RESIZE: {self.resize}")
+        logging.info(f"RESIZE WIDTH: {self.resize_w}")
+        logging.info(f"RESIZE HEIGHT: {self.resize_h}")
+        logging.info(f"PLOT LABEL: {self.plot_label}")
+
 
     def video_extract_frame(self,video_path,crop):
         vidcap = cv2.VideoCapture(video_path)
@@ -119,8 +181,9 @@ class BaseDataset:
 
                 if self.resize:
                     image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
-                self.img_saver.save_image(image,count)
-                print('save frame ',count)
+                if count >= 20000:
+                    self.img_saver.save_image(image,count)
+                logging.info('save frame %d',count)
             success,image = vidcap.read()
             count += 1
 
@@ -146,6 +209,7 @@ class BaseDataset:
         self.tailingObj_x1 = tailingObj_x1
         self.tailingObj_y1 = tailingObj_y1
 
+        text_thickness = 0.45
         # Draw bounding box on the image
         if self.showtailobjBB_corner:
             top_left = (tailingObj_x1, tailingObj_y1)
@@ -351,7 +415,7 @@ class BaseDataset:
             im_dir = self.im_dir
 
         video_dir = self.save_rawvideopath.split(os.path.basename(self.save_rawvideopath))[0]
-        print(video_dir)
+        logging.info(video_dir)
         os.makedirs(video_dir,exist_ok=True)
         # Get list of image files, assuming they are named RawFrame_[index].png
         images = [img for img in os.listdir(self.im_dir) if img.endswith(".png")]
@@ -359,7 +423,7 @@ class BaseDataset:
 
         # Check if there are images in the folder
         if not images:
-            print("No images found in the folder.")
+            logging.error("No images found in the folder.")
             exit()
 
         # Read the first image to get the size (width and height)
@@ -380,7 +444,7 @@ class BaseDataset:
         video.release()
         cv2.destroyAllWindows()
 
-        print(f"Video saved as {self.save_rawvideopath}")
+        logging.info(f"Video saved as {self.save_rawvideopath}")
     
 
     '''
@@ -411,19 +475,22 @@ class BaseDataset:
     def process_json_log(self,json_log):
         try:
             log_data = json.loads(json_log)
-            print("Received JSON:", json.dumps(log_data))  # Print formatted JSON
+            logging.info("=======================================================================================")
+            logging.info("Received [JSON]: %s", json.dumps(log_data))
+            logging.info("=======================================================================================")
             # print("Received JSON:", json.dumps(log_data, indent=4))  # Print formatted JSON
 
             frame_ID = list(log_data["frame_ID"].keys())[0]  # Extract the first frame_ID key
             
-            detect_objs = log_data["frame_ID"][frame_ID]["detectObj"]["VEHICLE"]
+            
             tailing_objs = log_data["frame_ID"][frame_ID]["tailingObj"]
             vanishline_objs = log_data["frame_ID"][frame_ID]["vanishLineY"]
             ADAS_objs = log_data["frame_ID"][frame_ID]["ADAS"]
             lane_info = log_data["frame_ID"][frame_ID]["LaneInfo"]
+            detect_objs = log_data["frame_ID"][frame_ID]["detectObj"]["VEHICLE"]
 
-            image_path = f"{self.im_dir}/{self.image_basename}{frame_ID}.png"
-            print(image_path)
+            image_path = f"{self.im_dir}/{self.image_basename}{frame_ID}.{self.image_format}"
+            logging.info(image_path)
             image = cv2.imread(image_path)
             image = cv2.resize(image, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
 
@@ -446,7 +513,31 @@ class BaseDataset:
                     x2 = image.shape[1]
                     cv2.line(image, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
                     cv2.putText(image, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
-            if self.show_tailingobjs:
+            
+            text_thickness = 0.45
+            if self.show_tailingobjs and tailing_objs:
+                custom_text_thickness = 0.45
+                if self.tailingobjs_text_size is not None:
+                    custom_text_thickness = self.tailingobjs_text_size
+                else:
+                    custom_text_thickness = 0.45
+
+
+                custom_color = (0,255,255)
+                if self.tailingobjs_BB_colorB is not None and \
+                    self.tailingobjs_BB_colorG is not None and \
+                    self.tailingobjs_BB_colorR is not None:
+                    custom_color = (self.tailingobjs_BB_colorB,self.tailingobjs_BB_colorG,self.tailingobjs_BB_colorR)
+                else:
+                    custom_color = (0,255,255)
+
+                custom_thickness = 2
+                if self.tailingobjs_BB_thickness is not None:
+                    custom_thickness = self.tailingobjs_BB_thickness
+                else:
+                    custom_thickness = 2
+
+
                 for obj in tailing_objs:
                     tailingObj_x1, tailingObj_y1 = obj["tailingObj.x1"], obj["tailingObj.y1"]
                     tailingObj_x2, tailingObj_y2 = obj["tailingObj.x2"], obj["tailingObj.y2"]
@@ -457,7 +548,6 @@ class BaseDataset:
                     tailingObj_label = obj['tailingObj.label']
                     # cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
                     im = image
-                    text_thickness = 0.45
                     color = (0,255,255)
                     if self.showtailobjBB_corner and self.show_tailingobjs:
                         top_left = (tailingObj_x1, tailingObj_y1)
@@ -497,9 +587,13 @@ class BaseDataset:
                         cv2.rectangle(im, (tailingObj_x1, tailingObj_y1), (tailingObj_x2, tailingObj_y2), color=(0,255,255), thickness=2)
                         # cv2.putText(image, f"{label} ({distance:.2f}m)", (tailingObj_x1, tailingObj_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
                     if self.show_tailingobjs:
-                        cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
-                        cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
-            if self.show_detectobjs:
+                        if not self.showtailobjBB_corner:
+                            cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
+                            cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
+                        else:
+                            cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
+                            cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
+            if self.show_detectobjs and detect_objs:
                 for obj in detect_objs:
                     x1, y1 = obj["detectObj.x1"], obj["detectObj.y1"]
                     x2, y2 = obj["detectObj.x2"], obj["detectObj.y2"]
@@ -558,7 +652,7 @@ class BaseDataset:
             if self.resize:
                 image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
             if self.show_airesultimage:
-                cv2.imshow("Annotated Image", image)
+                cv2.imshow("Visualize historical mode online", image)
                 if self.ADAS_LDW or self.ADAS_FCW:
                     if self.sleep_zeroonadas:
                         cv2.waitKey(0)  # Display the image for a short time
@@ -579,11 +673,11 @@ class BaseDataset:
                     # writer.writerow([frame_ID, json.dumps(log_data)])  # Save frame_ID and JSON log
 
         except KeyError as e:
-            print(f"KeyError: {e} - The key might be missing in the JSON data.")
+            logging.error(f"KeyError: {e} - The key might be missing in the JSON data.")
         except json.JSONDecodeError as e:
-            print(f"JSONDecodeError: {e} - The JSON data might be malformed.")
+            logging.error(f"JSONDecodeError: {e} - The JSON data might be malformed.")
         except Exception as e:
-            print(f"Error: {e} - An unexpected error occurred.")
+            logging.error(f"Error: {e} - An unexpected error occurred.")
     
 
 
