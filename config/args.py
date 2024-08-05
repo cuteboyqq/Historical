@@ -47,6 +47,7 @@ class Args:
         self.show_adasobjs = config['DISPLAY']['SHOW_ADAS_RESULT']
         self.showtailobjBB_corner = config['DISPLAY']['SHOW_TAILING_OBJS_BB_CORNER']
         self.show_laneline = config['DISPLAY']['SHOW_LANE_INFO']
+        self.show_distancetitle = config['DISPLAY']['SHOW_DISTANCE_TITLE']
 
         # Tailing obj bounding box
         self.tailingobjs_BB_thickness = config['TAILING_OBJ']['BOUDINGBOX_THINKNESS']

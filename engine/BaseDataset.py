@@ -78,6 +78,7 @@ class BaseDataset:
         self.show_adasobjs = args.show_adasobjs
         self.showtailobjBB_corner = args.showtailobjBB_corner
         self.show_laneline = args.show_laneline
+        self.show_distancetitle = args.show_distancetitle
 
         self.tailingobjs_BB_thickness = args.tailingobjs_BB_thickness
         self.tailingobjs_BB_colorB = args.tailingobjs_BB_colorB
@@ -514,6 +515,9 @@ class BaseDataset:
                     cv2.line(image, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
                     cv2.putText(image, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
             
+
+
+
             text_thickness = 0.45
             if self.show_tailingobjs and tailing_objs:
                 custom_text_thickness = 0.45
@@ -547,6 +551,10 @@ class BaseDataset:
                     tailingObj_id = obj['tailingObj.id']
                     tailingObj_label = obj['tailingObj.label']
                     # cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                    if self.show_distancetitle:
+                        cv2.putText(image, str(round(distance_to_camera,1)), (int(self.model_w/3.0), int(self.model_h*11.0/12.0)), cv2.FONT_HERSHEY_SIMPLEX,1.0, (0,255,255), 2, cv2.LINE_AA)
+
+
                     im = image
                     color = (0,255,255)
                     if self.showtailobjBB_corner and self.show_tailingobjs:

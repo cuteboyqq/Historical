@@ -49,6 +49,7 @@ DISPLAY:
   SHOW_LANE_INFO: true  # Flag to display lane line information
   SHOW_TAILING_OBJS_BB_CORNER: true  # Flag to show bounding box corners for trailing objects
   SHOW_DISTANCE_PLOT: true  # Flag to display distance plot
+  SHOW_DISTANCE_TITLE: true # Flag to display distance title
 
 # Tailing object configuation
 TAILING_OBJ:
