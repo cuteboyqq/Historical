@@ -2,6 +2,7 @@ import os
 import cv2
 import json
 import csv
+from pathlib import Path
 
 class ImageSaver:
     def __init__(self, base_dir='runs'):
@@ -49,6 +50,34 @@ class ImageSaver:
             writer = csv.writer(file)
             writer.writerow([json.dumps(json_log)])
         print(f"JSON log saved to {csv_path}")
+    
+    def save_video(self, output_filename='video.mp4', fps=7):
+        """Encode the images in the current directory into a video file."""
+        # Get list of image files in the directory
+        image_files = sorted(Path(self.current_dir).glob('frame_*.png'))
+        
+        if not image_files:
+            print("No images found to create a video.")
+            return
+        
+        # Read the first image to get the size
+        first_image = cv2.imread(str(image_files[0]))
+        height, width, _ = first_image.shape
+        
+        # Create VideoWriter object
+        video_path = os.path.join(self.current_dir, output_filename)
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for .mp4
+        video_writer = cv2.VideoWriter(video_path, fourcc, fps, (width, height))
+        
+        # Write images to video
+        for image_file in image_files:
+            img = cv2.imread(str(image_file))
+            video_writer.write(img)
+        
+        video_writer.release()
+        print(f"Video saved to {video_path}")
+
+
 
 
 # Usage example

@@ -48,6 +48,11 @@ class Args:
         self.showtailobjBB_corner = config['DISPLAY']['SHOW_TAILING_OBJS_BB_CORNER']
         self.show_laneline = config['DISPLAY']['SHOW_LANE_INFO']
         self.show_distancetitle = config['DISPLAY']['SHOW_DISTANCE_TITLE']
+        self.show_detectobjinfo = config['DISPLAY']['SHOW_DETECT_OBJS_INFO']
+
+        # Lane line
+        self.alpha = config['LANE_LINE']['ALPHA']
+        self.laneline_thickness = config['LANE_LINE']['THICKNESS']
 
         # Tailing obj bounding box
         self.tailingobjs_BB_thickness = config['TAILING_OBJ']['BOUDINGBOX_THINKNESS']
@@ -55,6 +60,7 @@ class Args:
         self.tailingobjs_BB_colorG = config['TAILING_OBJ']['BOUDINGBOX_COLOR_G']
         self.tailingobjs_BB_colorR = config['TAILING_OBJ']['BOUDINGBOX_COLOR_R']
         self.tailingobjs_text_size = config['TAILING_OBJ']['TEXT_SIZE']
+        self.tailingobjs_distance_decimal_length = config['TAILING_OBJ']['DISTANCE_DECIMAL_LENGTH']
 
         # Resize settings
         self.resize = config['RESIZE']['ENABLED']
@@ -67,7 +73,8 @@ class Args:
         self.save_rawvideo = config['SAVE']['RAW_VIDEO']
         self.save_jsonlog = config['SAVE']['JSON_LOG']
         self.save_extractframe = config['SAVE']['EXTRACT_FRAME']
-
+        self.video_fps = config['SAVE']['VIDEO_FPS']
+        
         # Wait settings
         self.sleep = config['WAIT']['VALUE']
         self.sleep_zeroonadas = config['WAIT']['ZERO_ON_ADAS_EVENT']
