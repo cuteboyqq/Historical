@@ -96,7 +96,7 @@ class BaseDataset:
         #plot label
         self.plot_label = args.plot_label
 
-        self.img_saver = ImageSaver()
+        self.img_saver = ImageSaver(args)
 
 
         # Video extract frames parameters
@@ -163,6 +163,157 @@ class BaseDataset:
         logging.info(f"MODEL WIDTH: {self.model_w}")
         logging.info(f"MODEL HEIGHT: {self.model_h}")
 
+
+
+    def visualize(self, mode=None, 
+                    jsonlog_from=None, 
+                    plot_distance=False, 
+                    gen_raw_video=False,
+                    save_raw_image_dir=None, 
+                    extract_video_to_frames=None, 
+                    crop=False, 
+                    raw_images_dir=None):
+            '''
+            Main function for visualizing AI results. Handles different operational modes and utility tasks.
+
+            Args:
+                mode (str, optional): Operational mode. Options include "online", "semi-online", "offline".
+                jsonlog_from (str, optional): Source of JSON logs. Options include "camera" and "online".
+                plot_distance (bool, optional): If True, plots distance data.
+                gen_raw_video (bool, optional): If True, generates a video from raw images.
+                save_raw_image_dir (str, optional): Directory to save raw images.
+                extract_video_to_frames (str, optional): Path to video for frame extraction.
+                crop (bool, optional): If True, applies cropping to extracted frames.
+                raw_images_dir (str, optional): Directory containing raw images for video generation.
+            '''
+            return NotImplemented
+    
+
+    def visualize_online(self):
+        '''
+        Visualizes AI results in real-time by transferring JSON logs and raw images from the camera to the local computer for display.
+
+        Details:
+            - Transfers JSON logs and JPEG images from the camera.
+            - Visualizes the data on the local computer.
+        '''
+        return NotImplemented
+    
+
+    def visualize_semi_online(self):
+        '''
+        Visualizes AI results in a semi-online mode by first transferring raw images and then processing the JSON logs.
+
+        Details:
+            - Transfers raw images from the camera to the local computer.
+            - Runs online mode to transfer and visualize JSON logs on saved images.
+        '''
+        return NotImplemented
+    
+
+    def visualize_offline_jsonlog_from_camera(self):
+        '''
+        Visualizes AI results offline using JSON logs saved from the camera.
+
+        Details:
+            - Processes JSON logs saved in a CSV file format.
+        '''
+        return NotImplemented
+    
+    def visualize_offline_jsonlog_from_online(self):
+        '''
+        Visualizes AI results offline using JSON logs saved during online mode.
+
+        Details:
+            - Processes JSON logs obtained from previous online visualizations.
+        '''
+        return NotImplemented
+    
+
+    def start_server(self):
+        '''
+        Starts a server to receive and process JSON logs from the camera.
+
+        Details:
+            - Listens for incoming JSON logs from the camera.
+            - Parses the logs to draw AI results on raw images.
+        '''
+        return NotImplemented
+    
+
+    def start_server_ver2(self):
+        '''
+        Starts a server to receive frame index, image data, and JSON logs from the camera.
+
+        Details:
+            - Listens for frame index, image size, and image data.
+            - Saves the received image and processes the JSON log to draw AI results.
+        '''
+        return NotImplemented
+    
+    def execute_remote_command_with_progress(self, command):
+        '''
+        Executes a command on the LI80 camera via SSH and reports progress.
+
+        Args:
+            command (str): Command to be executed on the remote camera.
+        '''
+        return NotImplemented
+    
+
+    def execute_local_command(self, command):
+        '''
+        Executes a command on the local computer.
+
+        Args:
+            command (str): Command to be executed locally.
+        '''
+        return NotImplemented
+    
+
+    def receive_image_and_log(self, client_socket):
+        '''
+        Receives image data and JSON logs from a client socket.
+
+        Details:
+            - Receives frame index, image size, image data, and JSON log.
+            - Saves the image and processes the JSON log.
+        
+        Args:
+            client_socket (socket.socket): Socket connection to the client.
+        '''
+        return NotImplemented
+    
+    def process_json_log(self, json_log):
+        '''
+        Processes a single frame's JSON log to visualize AI results.
+
+        Args:
+            json_log (dict): JSON log data for one frame.
+        '''
+        return NotImplemented
+    
+    def draw_AI_result_to_images(self):
+        '''
+        Processes a CSV file containing JSON logs and draws AI results on the corresponding raw images.
+        '''
+        return NotImplemented
+    
+
+    def draw_bounding_boxes(self, frame_ID, tailing_objs, detect_objs, vanish_objs, ADAS_objs, lane_info):
+        '''
+        Draws bounding boxes and other annotations on the image based on the provided JSON data.
+
+        Args:
+            frame_ID (int): Identifier for the frame.
+            tailing_objs (list): List of tailing objects to annotate.
+            detect_objs (dict): Dictionary of detected objects to annotate.
+            vanish_objs (list): List of vanish line objects to annotate.
+            ADAS_objs (list): List of ADAS objects to annotate.
+            lane_info (dict): Information about lane markings and related data.
+        '''
+        return NotImplemented
+    
 
     def video_extract_frame(self,video_path,crop):
         vidcap = cv2.VideoCapture(video_path)

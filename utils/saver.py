@@ -4,13 +4,14 @@ import json
 import csv
 from pathlib import Path
 
-class ImageSaver:
-    def __init__(self, base_dir='runs'):
+class ImageSaver():
+    def __init__(self, args,base_dir='runs'):
         self.base_dir = base_dir
         self.current_dir = self._get_next_directory()
         self.current_csv_dir = self._get_next_csv_directory()
         self._create_directory(self.current_dir)
         self._create_directory(self.current_csv_dir)
+        self.image_format = args.image_format
     
     def _get_next_directory(self):
         """Determine the next available directory."""
@@ -39,7 +40,7 @@ class ImageSaver:
     
     def save_image(self, image, frame_ID):
         """Save the image to the current directory."""
-        image_path = os.path.join(self.current_dir, f'frame_{frame_ID}.png')
+        image_path = os.path.join(self.current_dir, f'frame_{frame_ID}.{self.image_format}')
         cv2.imwrite(image_path, image)
         print(f"Image saved to {image_path}")
 

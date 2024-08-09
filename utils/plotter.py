@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import json
 import pandas as pd
 import logging
+import csv
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Plotter(BaseDataset):
@@ -80,6 +81,44 @@ class Plotter(BaseDataset):
         plt.show()
 
     def extract_distance_data(self,csv_file):
+        """
+        Extracts frame IDs and distance values from a CSV file containing JSON data.
+
+        The function reads a CSV file where each row contains JSON data prefixed with 'json:'. It parses the JSON data
+        to extract the frame IDs and the distance values to the camera associated with each frame. 
+
+        Parameters:
+        - csv_file (str): The path to the CSV file containing the data.
+
+        Returns:
+        - Tuple[List[int], List[float]]:
+            - frame_ids (List[int]): A list of frame IDs extracted from the JSON data.
+            - distances (List[float]): A list of distances to the camera corresponding to each frame ID.
+        
+        Process:
+        1. Initializes empty lists for `frame_ids` and `distances`.
+        2. Opens the specified CSV file for reading.
+        3. Iterates over each row in the CSV file:
+            - Joins the row elements into a single string.
+            - Searches for the 'json:' prefix to locate the start of the JSON data.
+            - Extracts and cleans the JSON data, removing any extra quotes and handling escaped characters.
+            - Parses the JSON data using `json.loads`.
+            - Extracts `frame_ID` and `distanceToCamera` values:
+                - Appends frame IDs and corresponding distances to the lists.
+                - Handles missing or invalid distance values by appending `float('nan')`.
+            - Logs any errors encountered during JSON parsing.
+        
+        Example:
+        If the CSV file contains rows like:
+        "1, ..., json:{\"frame_ID\":{\"1\":{\"tailingObj\":[{\"tailingObj.distanceToCamera\":12.5}]}}}"
+        The function will parse this JSON to extract `frame_ID` as `1` and `distanceToCamera` as `12.5`.
+
+        Logs:
+        - Logs each row read from the CSV file.
+        - Logs parsed JSON data.
+        - Logs any JSON decoding errors or unexpected exceptions.
+
+        """
         frame_ids = []
         distances = []
 

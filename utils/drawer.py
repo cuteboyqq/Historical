@@ -18,14 +18,45 @@ class Drawer(BaseDataset):
     def __init__(self, args):
         super().__init__(args)
 
-    '''
-    ------------------------------------------
-    FUNC: process_json_log
-        input : json_log only one frame
-        Purpose : Process just one frame JSON log
-    ------------------------------------------
-    '''
     def process_json_log(self,json_log):
+        """
+        Processes a JSON log, performs various visualizations and actions based on its content, and handles exceptions.
+
+        Args:
+            json_log (str): JSON formatted string containing log data.
+
+        The function performs the following tasks:
+        1. **Parsing JSON**: Attempts to load and parse the provided JSON log. Logs the parsed JSON for debugging purposes.
+        2. **Extracting Frame Information**:
+            - Extracts `frame_ID` from the JSON data.
+            - Retrieves data related to tailing objects, vanish line, ADAS (Advanced Driver Assistance Systems) alerts, and lane information from the JSON.
+        3. **Image Processing**:
+            - Constructs the path for the corresponding image file and reads it using OpenCV.
+            - Resizes the image to the dimensions specified by the model.
+            - Annotates the image with the `frame_ID` text.
+        4. **ADAS Alerts**:
+            - Checks and displays ADAS alerts such as Forward Collision Warning (FCW) and Lane Departure Warning (LDW) if enabled.
+        5. **Vanish Line**:
+            - Draws a line and displays the vanish line Y-coordinate if enabled.
+        6. **Detection Objects**:
+            - Draws bounding boxes and annotations for detected objects if enabled.
+            - Differentiates between tailing and detected objects, handling overlapping cases by comparing coordinates.
+        7. **Tailing Objects**:
+            - Draws bounding boxes and annotations for tailing objects, with customizable color and thickness.
+            - Optionally draws corners of bounding boxes based on distance to the camera.
+        8. **Lane Information**:
+            - Draws lane lines and overlays the image with lane information if detected.
+        9. **Image Resizing**:
+            - Resizes the final image to the dimensions specified by `resize_w` and `resize_h` if enabled.
+        10. **Displaying and Saving Results**:
+            - Displays the processed image in a window if enabled, with different wait times based on ADAS status.
+            - Saves the processed image and JSON log to files if enabled.
+
+        Exceptions:
+        - Catches and logs `KeyError` if a required key is missing in the JSON data.
+        - Catches and logs `JSONDecodeError` if the JSON data is malformed.
+        - Catches and logs any other unexpected exceptions.
+        """
         try:
             log_data = json.loads(json_log)
             logging.info("=======================================================================================")
@@ -292,6 +323,53 @@ class Drawer(BaseDataset):
 
     
     def draw_AI_result_to_images(self):
+        """
+        Processes a CSV file to extract and visualize AI results by overlaying information onto images.
+
+        Steps:
+        1. Initialize empty lists for storing frame IDs and distances.
+        2. Open and read the CSV file specified by `self.csv_file_path`.
+        3. For each row in the CSV:
+        - Convert the row to a string and locate the JSON data.
+        - Parse the JSON data to extract frame information.
+        - For each frame ID:
+            a. Construct the image file path using the frame ID.
+            b. Read the image using OpenCV.
+            c. Overlay frame ID and other AI results onto the image:
+                - Tail objects (`tailingObj`)
+                - Detected objects (`detectObj`)
+                - Vanishing line objects (`vanishLineY`)
+                - ADAS objects (`ADAS`)
+                - Lane information (`LaneInfo`)
+            d. Optionally display the image with overlays and save the image to disk.
+        - Handle exceptions related to JSON decoding and other unexpected errors.
+        4. If enabled, plot distances to the camera over frame IDs using Matplotlib.
+
+        Attributes:
+        - `self.frame_ids`: List of frame IDs extracted from the CSV.
+        - `self.distances`: List of distances corresponding to the tailing objects in each frame.
+        - `self.csv_file_path`: Path to the CSV file containing AI results.
+        - `self.image_basename`: Base name for image files.
+        - `self.image_format`: Format of the image files.
+        - `self.im_dir`: Directory where image files are located.
+        - `self.show_tailingobjs`: Flag to indicate whether to draw tailing objects.
+        - `self.show_detectobjs`: Flag to indicate whether to draw detected objects.
+        - `self.show_vanishline`: Flag to indicate whether to draw vanish lines.
+        - `self.show_adasobjs`: Flag to indicate whether to draw ADAS objects.
+        - `self.show_laneline`: Flag to indicate whether to draw lane lines.
+        - `self.show_airesultimage`: Flag to control whether to display the processed images.
+        - `self.resize`: Flag to indicate whether to resize images before display.
+        - `self.resize_w`, `self.resize_h`: Dimensions for resizing images.
+        - `self.sleep`, `self.sleep_onadas`, `self.sleep_zeroonadas`: Time to wait before closing the image window.
+        - `self.save_airesultimage`: Flag to control whether to save the processed images.
+        - `self.save_imdir`: Directory to save the processed images.
+        - `self.plot_label`: Label for the distance plot.
+        - `self.show_distanceplot`: Flag to control whether to display the distance plot.
+
+        Returns:
+        - `frame_ids`: List of frame IDs processed.
+        - `distances`: List of distances to the camera for the tailing objects.
+        """
         frame_ids = []
         distances = []
 
@@ -403,6 +481,40 @@ class Drawer(BaseDataset):
     
 
     def draw_bounding_boxes(self,frame_ID, tailing_objs,detect_objs,vanish_objs,ADAS_objs,lane_info):
+        """
+        Draws bounding boxes, labels, and other annotations on an image based on detected objects and information.
+
+        Parameters:
+        - `frame_ID`: Identifier for the current frame, used to load the corresponding image file.
+        - `tailing_objs`: List of dictionaries containing details about tailing objects.
+        - `detect_objs`: List of dictionaries containing details about detected objects.
+        - `vanish_objs`: List of dictionaries containing information about vanish lines.
+        - `ADAS_objs`: List of dictionaries containing ADAS (Advanced Driver Assistance Systems) information.
+        - `lane_info`: List of dictionaries containing information about lane lines.
+
+        Steps:
+        1. Construct the path to the image file using `frame_ID` and load the image.
+        2. Resize the image to match the model's expected input dimensions.
+        3. Check if the image was successfully loaded. Log an error if not found.
+        4. Add a text label with `frame_ID` at the top-left corner of the image.
+        5. If `tailing_objs` is not empty and `self.show_tailingobjs` is `True`, draw bounding boxes and labels for tailing objects:
+        - Set custom text thickness, color, and thickness for the bounding boxes based on instance variables.
+        - Draw bounding box corners or rectangles depending on `self.showtailobjBB_corner`.
+        - Add text labels for each tailing object, including the label, ID, and distance to the camera.
+        6. If `lane_info` is present and `self.show_laneline` is `True`, draw lane lines using the `draw_laneline_objs` method.
+        7. If `detect_objs` is not empty and `self.show_detectobjs` is `True`, draw bounding boxes and labels for detected objects.
+        8. If `vanish_objs` is not empty and `self.show_vanishline` is `True`, draw a line for the vanish line and add a text label for the vanish line position.
+        9. If `ADAS_objs` is not empty and `self.show_adasobjs` is `True`, display ADAS alerts for collision and lane departure warnings.
+        10. If `self.resize` is `True`, resize the image to new dimensions specified by `self.resize_w` and `self.resize_h`.
+        11. If `self.show_airesultimage` is `True`, display the annotated image using `cv2.imshow`. Handle wait time based on ADAS alerts.
+        12. If `self.save_airesultimage` is `True`, save the annotated image using the `img_saver.save_image` method.
+
+        Attributes:
+        - `self`: The instance of the class this method belongs to. Used to access instance variables and methods.
+
+        Returns:
+        - None. The image `im` is modified in place with bounding boxes and labels drawn on it.
+        """
         image_path = os.path.join(self.im_dir, f'{self.image_basename}{frame_ID}.png')
         image = cv2.imread(image_path)
         image = cv2.resize(image, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
@@ -546,6 +658,42 @@ class Drawer(BaseDataset):
 
 
     def draw_tailing_obj(self,tailing_objs,im):
+        """
+        Draws bounding boxes and labels for tailing objects on an image.
+
+        Parameters:
+        - `tailing_objs`: A list containing dictionaries with details of tailing objects. Each dictionary includes:
+            - 'tailingObj.distanceToCamera': The distance of the object from the camera.
+            - 'tailingObj.id': The unique identifier of the tailing object.
+            - 'tailingObj.x1': The x-coordinate of the top-left corner of the bounding box.
+            - 'tailingObj.y1': The y-coordinate of the top-left corner of the bounding box.
+            - 'tailingObj.x2': The x-coordinate of the bottom-right corner of the bounding box.
+            - 'tailingObj.y2': The y-coordinate of the bottom-right corner of the bounding box.
+            - 'tailingObj.label': The label of the tailing object (e.g., 'VEHICLE').
+
+        - `im`: The image on which the bounding boxes and labels will be drawn.
+
+        Steps:
+        1. Extract details (distance to camera, ID, coordinates, and label) from the first tailing object in the list.
+        2. Update instance variables `self.tailingObj_x1` and `self.tailingObj_y1` with the coordinates of the tailing object.
+        3. Set parameters for drawing the bounding box:
+            - `text_thickness`: Thickness of the text used for labels.
+            - `color`: Color for the bounding box and text, which varies based on the distance to the camera.
+            - `thickness`: Thickness of the bounding box lines.
+        4. If `self.showtailobjBB_corner` is `True`, draw bounding box corners using lines instead of a rectangle:
+            - Draw lines at each corner of the bounding box with varying thickness and color based on the distance to the camera.
+        5. If `self.showtailobjBB_corner` is `False`, draw a standard rectangle bounding box around the object.
+        6. Draw text labels above the bounding box:
+            - Display the object label and ID.
+            - Display the distance to the camera.
+        7. Append the distance to `self.distances` list. If the distance is not available, append `float('nan')`.
+
+        Attributes:
+        - `self`: The instance of the class this method belongs to. Used to access instance variables like `self.showtailobjBB_corner` and `self.distances`.
+
+        Returns:
+        - None. The image `im` is modified in place with the bounding box and labels drawn on it.
+        """
         distance_to_camera = tailing_objs[0].get('tailingObj.distanceToCamera', None)
         tailingObj_id = tailing_objs[0].get('tailingObj.id', None)
         tailingObj_x1 = tailing_objs[0].get('tailingObj.x1', None)
@@ -616,6 +764,36 @@ class Drawer(BaseDataset):
 
     
     def draw_detect_objs(self,detect_objs,im):
+        """
+        Draws detected objects with bounding boxes and labels on an image.
+
+        Parameters:
+        - `detect_objs`: A dictionary where each key represents an object type and the corresponding value is a 
+        list of objects detected. Each object is a dictionary containing keys:
+            - 'detectObj.label': The label of the detected object (e.g., 'VEHICLE', 'HUMAN').
+            - 'detectObj.x1': The x-coordinate of the top-left corner of the bounding box.
+            - 'detectObj.y1': The y-coordinate of the top-left corner of the bounding box.
+            - 'detectObj.x2': The x-coordinate of the bottom-right corner of the bounding box.
+            - 'detectObj.y2': The y-coordinate of the bottom-right corner of the bounding box.
+            - 'detectObj.confidence': The confidence score of the detection.
+        - `im`: The image on which the detected objects will be drawn.
+
+        Steps:
+        1. Iterate over each object type and its list of detected objects in `detect_objs`.
+        2. For each detected object:
+        - Extract the label, bounding box coordinates (x1, y1, x2, y2), and confidence score.
+        - Skip drawing the bounding box if it matches the specified tailing object coordinates (`self.tailingObj_x1` and `self.tailingObj_y1`).
+        - Otherwise, draw the bounding box around the detected object using a specific color based on the label:
+            - `VEHICLE`: Orange color.
+            - `HUMAN`: Light orange color.
+        - Add the label and confidence score text above the bounding box.
+
+        Attributes:
+        - `self`: The instance of the class this method belongs to. Used to access the instance variables `self.show_tailingobjs`, `self.tailingObj_x1`, and `self.tailingObj_y1`.
+
+        Returns:
+        - None. The image `im` is modified in place with the bounding boxes and labels drawn on it.
+        """
         # Draw detectObj bounding boxes
         for obj_type, obj_list in detect_objs.items():
             for obj in obj_list:
@@ -657,6 +835,33 @@ class Drawer(BaseDataset):
             cv2.putText(im, 'Departure Warning', (150,80), cv2.FONT_HERSHEY_SIMPLEX,1.3, (128, 0, 255), 2, cv2.LINE_AA)
 
     def draw_laneline_objs(self,lane_info,im):
+        """
+        Draws lane lines on an image based on lane information.
+
+        Parameters:
+        - `lane_info`: A list of dictionaries containing lane line information. The dictionary should have keys 
+        "pLeftCarhood.x", "pLeftCarhood.y", "pLeftFar.x", "pLeftFar.y", "pRightCarhood.x", "pRightCarhood.y", 
+        "pRightFar.x", and "pRightFar.y", representing points on the left and right sides of the lane.
+        - `im`: The image on which the lane lines will be drawn.
+
+        Steps:
+        1. Extract points from the `lane_info` for left and right carhood and far points.
+        2. Compute the width of the lane at the carhood and far points.
+        3. Calculate the main lane points by shifting the left and right carhood and far points towards the center.
+        4. Create an array of points defining the lane polygon and another for the main lane polygon.
+        5. Create an overlay image and fill the main lane polygon with a green color.
+        6. Blend the overlay with the original image using a transparency factor.
+        7. Optionally draw the polygon border and direction line (commented out in the code).
+        8. Draw the left and right lane lines on the image:
+        - Left lane line: Drawn in blue.
+        - Right lane line: Drawn in red.
+
+        Attributes:
+        - `self`: The instance of the class this method belongs to. Not used directly in this method but included for context.
+
+        Returns:
+        - None. The image `im` is modified in place with the lane lines drawn on it.
+        """
         pLeftCarhood = (lane_info[0]["pLeftCarhood.x"], lane_info[0]["pLeftCarhood.y"])
         pLeftFar = (lane_info[0]["pLeftFar.x"], lane_info[0]["pLeftFar.y"])
         pRightCarhood = (lane_info[0]["pRightCarhood.x"], lane_info[0]["pRightCarhood.y"])

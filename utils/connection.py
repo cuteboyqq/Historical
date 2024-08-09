@@ -20,14 +20,18 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 class Connection(BaseDataset):
 
-    def __init__(self,args):
+    def __init__(self, args):
+        """
+        Initialize the Connection object.
+
+        Args:
+            args: Arguments containing connection details and configuration.
+        """
         super().__init__(args)
         self.hostname = args.host_name
         self.port = args.port
         self.username = args.user_name
         self.password = args.password
-        # self.remote_path = args.remote_path
-        # self.local_path = args.local_path
         self.tftpserver_dir = args.tftpserver_dir
         self.server_port = args.server_port
         self.display_parameters()
@@ -35,10 +39,12 @@ class Connection(BaseDataset):
         self.Drawer = Drawer(args)
 
     def display_parameters(self):
-        # Call the base class method to log parameters from BaseDataset
-        super().display_parameters()
+        """
+        Log parameters for the connection configuration.
         
-        # Log parameters specific to Connection
+        This method extends the base class method to include specific details for the Connection class.
+        """
+        super().display_parameters()
         logging.info(f"HOSTNAME: {self.hostname}")
         logging.info(f"PORT: {self.port}")
         logging.info(f"USERNAME: {self.username}")
@@ -47,6 +53,11 @@ class Connection(BaseDataset):
         logging.info(f"SERVER PORT: {self.server_port}")
 
     def start_server(self):
+        """
+        Start a TCP server to listen for incoming client connections.
+
+        The server accepts connections, receives JSON log data, and processes it.
+        """
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -61,12 +72,12 @@ class Connection(BaseDataset):
 
         server_socket.listen(5)
         logging.info(f"Server started on {self.tftp_ip}:{self.server_port}")
-        # os.makedirs('AI_result_images', exist_ok=True)
+
         while True:
             client_socket, addr = server_socket.accept()
             logging.info(f"Connection from {addr}")
 
-            # Read the remaining data for JSON log
+            # Receive JSON log data
             json_data = b''
             while True:
                 data = client_socket.recv(4096)
@@ -78,7 +89,7 @@ class Connection(BaseDataset):
 
             try:
                 json_data = json_data.decode('utf-8')
-                self.process_json_log(json_data)
+                self.Drawer.process_json_log(json_data)
             except UnicodeDecodeError as e:
                 logging.error(f"UnicodeDecodeError: {e} - Raw data: {json_data}")
             except Exception as e:
@@ -86,11 +97,13 @@ class Connection(BaseDataset):
 
             client_socket.close()
 
-    
     def start_server_ver2(self):
-        # host = '192.168.1.10'  # Bind to localhost
-        # port = 5000  # Non-privileged port number
+        """
+        Start an improved version of the TCP server to handle image and JSON log reception.
 
+        This method listens for incoming connections, receives image data and JSON logs,
+        and saves the images locally.
+        """
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -113,8 +126,15 @@ class Connection(BaseDataset):
             self.receive_image_and_log(client_socket)
             client_socket.close()
 
-
     def execute_remote_command_with_progress(self, command):
+        """
+        Execute a remote command via SSH and monitor its progress.
+
+        Args:
+            command (str): The command to be executed on the remote server.
+
+        This method provides real-time progress feedback and logs output and errors.
+        """
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -145,19 +165,20 @@ class Connection(BaseDataset):
             ssh.close()
         except paramiko.ssh_exception.AuthenticationException as auth_err:
             logging.error(f"Authentication failed: {auth_err}")
-        
         except paramiko.ssh_exception.SSHException as ssh_err:
             logging.error(f"SSH error: {ssh_err}")
-        
         except Exception as e:
             logging.error(f"An error occurred: {e}")
 
+    def execute_local_command(self, command):
+        """
+        Execute a local command and log its output and errors.
 
+        Args:
+            command (str): The command to be executed locally.
 
-    
-    # Execute local commands
-    # Function to execute a command locally
-    def execute_local_command(self,command):
+        This method captures and logs the command's output and errors.
+        """
         try:
             result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             logging.info(f"Command executed: {command}")
@@ -166,17 +187,21 @@ class Connection(BaseDataset):
             logging.info("Errors:")
             logging.info(result.stderr.decode())
         except subprocess.CalledProcessError as e:
-            logging.info(f"An error occurred: {e}")
-            logging.info("Output:")
-            logging.info(e.stdout.decode())
-            logging.info("Errors:")
-            logging.info(e.stderr.decode())
+            logging.error(f"An error occurred: {e}")
+            logging.error("Output:")
+            logging.error(e.stdout.decode())
+            logging.error("Errors:")
+            logging.error(e.stderr.decode())
 
-
-   
     def receive_image_and_log(self, client_socket):
-        global index
+        """
+        Receive image data and JSON logs from a client connection.
 
+        Args:
+            client_socket (socket.socket): The socket object for the client connection.
+
+        This method processes and saves the received image and JSON log data.
+        """
         try:
             # Receive the frame_index
             frame_index_data = client_socket.recv(4)
@@ -213,7 +238,6 @@ class Connection(BaseDataset):
             # Save the image to a file
             image_path = f'{self.im_dir}/{self.image_basename}{frame_index}.{self.image_format}'
 
-            # if self.save_rawimages:
             with open(image_path, 'wb') as file:
                 file.write(buffer)
 
@@ -234,6 +258,10 @@ class Connection(BaseDataset):
            
         except Exception as e:
             logging.error(f"Error: {e} - An unexpected error occurred.")
+
+
+
+
 
 
 

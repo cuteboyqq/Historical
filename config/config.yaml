@@ -31,7 +31,7 @@ SERVER:
 # Local configuration
 LOCAL:
   CSV_FILE: 'assets/csv_file/GoldenData_50m_3.csv'  # Path to the local CSV file
-  RAW_IMG_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/2024-8-5-12-58'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
+  RAW_IMG_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/2024-8-9-9-50'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
   SAVE_RAW_VIDEO_PATH: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/videos/2024-8-5-12-58-ori.mp4'  # Path to save the raw video file
 
 # Image configuration
@@ -59,17 +59,17 @@ TAILING_OBJ:
   BOUDINGBOX_COLOR_G: 255 # Tailing obj bounding box color Green 
   BOUDINGBOX_COLOR_R: 255 # Tailing obj bounding box color Red 
   TEXT_SIZE: 0.60 # Tailing obj text size 
-  DISTANCE_DECIMAL_LENGTH: 8 # The length of distance decimal 
+  DISTANCE_DECIMAL_LENGTH: 6 # The length of distance decimal 
 
 LANE_LINE:
-  ALPHA: 0.40
-  THICKNESS: 3
+  ALPHA: 0.35
+  THICKNESS: 6
     
 # Resize settings
 RESIZE:
-  ENABLED: false  # Flag to enable or disable image resizing
-  WIDTH: 1600  # Width of the resized images
-  HEIGHT: 900  # Height of the resized images
+  ENABLED: true  # Flag to enable or disable image resizing
+  WIDTH: 1280  # Width of the resized images
+  HEIGHT: 720  # Height of the resized images
 
 # Wait settings
 WAIT:
