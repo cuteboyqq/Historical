@@ -16,13 +16,13 @@ class Args:
         self.jsonlog_from = config['JSONLOG']['FROM']
 
         # Camera configuration
-        self.camerarawimages_dir = config['CAMERA']['RAW_IMAGE_DIR']
-        self.cameracsvfile_dir = config['CAMERA']['CSV_FILE_DIR']
-        self.host_name = config['CAMERA']['HOSTNAME']
-        self.port = config['CAMERA']['PORT']
-        self.user_name = config['CAMERA']['USERNAME']
-        self.password = config['CAMERA']['PASSWORD']
-        self.config_dir = config['CAMERA']['CONFIG_DIR']
+        self.camera_rawimages_dir = config['CAMERA']['CAMERA_RAW_IMAGE_DIR']
+        self.camera_csvfile_dir = config['CAMERA']['CAMERA_CSV_FILE_DIR']
+        self.camera_host_name = config['CAMERA']['CAMERA_HOSTNAME']
+        self.camera_port = config['CAMERA']['CAMERA_PORT']
+        self.camera_user_name = config['CAMERA']['CAMERA_USERNAME']
+        self.camera_password = config['CAMERA']['CAMERA_PASSWORD']
+        self.camera_config_dir = config['CAMERA']['CAMERA_CONFIG_DIR']
 
         # Server configuration
         self.tftpserver_dir = config['SERVER']['TFTP_DIR']
@@ -50,6 +50,7 @@ class Args:
         self.show_laneline = config['DISPLAY']['SHOW_LANE_INFO']
         self.show_distancetitle = config['DISPLAY']['SHOW_DISTANCE_TITLE']
         self.show_detectobjinfo = config['DISPLAY']['SHOW_DETECT_OBJS_INFO']
+        self.show_devicemode = config['DISPLAY']['SHOW_DEVICE_MODE']
 
         # Lane line
         self.alpha = config['LANE_LINE']['ALPHA']
@@ -91,7 +92,4 @@ class Args:
         self.eval_save_ai_result_dir = config['EVALUATION']['EVAL_SAVE_AI_RESULT_DIR']
         self.script_path = config['EVALUATION']['SCRIPT_PATH']
         self.evaluationdata_dir = config['EVALUATION']['DATA_DIR']
-        self.enable_scenary_one = config['EVALUATION']['RUN_SCENARY_ONE']
-        self.enable_scenary_two = config['EVALUATION']['RUN_SCENARY_TWO']
-        self.enable_scenary_three = config['EVALUATION']['RUN_SCENARY_THREE']
         self.remote_csv_file_path = config['EVALUATION']['CSV_FILE_PATH']

@@ -20,16 +20,14 @@ class Evaluation(BaseDataset):
         self.eval_save_ai_result_dir = args.eval_save_ai_result_dir
         self.tftpserver_dir = args.tftpserver_dir
         self.evaluationdata_dir = args.evaluationdata_dir
-        self.enable_scenary_one = args.enable_scenary_one
-        self.enable_scenary_two = args.enable_scenary_two
-        self.enable_scenary_three = args.enable_scenary_three
+
         self.local_commands = None
         self.remote_commands = None
         self.script_path = args.script_path
         self.script_dir = os.path.dirname(self.script_path)
         self.script_file = os.path.basename(self.script_path)
-        self.config_dir = args.config_dir
-        self.config_file_path = os.path.join(self.config_dir,'config.txt')
+        self.camera_config_dir = args.camera_config_dir
+        self.config_file_path = os.path.join(self.camera_config_dir,'config.txt')
         self.input_mode = 2
         self.video_path = "/new/path/to/video/file"
         self.raw_image_dir = None
@@ -53,13 +51,10 @@ class Evaluation(BaseDataset):
         logging.info("---------------Evaluation settings-----------------------------------------------------")
         logging.info(f"CAMERA RAW IMAGES DIR: {self.eval_camera_raw_im_dir}")
         logging.info(f"EVALUATION DATA DIR: {self.evaluationdata_dir}")
-        logging.info(f"ENABLE SCENARY ONE: {self.enable_scenary_one}")
-        logging.info(f"ENABLE SCENARY TWO: {self.enable_scenary_two}")
-        logging.info(f"ENABLE SCENARY THREE: {self.enable_scenary_three}")
         logging.info(f"SCRIPT PATH: {self.script_path}")
         logging.info(f"SCRIPT DIRECTORY: {self.script_dir}")
         logging.info(f"SCRIPT FILE: {self.script_file}")
-        logging.info(f"CONFIG DIR: {self.config_dir}")
+        logging.info(f"CONFIG DIR: {self.camera_config_dir}")
         logging.info(f"CONFIG FILE PATH: {self.config_file_path}")
         logging.info(f"INPUT MODE: {self.input_mode}")
         logging.info(f"VIDEO PATH: {self.video_path}")

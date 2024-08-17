@@ -294,15 +294,32 @@ class Drawer(BaseDataset):
             if device_image_path is not None:
                 base_directory_name = os.path.basename(os.path.dirname(device_image_path))
                 x = int(self.model_w / 4.0)
-                y = int(self.model_h / 20.0)
+                y = int(self.model_h / 10.0)
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 color = (0,0,0)
                 cv2.putText(image, base_directory_name, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
 
+            if self.show_devicemode:
+
+                x = int(self.model_w / 4.0)
+                y = int(self.model_h / 20.0)
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                color = (0,0,255)
+                mode = 'Unknown'
+                if self.mode in ['eval','evaluation']:
+                    mode = 'Evaluation (Historical)'
+                elif self.mode == 'online':
+                    mode = 'Visualize online'
+                # elif self.mode == 'sem-online':
+                #     mode = 'Visualize semi-online'
+            
+                cv2.putText(image, 'Mode : ' + mode, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
+
+
             if self.resize:
                 image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
             if self.show_airesultimage:
-                cv2.imshow("Visualize historical mode online", image)
+                cv2.imshow("Visualize AI Result", image)
                 if self.ADAS_LDW or self.ADAS_FCW:
                     if self.sleep_zeroonadas:
                         cv2.waitKey(0)  # Display the image for a short time

@@ -32,10 +32,15 @@ class Connection(BaseDataset):
             args: Arguments containing connection details and configuration.
         """
         super().__init__(args)
-        self.hostname = args.host_name
-        self.port = args.port
-        self.username = args.user_name
-        self.password = args.password
+        # Camera setting
+        self.camera_rawimages_dir = args.camera_rawimages_dir
+        self.camera_csvfile_dir = args.camera_csvfile_dir
+        self.camera_host_name = args.camera_host_name
+        self.camera_port = args.camera_port
+        self.camera_user_name = args.camera_user_name
+        self.camera_password = args.camera_password
+        self.camera_config_dir = args.camera_config_dir
+
         self.tftpserver_dir = args.tftpserver_dir
         self.server_port = args.server_port
         self.stop_server_flag = threading.Event()
@@ -44,7 +49,6 @@ class Connection(BaseDataset):
         self.stop_server = threading.Event()
         self.display_parameters()
         self.remote_csv_file_path = args.remote_csv_file_path
-
         self.Drawer = Drawer(args)
 
     def display_parameters(self):
@@ -54,10 +58,10 @@ class Connection(BaseDataset):
         This method extends the base class method to include specific details for the Connection class.
         """
         super().display_parameters()
-        logging.info(f"HOSTNAME: {self.hostname}")
-        logging.info(f"PORT: {self.port}")
-        logging.info(f"USERNAME: {self.username}")
-        logging.info(f"PASSWORD: {self.password}")
+        logging.info(f"CAMERA HOSTNAME: {self.camera_host_name}")
+        logging.info(f"CAMERA PORT: {self.camera_port}")
+        logging.info(f"CAMERA USERNAME: {self.camera_user_name}")
+        logging.info(f"CAMERA PASSWORD: {self.camera_password}")
         logging.info(f"TFTP SERVER DIR: {self.tftpserver_dir}")
         logging.info(f"SERVER PORT: {self.server_port}")
 
@@ -262,12 +266,12 @@ class Connection(BaseDataset):
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            logging.info(f'hostname:{self.hostname}')
-            logging.info(f'port:{self.port}')
-            logging.info(f'username:{self.username}')
-            logging.info(f'password:{self.password}')
-            ssh.connect(self.hostname, self.port, self.username, self.password)
-            print(f"Connected to {self.hostname}")
+            logging.info(f'hostname:{self.camera_host_name}')
+            logging.info(f'port:{self.camera_port}')
+            logging.info(f'username:{self.camera_user_name}')
+            logging.info(f'password:{self.camera_password}')
+            ssh.connect(self.camera_host_name, self.camera_port, self.camera_user_name, self.camera_password)
+            print(f"Connected to {self.camera_host_name}")
 
             # Execute the command
             stdin, stdout, stderr = ssh.exec_command(command)
@@ -342,13 +346,11 @@ class Connection(BaseDataset):
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(self.hostname, self.port, self.username, self.password)
-            logging.info(f"Connected to {self.hostname}")
+            ssh.connect(self.camera_host_name, self.port, self.username, self.password)
+            logging.info(f"Connected to {self.camera_host_name}")
 
-            logging.info(f"Before exec_command  {self.hostname}")
             stdin, stdout, stderr = ssh.exec_command(command, timeout=60)
-            logging.info(f"After exec_command  {self.hostname}")
-
+        
             final_output = stdout.read().decode('utf-8').splitlines()
             final_errors = stderr.read().decode('utf-8').splitlines()
 
@@ -384,8 +386,8 @@ class Connection(BaseDataset):
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(self.hostname, self.port, self.username, self.password)
-            logging.info(f"Connected to {self.hostname}")
+            ssh.connect(self.camera_host_name, self.camera_port, self.camera_user_name, self.camera_password)
+            logging.info(f"Connected to {self.camera_host_name}")
 
             # Execute the command with a timeout
             stdin, stdout, stderr = ssh.exec_command(command, timeout=10)  # Set an appropriate timeout
@@ -543,6 +545,26 @@ class Connection(BaseDataset):
             logging.debug(f"Received packet: {packet.hex()} (Total: {len(data)}/{size} bytes)")
         return data
 
+    def get_input_mode_value(self):
+        # Ensure you have the correct path to the config file
+        config_file_path = os.path.join(self.camera_config_dir,'config.txt')
+
+        # Command to get the value of InputMode from the config file
+        command = f"grep '^InputMode' {config_file_path} | awk -F ' = ' '{{print $2}}'"
+        
+        logging.info(f"Retrieving InputMode value with command: {command}")
+        
+        # Execute the command and capture the output
+        stdin, stdout, stderr = self.execute_remote_command_with_progress_ver2(command)
+        
+        # Read the output from stdout
+        input_mode_value = stdout.read().strip()
+        
+        logging.info(f"InputMode value retrieved: {input_mode_value}")
+        
+        return input_mode_value
+
+
 
     def receive_image_and_log_ver2(self, client_socket):
         """
@@ -624,66 +646,15 @@ class Connection(BaseDataset):
             json_data = json_data.decode('utf-8')
             logging.info(f"Received JSON log: {json_data}")
 
-            # # Receive the length of the image path
-            # path_length_data = client_socket.recv(4)
-            # if not path_length_data:
-            #     logging.error("Failed to receive path length.")
-            #     return
-
-            # path_length = int.from_bytes(path_length_data, byteorder='big')
-
-            # # Receive the image path
-            # image_path_data = b''
-            # while len(image_path_data) < path_length:
-            #     data = client_socket.recv(min(path_length - len(image_path_data), 4096))
-            #     if not data:
-            #         logging.error("Failed to receive image path.")
-            #         return
-            #     image_path_data += data
-
-            # image_path = image_path_data.decode('utf-8')
-            # logging.info(f"Received image path: {image_path}")
-
-            # Receive the length of the image path
-            # logging.info(f"start get path_length_data")
-            # path_length_data = client_socket.recv(4)
-            # if not path_length_data:
-            #     logging.error("Failed to receive image path lenght.")
-            #     return
-            # path_length = int.from_bytes(path_length_data, byteorder='big')
-
-
-
-            # path_length_data = self.receive_fixed_size_data(client_socket, 4)
-            # logging.info(f"Raw path_length_data: {path_length_data}")
-            # path_length = int.from_bytes(path_length_data, byteorder='big')
-            # logging.info(f"Received image path length: {path_length}")
-
-
           
+         
             self.Drawer.process_json_log(json_data,image_path)
 
         except Exception as e:
             logging.error(f"Error: {e} - An unexpected error occurred.")
 
 
-    # # Receive the image path
-            # image_path_data = b''
-            # while True:
-            #     data = client_socket.recv(1024)
-            #     if not data:
-            #         break
-            #     image_path_data += data
-            #     if b'\n' in data:
-            #         break
-
-            # image_path = image_path_data.decode('utf-8').strip()
-            # logging.info(f"Received image path: {image_path}")
-
-            # Optionally, process the received image path
-            # Example: You could store or use it as needed
-            # self.process_received_image_path(image_path)
-            # Process the JSON log
+  
 
 
 

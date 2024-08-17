@@ -57,6 +57,7 @@ class BaseDataset:
         self.show_laneline = args.show_laneline
         self.show_distancetitle = args.show_distancetitle
         self.show_detectobjinfo = args.show_detectobjinfo
+        self.show_devicemode = args.show_devicemode
 
         # Lane line
         self.alpha = args.alpha
@@ -116,6 +117,15 @@ class BaseDataset:
             self.img_saver = ImageSaver(args)
         else:
             self.img_saver = None
+            
+        # Camera setting
+        self.camera_rawimages_dir = args.camera_rawimages_dir
+        self.camera_csvfile_dir = args.camera_csvfile_dir
+        self.camera_host_name = args.camera_host_name
+        self.camera_port = args.camera_port
+        self.camera_user_name = args.camera_user_name
+        self.camera_password = args.camera_password
+        self.camera_config_dir = args.camera_config_dir
     
 
     def display_parameters(self):

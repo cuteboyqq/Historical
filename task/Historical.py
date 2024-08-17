@@ -26,8 +26,8 @@ class Historical(BaseDataset):
         """
         super().__init__(args)
         self.tftpserver_dir = None
-        self.camera_rawimages_dir = args.camerarawimages_dir
-        self.camera_csvfile_dir = args.cameracsvfile_dir
+        self.camera_rawimages_dir = args.camera_rawimages_dir
+        self.camera_csvfile_dir = args.camera_csvfile_dir
         self.current_dir = os.getcwd()  # Current working directory (e.g., .../Historical)
         self.Connect = Connection(args)
         self.tftpserver_dir = args.tftpserver_dir
