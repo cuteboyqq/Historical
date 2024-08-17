@@ -11,6 +11,7 @@ import logging
 import pandas as pd
 from utils.plotter import Plotter
 from utils.drawer import Drawer
+from utils.evaluation import Evaluation
 # # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -31,6 +32,9 @@ class Historical(BaseDataset):
         self.Connect = Connection(args)
         self.tftpserver_dir = args.tftpserver_dir
         self.im_folder = os.path.basename(self.im_dir)
+        self.script_path = args.script_path
+        self.script_dir = os.path.dirname(self.script_path)
+        self.script_file = os.path.basename(self.script_path)
 
         # Commands for remote and local operations
         self.get_raw_images_remote_commands = (
@@ -62,6 +66,8 @@ class Historical(BaseDataset):
 
         self.Plotter = Plotter(args)
         self.Drawer = Drawer(args)
+        self.Evaluation = Evaluation(args)
+        # self.initialize_image_saver(args)
     
     def visualize(self, mode=None, 
                   jsonlog_from=None, 
@@ -102,6 +108,10 @@ class Historical(BaseDataset):
                 self.im_dir = save_raw_image_dir
             self.visualize_online()
         
+        elif mode=="eval" or mode=="evaluation":
+            logging.info("Running evaluation mode")
+            self.Evaluation.run_golden_dataset()
+        
         if extract_video_to_frames:
             self.video_extract_frame(extract_video_to_frames, crop)
 
@@ -115,6 +125,11 @@ class Historical(BaseDataset):
         """
         Visualizes AI results in real-time by transferring JSON logs and raw images from the camera to the local computer.
         """
+        # self.remote_run_historical_mode_commands = (
+        #         f"cd {self.script_dir} && "
+        #         f"./{self.script_file}"
+        #     )
+        # self.Connect.execute_remote_command_async(self.remote_run_historical_mode_commands)
         # self.Connect.execute_remote_command_with_progress(self.run_ADAS_remote_commands)
         self.Connect.start_server_ver2()
         

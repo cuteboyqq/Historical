@@ -2,12 +2,12 @@
 
 # Model configuration
 MODEL:
-  INPUT_WIDTH: 640 # Model input image width  
-  INPUT_HEIGHT: 384 # Model input image height
+  INPUT_WIDTH: 576 # Model input image width  
+  INPUT_HEIGHT: 320 # Model input image height
 
 # Mode configuration
 MODE:
-  VISUALIZE_HISTORICAL_MODE: online # Mode of run visualize historical mode ('online' / 'offline' / 'semi-online' / None)
+  VISUALIZE_HISTORICAL_MODE: eval # Mode of run visualize historical mode ('online' / 'offline' / 'semi-online' / eval / None)
 
 # JSON log configuration
 JSONLOG:
@@ -21,19 +21,19 @@ CAMERA:
   PASSWORD: 'ALUDS$#q'  # Password for camera access
   RAW_IMAGE_DIR: '/mnt/mmc/adas/debug/raw_images'  # Directory on the camera where raw images are stored
   CSV_FILE_DIR: '/logging/video-adas'  # Directory on the camera where CSV files are stored
+  CONFIG_DIR: '/customer/adas/config' # Directory on the camera where config.txt files are stored
 
 # Server configuration
 SERVER:
-  PORT: 3501  # Port number for the local server
+  PORT: 3530  # Port number for the local server
   TFTP_DIR: '/home/ali/Public/tftp'  # Directory on the server for TFTP file transfers
   TFTP_IP: '192.168.1.11'  # IP address of the TFTP server
 
 # Local configuration
 LOCAL:
   CSV_FILE: 'assets/csv_file/GoldenData_50m_3.csv'  # Path to the local CSV file
-  RAW_IMG_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/2024-8-9-9-50'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
-  SAVE_RAW_VIDEO_PATH: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/videos/2024-8-5-12-58-ori.mp4'  # Path to save the raw video file
-
+  RAW_IMG_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/2024-8-13-13-17'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
+  SAVE_RAW_VIDEO_PATH: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/videos/predict8.mp4'  # Path to save the raw video file
 # Image configuration
 IMAGE:
   BASE_NAME: 'RawFrame_'  # Base name for image files
@@ -63,13 +63,13 @@ TAILING_OBJ:
 
 LANE_LINE:
   ALPHA: 0.35
-  THICKNESS: 6
+  THICKNESS: 3
     
 # Resize settings
 RESIZE:
   ENABLED: true  # Flag to enable or disable image resizing
-  WIDTH: 1280  # Width of the resized images
-  HEIGHT: 720  # Height of the resized images
+  WIDTH: 960  # Width of the resized images
+  HEIGHT: 540  # Height of the resized images
 
 # Wait settings
 WAIT:
@@ -84,10 +84,99 @@ PLOT:
 
 # Save settings
 SAVE:
-  RAW_IMAGES: true     # Flasg to save raw images
+  RAW_IMAGES: false     # Flasg to save raw images
   AI_RESULT_IMAGE: true  # Flag to save AI result images
   RAW_VIDEO: false  # Flag to save raw video
   VIDEO_FPS: 7 # FPS of the saved video
-  JSON_LOG: true  # Flag to save JSON log
+  JSON_LOG: false  # Flag to save JSON log
   EXTRACT_FRAME: false # Flag to save frames extracted from the video stream
+
+EVALUATION:
+  EVAL_EACH_CASE_RUN_TIME: 20
+  EVAL_RAW_IMAGE_DIR: '/mnt/mmc/adas/debug/raw_images/raw_imaegs_640x384_rename/static'
+  EVAL_SAVE_AI_RESULT_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/runs/eval'
+  SCRIPT_PATH: '/customer/Run_Historical-Mode.sh'
+  DATA_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/Golden_Data_20240805-2/static'
+  CSV_FILE_PATH: '/logging/video-adas/180_video-adas_2024-08-16.csv'
+  RUN_SCENARY_ONE: true
+  RUN_SCENARY_TWO: true
+  RUN_SCENARY_THREE: true
+  SCENARY_ONE:
+    TEST_CASE:
+      STATIC:
+        RUN: true
+        TEN_METER: true
+        TWENTY_METER: true
+        THIRTY_METER: true
+        FOURTY_METER: true
+        FIFTY_METER: true
+        SIXTY_METER: true
+      MOVING:
+        SAME_SPEED:
+          RUN: true
+          THIRTY_THIRTY: true
+          FOURTY_FOURTY: true
+        FORNT_CAR_FASTER:
+          RUN: true
+          THIRTY_FOURTY: true
+          THIRTY_FIFTY: true
+          THIRTY_SIXTY: true
+        FORNT_CAR_SLOWER:
+          RUN: true
+          FOURTY_THIRTY: true
+          FIFTY_THIRTY: true
+          SIXTY_THIRTY: true    
+  SCENARY_TWO:
+    TEST_CASE:
+      STATIC:
+        RUN: true
+        TEN_METER: true
+        TWENTY_METER: true
+        THIRTY_METER: true
+        FOURTY_METER: true
+        FIFTY_METER: true
+        SIXTY_METER: true
+      MOVING:
+        SAME_SPEED:
+          RUN: true
+          THIRTY_THIRTY: true
+          FOURTY_FOURTY: true
+        FORNT_CAR_FASTER:
+          RUN: true
+          THIRTY_FOURTY: true
+          THIRTY_FIFTY: true
+          THIRTY_SIXTY: true
+        FORNT_CAR_SLOWER:
+          RUN: true
+          FOURTY_THIRTY: true
+          FIFTY_THIRTY: true
+          SIXTY_THIRTY: true
+  SCENARY_THREE:
+    TEST_CASE:
+      STATIC:
+        RUN: true
+        TEN_METER: true
+        TWENTY_METER: true
+        THIRTY_METER: true
+        FOURTY_METER: true
+        FIFTY_METER: true
+        SIXTY_METER: true
+      MOVING:
+        SAME_SPEED:
+          RUN: true
+          THIRTY_THIRTY: true
+          FOURTY_FOURTY: true
+        FORNT_CAR_FASTER:
+          RUN: true
+          THIRTY_FOURTY: true
+          THIRTY_FIFTY: true
+          THIRTY_SIXTY: true
+        FORNT_CAR_SLOWER:
+          RUN: true
+          FOURTY_THIRTY: true
+          FIFTY_THIRTY: true
+          SIXTY_THIRTY: true
+  
+    
+  
 

@@ -18,7 +18,7 @@ class Drawer(BaseDataset):
     def __init__(self, args):
         super().__init__(args)
 
-    def process_json_log(self,json_log):
+    def process_json_log(self,json_log,device_image_path):
         """
         Processes a JSON log, performs various visualizations and actions based on its content, and handles exceptions.
 
@@ -68,7 +68,7 @@ class Drawer(BaseDataset):
             
             
             tailing_objs = log_data["frame_ID"][frame_ID]["tailingObj"]
-            vanishline_objs = log_data["frame_ID"][frame_ID]["vanishLineY"]
+            vanishline_objs = log_data["frame_ID"][frame_ID]["vanishLine"]
             ADAS_objs = log_data["frame_ID"][frame_ID]["ADAS"]
             lane_info = log_data["frame_ID"][frame_ID]["LaneInfo"]
             detect_objs = log_data["frame_ID"][frame_ID]["detectObj"]["VEHICLE"]
@@ -93,7 +93,7 @@ class Drawer(BaseDataset):
 
             if self.show_vanishline:
                 for obj in vanishline_objs:
-                    vanishlineY = obj["vanishlineY"]
+                    vanishlineY = obj["vanishLineY"]
                     x2 = image.shape[1]
                     cv2.line(image, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
                     cv2.putText(image, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
@@ -291,6 +291,14 @@ class Drawer(BaseDataset):
                 # pmiddleCarhood_mainlane = (int((pLeftCarhood[0]+pRightCarhood[0])/2.0),int((pLeftCarhood[1]+pRightCarhood[1])/2.0))
                 # cv2.line(image, pmiddleFar_mainlane, pmiddleCarhood_mainlane, (0, 255, 255), 1)  # Blue line
 
+            if device_image_path is not None:
+                base_directory_name = os.path.basename(os.path.dirname(device_image_path))
+                x = int(self.model_w / 4.0)
+                y = int(self.model_h / 20.0)
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                color = (0,0,0)
+                cv2.putText(image, base_directory_name, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
+
             if self.resize:
                 image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
             if self.show_airesultimage:
@@ -302,9 +310,30 @@ class Drawer(BaseDataset):
                         cv2.waitKey(self.sleep_onadas)
                 else:
                     cv2.waitKey(self.sleep)
+
+            
+
+
             if self.save_airesultimage:
-                self.img_saver.save_image(image,frame_ID)
-                # cv2.imwrite(f'{self.save_imdir}/frame_{frame_ID}.jpg',image)
+                if device_image_path is not None:
+                    logging.info(f"device_image_path:{device_image_path}")
+                    base_directory_name = os.path.basename(os.path.dirname(device_image_path))
+                    GT_dist = os.path.basename(os.path.dirname(os.path.dirname(device_image_path)))
+                    data_folder = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(device_image_path))))
+                    logging.info(f"base_directory_name:{base_directory_name}")
+                    save_file = "frame_" + str(frame_ID) + ".jpg"
+                    current_directory = os.getcwd()
+                
+                    save_dir = os.path.join(current_directory,"runs",data_folder,GT_dist,base_directory_name)
+                    save_path = os.path.join(save_dir,save_file)
+                    logging.info(f"save_file:{save_file}")
+                    logging.info(f"current_directory:{current_directory}")
+                    logging.info(f"svae_path:{save_path}")
+                    os.makedirs(save_dir, exist_ok=True)
+                    cv2.imwrite(save_path,image)
+                else:
+                    self.img_saver.save_image(image,frame_ID)
+                    # cv2.imwrite(f'{self.save_imdir}/frame_{frame_ID}.jpg',image)
 
             if self.save_jsonlog:
                 self.img_saver.save_json_log(log_data)

@@ -13,7 +13,6 @@ from config.args import Args
 import colorlog
 from tqdm import tqdm
 import pandas as pd
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class BaseDataset:
@@ -96,7 +95,9 @@ class BaseDataset:
         #plot label
         self.plot_label = args.plot_label
 
-        self.img_saver = ImageSaver(args)
+
+        self.img_saver = None
+        # self.img_saver = ImageSaver(args)
 
 
         # Video extract frames parameters
@@ -108,6 +109,10 @@ class BaseDataset:
 
         self.model_w = args.model_w
         self.model_h = args.model_h
+
+  
+        self.img_saver = ImageSaver(args)
+    
 
     def display_parameters(self):
         logging.info(f"IMAGE DIRECTORY: {self.im_dir}")
@@ -229,6 +234,7 @@ class BaseDataset:
         '''
         return NotImplemented
     
+
 
     def start_server(self):
         '''
