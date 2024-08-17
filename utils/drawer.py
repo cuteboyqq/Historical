@@ -316,19 +316,14 @@ class Drawer(BaseDataset):
 
             if self.save_airesultimage:
                 if device_image_path is not None:
-                    logging.info(f"device_image_path:{device_image_path}")
                     base_directory_name = os.path.basename(os.path.dirname(device_image_path))
                     GT_dist = os.path.basename(os.path.dirname(os.path.dirname(device_image_path)))
                     data_folder = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(device_image_path))))
-                    logging.info(f"base_directory_name:{base_directory_name}")
                     save_file = "frame_" + str(frame_ID) + ".jpg"
                     current_directory = os.getcwd()
-                
                     save_dir = os.path.join(current_directory,"runs",data_folder,GT_dist,base_directory_name)
                     save_path = os.path.join(save_dir,save_file)
-                    logging.info(f"save_file:{save_file}")
-                    logging.info(f"current_directory:{current_directory}")
-                    logging.info(f"svae_path:{save_path}")
+                   
                     os.makedirs(save_dir, exist_ok=True)
                     cv2.imwrite(save_path,image)
                 else:
@@ -336,7 +331,30 @@ class Drawer(BaseDataset):
                     # cv2.imwrite(f'{self.save_imdir}/frame_{frame_ID}.jpg',image)
 
             if self.save_jsonlog:
-                self.img_saver.save_json_log(log_data)
+                if device_image_path is not None:
+                    logging.info(f"device_image_path:{device_image_path}")
+                    base_directory_name = os.path.basename(os.path.dirname(device_image_path))
+                    GT_dist = os.path.basename(os.path.dirname(os.path.dirname(device_image_path)))
+                    data_folder = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(device_image_path))))
+                    data_folder = data_folder + '_csv'
+                    logging.info(f"base_directory_name:{base_directory_name}")
+                    current_directory = os.getcwd()
+                    save_dir = os.path.join(current_directory,"runs",data_folder,GT_dist,base_directory_name)
+                   
+                    logging.info(f"save_file:{save_file}")
+                    logging.info(f"current_directory:{current_directory}")
+                    txt_file = base_directory_name + '.txt'  # Updated to '.txt' for the file extension
+                    os.makedirs(save_dir, exist_ok=True)
+                    txt_path = os.path.join(save_dir, txt_file)
+                    # Convert the JSON string to a dictionary and then back to a JSON string to remove escape characters
+                    json_log_dict = json.loads(json_log)
+                    json_log_str = json.dumps(json_log_dict)
+                    
+                    with open(txt_path, mode='a') as file:  # Opening file in append mode
+                        file.write(json_log_str + '\n')  # Writing JSON log to the file without escape characters
+                    print(f"JSON log saved to {txt_path}")
+                else:
+                    self.img_saver.save_json_log(log_data)
                 # # Save the JSON log to a CSV file
                 # with open(f'{self.save_jsonlogpath}', mode='a', newline='') as file:
                 #     writer = csv.writer(file)

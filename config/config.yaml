@@ -88,7 +88,7 @@ SAVE:
   AI_RESULT_IMAGE: true  # Flag to save AI result images
   RAW_VIDEO: false  # Flag to save raw video
   VIDEO_FPS: 7 # FPS of the saved video
-  JSON_LOG: false  # Flag to save JSON log
+  JSON_LOG: true  # Flag to save JSON log
   EXTRACT_FRAME: false # Flag to save frames extracted from the video stream
 
 EVALUATION:

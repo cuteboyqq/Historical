@@ -110,8 +110,12 @@ class BaseDataset:
         self.model_w = args.model_w
         self.model_h = args.model_h
 
-  
-        self.img_saver = ImageSaver(args)
+        self.mode = args.mode
+
+        if not self.mode=='eval' and not self.mode=='evaluation':
+            self.img_saver = ImageSaver(args)
+        else:
+            self.img_saver = None
     
 
     def display_parameters(self):
