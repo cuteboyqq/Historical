@@ -119,7 +119,7 @@ class Historical(BaseDataset):
             self.convert_rawimages_to_videoclip(im_dir=raw_images_dir)
 
         if plot_distance:
-            self.Plotter.plot_distance_value_on_each_frame_ID()
+            self.Plotter.plot_all_static_golden_dataset()
 
     def visualize_online(self):
         """

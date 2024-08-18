@@ -97,7 +97,6 @@ class BaseDataset:
         self.plot_label = args.plot_label
 
 
-        self.img_saver = None
         # self.img_saver = ImageSaver(args)
 
 
@@ -118,14 +117,7 @@ class BaseDataset:
         else:
             self.img_saver = None
             
-        # Camera setting
-        self.camera_rawimages_dir = args.camera_rawimages_dir
-        self.camera_csvfile_dir = args.camera_csvfile_dir
-        self.camera_host_name = args.camera_host_name
-        self.camera_port = args.camera_port
-        self.camera_user_name = args.camera_user_name
-        self.camera_password = args.camera_password
-        self.camera_config_dir = args.camera_config_dir
+        
     
 
     def display_parameters(self):

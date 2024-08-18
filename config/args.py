@@ -85,11 +85,14 @@ class Args:
         # Plot settings
         self.plot_label = config['PLOT']['LABEL']
         self.run_plot = config['PLOT']['RUN']
+        self.save_plot = config['PLOT']['SAVE']
+        self.save_plot_dir = config['PLOT']['SAVE_DIR']
 
         # Evaluation settings
         self.eval_camera_rawimage_dir = config['EVALUATION']['EVAL_RAW_IMAGE_DIR']
         self.eval_each_case_run_time = config['EVALUATION']['EVAL_EACH_CASE_RUN_TIME']
         self.eval_save_ai_result_dir = config['EVALUATION']['EVAL_SAVE_AI_RESULT_DIR']
+        self.eval_save_jsonlog_dir = config['EVALUATION']['EVAL_SAVE_JSONLOG_DIR']
         self.script_path = config['EVALUATION']['SCRIPT_PATH']
         self.evaluationdata_dir = config['EVALUATION']['DATA_DIR']
         self.remote_csv_file_path = config['EVALUATION']['CSV_FILE_PATH']

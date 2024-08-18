@@ -301,7 +301,7 @@ class Drawer(BaseDataset):
 
             if self.show_devicemode:
 
-                x = int(self.model_w / 4.0)
+                x = int(self.model_w * 2.0/ 4.0)
                 y = int(self.model_h / 20.0)
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 color = (0,0,255)

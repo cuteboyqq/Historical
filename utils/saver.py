@@ -27,9 +27,7 @@ class ImageSaver:
             dir_name = f'predict{i}'
             path = os.path.join(self.base_dir, dir_name)
             if not os.path.exists(path):
-                time.sleep(1)
                 print(f"path : {path} is not exist, create it")
-                print(f"path : {path} is created")
                 # self.is_created = True
                 return path
             i += 1

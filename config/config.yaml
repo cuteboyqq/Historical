@@ -7,7 +7,7 @@ MODEL:
 
 # Mode configuration
 MODE:
-  VISUALIZE_HISTORICAL_MODE: eval # Mode of run visualize historical mode ('online' / 'offline' / 'semi-online' / eval / None)
+  VISUALIZE_HISTORICAL_MODE: None # Mode of run visualize historical mode ('online' / 'offline' / 'semi-online' / eval / None)
 
 # JSON log configuration
 JSONLOG:
@@ -31,7 +31,7 @@ SERVER:
 
 # Local configuration
 LOCAL:
-  CSV_FILE: 'assets/csv_file/GoldenData_50m_3.csv'  # Path to the local CSV file
+  CSV_FILE: 'assets/csv_file/static_csv/30m/Static_20240805_30m_0km_0km_1/Static_20240805_30m_0km_0km_1.txt'  # Path to the local CSV file
   RAW_IMG_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/2024-8-13-13-17'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
   SAVE_RAW_VIDEO_PATH: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/videos/predict8.mp4'  # Path to save the raw video file
 # Image configuration
@@ -67,9 +67,9 @@ LANE_LINE:
     
 # Resize settings
 RESIZE:
-  ENABLED: true  # Flag to enable or disable image resizing
-  WIDTH: 960  # Width of the resized images
-  HEIGHT: 540  # Height of the resized images
+  ENABLED: false  # Flag to enable or disable image resizing
+  WIDTH: 1280  # Width of the resized images
+  HEIGHT: 720  # Height of the resized images
 
 # Wait settings
 WAIT:
@@ -79,22 +79,25 @@ WAIT:
 
 # Plot settings
 PLOT:
-  RUN:  false
+  RUN:  true
   LABEL: 'DISTANCE'  # Label for the distance plot
+  SAVE: true
+  SAVE_DIR:  assets/plots
 
 # Save settings
 SAVE:
   RAW_IMAGES: false     # Flasg to save raw images
-  AI_RESULT_IMAGE: true  # Flag to save AI result images
+  AI_RESULT_IMAGE: false  # Flag to save AI result images
   RAW_VIDEO: false  # Flag to save raw video
   VIDEO_FPS: 7 # FPS of the saved video
-  JSON_LOG: true  # Flag to save JSON log
+  JSON_LOG: false  # Flag to save JSON log
   EXTRACT_FRAME: false # Flag to save frames extracted from the video stream
 
 EVALUATION:
-  EVAL_EACH_CASE_RUN_TIME: 40
+  EVAL_EACH_CASE_RUN_TIME: 60
   EVAL_RAW_IMAGE_DIR: '/mnt/mmc/adas/debug/raw_images/raw_imaegs_640x384_rename/static'
   EVAL_SAVE_AI_RESULT_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/runs/eval'
+  EVAL_SAVE_JSONLOG_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/csv_file/static_csv'
   SCRIPT_PATH: '/customer/Run_Historical-Mode.sh'
   DATA_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/Golden_Data_20240805-2/static'
   CSV_FILE_PATH: '/logging/video-adas/180_video-adas_2024-08-16.csv'
