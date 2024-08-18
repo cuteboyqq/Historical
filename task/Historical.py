@@ -11,7 +11,7 @@ import logging
 import pandas as pd
 from utils.plotter import Plotter
 from utils.drawer import Drawer
-from utils.evaluation import Evaluation
+from task.evaluation import Evaluation
 # # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

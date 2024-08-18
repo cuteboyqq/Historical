@@ -57,11 +57,11 @@ class Plotter(BaseDataset):
             self.json_log_path = search_dir_path
             frame_ids,distances = self.plot_distance_value_on_each_frame_ID_txt(show_plot=False)
            
-            plt.plot(frame_ids, distances, label='scenary' + str(scenary))
+            plt.plot(frame_ids, distances, label= f'{file_name} result')
         
         plt.xlabel('Frame ID', fontsize=20)
         plt.ylabel('Tailing Object Distance to Camera', fontsize=20)
-        plt.title('Tailing Object Distance to Camera vs Frame ID', fontsize=24)
+        plt.title(f'Static Ground Truth = {GT_dist}m', fontsize=24)
         plt.legend(fontsize=32)  # Adjust legend font size
         plt.xticks(fontsize=14)  # Adjust x-axis tick font size
         plt.yticks(fontsize=14)  # Adjust y-axis tick font size
