@@ -16,7 +16,8 @@ class Evaluation(BaseDataset):
         super().__init__(args)
         self.args = args
         self.eval_camera_raw_im_dir = args.eval_camera_rawimage_dir
-        self.eval_each_case_run_time = args.eval_each_case_run_time
+        self.eval_static_case_run_time = args.eval_static_case_run_time
+        self.eval_dynamic_case_run_time =args.eval_dynamic_case_run_time
         self.eval_save_ai_result_dir = args.eval_save_ai_result_dir
         self.tftpserver_dir = args.tftpserver_dir
         self.evaluationdata_dir = args.evaluationdata_dir
@@ -214,21 +215,31 @@ class Evaluation(BaseDataset):
         # server_th = threading.Thread(target=start_server_thread)
         # server_th.start()    
 
-        t = self.eval_each_case_run_time
-
-        im_dir_list = glob.glob(os.path.join(self.evaluationdata_dir, '**/*'))
-        print(f'im_dir_list:{im_dir_list}')
+        im_dir_list = sorted(glob.glob(os.path.join(self.evaluationdata_dir, '***/**/*')))
+        for i in im_dir_list:
+            print(i)
+        # print(f'im_dir_list:{im_dir_list}')
         for im_dir in im_dir_list:
             print(f"im_dir:{im_dir}")
             self.im_folder = os.path.basename(os.path.normpath(im_dir))
+            data_type = self.im_folder.split("_")[0]
+            
+            # Set running time on each case
+            if data_type=='Static':
+                t = self.eval_static_case_run_time
+            elif data_type=='Dynamic':
+                t = self.eval_dynamic_case_run_time
+
+
             # GT_dist = self.im_folder.split("_")[-4]
             # if GT_dist=="None":
             # Get the parent directory
             parent_dir = os.path.dirname(im_dir)
             # desired_path = os.path.dirname(parent_dir)
             GT_dist = os.path.basename(parent_dir)
+            mytype = os.path.basename(os.path.dirname(parent_dir))
             print(f"GT_dist:{GT_dist}")
-            dir_path = os.path.join(self.eval_camera_raw_im_dir, GT_dist, self.im_folder)
+            dir_path = os.path.join(self.eval_camera_raw_im_dir, mytype, GT_dist, self.im_folder)
             print(f'dir_path:{dir_path}')
             if self.check_directory_exists(dir_path):
                 custom_directory = (os.path.join(self.eval_save_ai_result_dir,GT_dist,self.im_folder))

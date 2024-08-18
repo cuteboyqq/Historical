@@ -90,7 +90,8 @@ class Args:
 
         # Evaluation settings
         self.eval_camera_rawimage_dir = config['EVALUATION']['EVAL_RAW_IMAGE_DIR']
-        self.eval_each_case_run_time = config['EVALUATION']['EVAL_EACH_CASE_RUN_TIME']
+        self.eval_static_case_run_time = config['EVALUATION']['EVAL_STATIC_CASE_RUN_TIME']
+        self.eval_dynamic_case_run_time = config['EVALUATION']['EVAL_DYNAMIC_CASE_RUN_TIME']
         self.eval_save_ai_result_dir = config['EVALUATION']['EVAL_SAVE_AI_RESULT_DIR']
         self.eval_save_jsonlog_dir = config['EVALUATION']['EVAL_SAVE_JSONLOG_DIR']
         self.script_path = config['EVALUATION']['SCRIPT_PATH']

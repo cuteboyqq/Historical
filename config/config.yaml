@@ -7,7 +7,7 @@ MODEL:
 
 # Mode configuration
 MODE:
-  VISUALIZE_HISTORICAL_MODE: None # Mode of run visualize historical mode ('online' / 'offline' / 'semi-online' / eval / None)
+  VISUALIZE_HISTORICAL_MODE: eval # Mode of run visualize historical mode ('online' / 'offline' / 'semi-online' / eval / None)
 
 # JSON log configuration
 JSONLOG:
@@ -94,12 +94,13 @@ SAVE:
   EXTRACT_FRAME: false # Flag to save frames extracted from the video stream
 
 EVALUATION:
-  EVAL_EACH_CASE_RUN_TIME: 50
-  EVAL_RAW_IMAGE_DIR: '/mnt/mmc/adas/debug/raw_images/Golden_Data_20240805-2/static'
+  EVAL_STATIC_CASE_RUN_TIME: 60
+  EVAL_DYNAMIC_CASE_RUN_TIME : 30
+  EVAL_RAW_IMAGE_DIR: '/mnt/mmc/adas/debug/raw_images/Golden_Data_20240805-2'
   EVAL_SAVE_AI_RESULT_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/runs/eval'
   EVAL_SAVE_JSONLOG_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/csv_file/static_csv'
   SCRIPT_PATH: '/customer/Run_Historical-Mode.sh'
-  DATA_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/Golden_Data_20240805-2/static'
+  DATA_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/Golden_Data_20240805-2'
   CSV_FILE_PATH: '/logging/video-adas/180_video-adas_2024-08-16.csv'
  
   
