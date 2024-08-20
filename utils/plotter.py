@@ -19,17 +19,91 @@ class Plotter(BaseDataset):
         self.eval_save_jsonlog_dir = args.eval_save_jsonlog_dir
         self.save_plot = args.save_plot
         self.save_plot_dir = args.save_plot_dir
+        self.type = None
         os.makedirs(self.save_plot_dir,exist_ok=True)
+        self.display_init_params()
 
+    def display_init_params(self):
+        ascii_art = """
+         ____  _       _     _              _   _                 
+        |  _ \| |     | |   | |            | | (_)                
+        | |_) | |_   _| |__ | |__  _ __ ___| |_ _  ___  _ __  ___ 
+        |  _ <| | | | | '_ \| '_ \| '__/ _ \ __| |/ _ \| '_ \/ __|
+        | |_) | | |_| | |_) | | | | | |  __/ |_| | (_) | | | \__ \\
+        |____/|_|\__,_|_.__/|_| |_|_|  \___|\__|_|\___/|_| |_|___/
+        """
+        print(ascii_art)
+        
+        print("📂 Initialized Parameters:")
+        print(f"  📄 JSON Log Path:         {self.json_log_path}")
+        print(f"  📁 Evaluation Save Dir:   {self.eval_save_jsonlog_dir}")
+        print(f"  💾 Save Plot:             {self.save_plot}")
+        print(f"  📂 Save Plot Directory:   {self.save_plot_dir}")
+        print(f"  🔍 Type:                  {self.type if self.type else 'Not Set'}")
+        print("\n")
+
+    def parse_GT_dist(self,GT_dist=None):
+        if len(GT_dist.split("m"))== 2:
+            print(GT_dist.split("m"))
+            return 'static'
+        else:
+            print(GT_dist.split("m"))
+            return 'dynamic'
+            
     def plot_all_static_golden_dataset(self):
-        search_dir_list = glob.glob(f'{self.eval_save_jsonlog_dir}/*')
+        search_dir_list = sorted(glob.glob(f'{self.eval_save_jsonlog_dir}/**/*'))
         for search_dir in search_dir_list:
             print(search_dir)
-            GT_dist = search_dir.split("/")[-1]
-            print(f"GT_dist:{GT_dist}")
-            self.plot_different_scenary_distance_value_on_each_frame_ID(ground_truth_distance=GT_dist)
+            front_ego = search_dir.split("/")[-1]
+            print(f"front_ego:{front_ego}")
+            data_type = self.parse_GT_dist(front_ego)
+            print(f"self.type :{self.type}")
+            self.type = os.path.basename(os.path.dirname(search_dir))
+            
+            if data_type=='static':
+                self.plot_static_different_scenary_distance_value_on_each_frame_ID(ground_truth_distance=front_ego)
+            else:
+                self.plot_dynamic_different_scenary_distance_value_on_each_frame_ID(front_ego=front_ego)
 
-    def plot_different_scenary_distance_value_on_each_frame_ID(self,ground_truth_distance = None):
+    def plot_dynamic_different_scenary_distance_value_on_each_frame_ID(self,front_ego = None):
+        plt.figure(figsize=(128, 72))
+        plt.style.use('ggplot')
+
+        search_dir = os.path.join(self.eval_save_jsonlog_dir,self.type, front_ego)
+        print(f'plotter search_dir:{search_dir}')
+        search_dir_path_list = glob.glob(f"{search_dir}/**/*.txt")
+        for search_dir_path in search_dir_path_list:
+            print(search_dir_path)
+            file_name = os.path.basename(os.path.dirname(search_dir_path))
+            scenary = file_name.split("_")[-1]
+            print(f'scenary:{scenary}')
+            self.json_log_path = search_dir_path
+            frame_ids,distances = self.plot_distance_value_on_each_frame_ID_txt(show_plot=False)
+           
+            plt.plot(frame_ids, distances, label= f'{file_name} result')
+        
+        plt.xlabel('Frame ID', fontsize=20)
+        plt.ylabel('Tailing Object Distance to Camera', fontsize=20)
+        plt.title(f'Front-Ego = {front_ego}', fontsize=24)
+        plt.legend(fontsize=32)  # Adjust legend font size
+        plt.xticks(fontsize=14)  # Adjust x-axis tick font size
+        plt.yticks(fontsize=14)  # Adjust y-axis tick font size
+
+
+        plt.grid(True)
+        
+        # Ensure labels are shown by adding a legend
+        plt.legend()
+        
+        if self.save_plot:
+            # Save the plot as a .jpg or .png file
+            save_path = os.path.join(self.save_plot_dir, str(front_ego)+'m.jpg')
+            plt.savefig(save_path,dpi=10,format='jpg')  # Change 'png' to 'jpg' for JPEG format
+        
+        # Show the plot
+        plt.show()
+
+    def plot_static_different_scenary_distance_value_on_each_frame_ID(self,ground_truth_distance = None):
         plt.figure(figsize=(128, 72))
         GT_dist = int(ground_truth_distance.split('m')[0])
         GT_dist_int = int(GT_dist)
@@ -46,7 +120,7 @@ class Plotter(BaseDataset):
         plt.fill_between(GT_frame_ids, GT_dist_int-5, GT_dist_int+5, color='blue', alpha=0.15, label=f'Accept distance range {GT_dist_int-5} to {GT_dist_int+5}')
         print(f'GT_dist:{GT_dist}')
         
-        search_dir = os.path.join(self.eval_save_jsonlog_dir,ground_truth_distance)
+        search_dir = os.path.join(self.eval_save_jsonlog_dir,self.type, ground_truth_distance)
         print(f'plotter search_dir:{search_dir}')
         search_dir_path_list = glob.glob(f"{search_dir}/**/*.txt")
         for search_dir_path in search_dir_path_list:
@@ -116,6 +190,7 @@ class Plotter(BaseDataset):
             plt.title('Tailing Object Distance to Camera vs Frame ID')
             plt.grid(True)
             plt.show()
+            return frame_ids,distances
         else:
             return frame_ids,distances
 

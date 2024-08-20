@@ -61,14 +61,14 @@ class ImageSaver:
             # Determine where to save the image
             save_dir = self.custom_dir if self.custom_dir is not None else self.current_dir
 
-            logging.error(f"self.custom_dir is {self.custom_dir}")
-            logging.error(f"self.current_dir is {self.current_dir}")
+            # logging.error(f"self.custom_dir is {self.custom_dir}")
+            # logging.error(f"self.current_dir is {self.current_dir}")
 
             image_path = os.path.join(save_dir, f'frame_{frame_ID}.{self.image_format}')
             success = cv2.imwrite(image_path, image)
-            if success:
-                logging.info(f"Image saved to {image_path}")
-            else:
+            # if success:
+            #     logging.info(f"Image saved to {image_path}")
+            if not success:
                 logging.error(f"Failed to save image to {image_path}")
         except Exception as e:
             logging.error(f"Error saving image: {e}")
@@ -79,7 +79,7 @@ class ImageSaver:
         with open(csv_path, mode='a', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([json.dumps(json_log)])
-        print(f"JSON log saved to {csv_path}")
+        # print(f"JSON log saved to {csv_path}")
 
     def save_video(self, output_filename='video.mp4', fps=7):
         """Encode the images in the current directory into a video file."""
@@ -105,7 +105,6 @@ class ImageSaver:
             video_writer.write(img)
         
         video_writer.release()
-        print(f"Video saved to {video_path}")
 
 
 
@@ -121,7 +120,3 @@ class ImageSaver:
     
     # image_saver.save_image(image, frame_ID)
     # image_saver.save_json_log(json_log, frame_ID)
-
-    # saver = ImageSaver(args)
-    # saver.set_custom_directory('custom_folder_name')
-

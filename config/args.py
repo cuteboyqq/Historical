@@ -4,7 +4,7 @@ import os
 # Argument parsing for class initialization
 class Args:
     def __init__(self, config):
-        
+
         # Model configuation
         self.model_w = config['MODEL']['INPUT_WIDTH']
         self.model_h = config['MODEL']['INPUT_HEIGHT']
@@ -38,7 +38,7 @@ class Args:
         # Image configuration
         self.image_basename = config['IMAGE']['BASE_NAME']
         self.image_format = config['IMAGE']['FORMAT']
-        
+
         # Display settings
         self.show_distanceplot = config['DISPLAY']['SHOW_DISTANCE_PLOT']
         self.show_airesultimage = config['DISPLAY']['SHOW_AI_RESULT_IMAGE']
@@ -51,6 +51,7 @@ class Args:
         self.show_distancetitle = config['DISPLAY']['SHOW_DISTANCE_TITLE']
         self.show_detectobjinfo = config['DISPLAY']['SHOW_DETECT_OBJS_INFO']
         self.show_devicemode = config['DISPLAY']['SHOW_DEVICE_MODE']
+
 
         # Lane line
         self.alpha = config['LANE_LINE']['ALPHA']
@@ -76,24 +77,45 @@ class Args:
         self.save_jsonlog = config['SAVE']['JSON_LOG']
         self.save_extractframe = config['SAVE']['EXTRACT_FRAME']
         self.video_fps = config['SAVE']['VIDEO_FPS']
-        
+
         # Wait settings
         self.sleep = config['WAIT']['VALUE']
         self.sleep_zeroonadas = config['WAIT']['ZERO_ON_ADAS_EVENT']
         self.sleep_onadas = config['WAIT']['ON_ADAS_EVENT']
-    
+
         # Plot settings
         self.plot_label = config['PLOT']['LABEL']
         self.run_plot = config['PLOT']['RUN']
         self.save_plot = config['PLOT']['SAVE']
         self.save_plot_dir = config['PLOT']['SAVE_DIR']
 
+        # Test settings
+        self.test_version_fw_version = config['TEST']['VERSION']['FW_VERSION']
+        self.test_version_mcu_version = config['TEST']['VERSION']['MCU_VERSION']
+        self.test_version_adas_version = config['TEST']['VERSION']['ADAS_VERSION']
+        self.test_adas_config_path = config['TEST']['CONFIG_PARAMS']['CONFIG_PATH']
+        self.test_check_duration = config['TEST']['MONITOR']['DURATION']
+        self.test_check_interval = config['TEST']['MONITOR']['INTERVAL']
+        self.test_threshold_inference_time = config['TEST']['THRESHOLD']['INFERENCE_TIME']
+        self.test_threshold_buffer_size_ratio = config['TEST']['THRESHOLD']['BUFFER_SIZE_RATIO']
+        self.test_cpu_threshold = config['TEST']['THRESHOLD']['CPU_USAGE']
+        self.test_mem_threshold = config['TEST']['THRESHOLD']['MEMORY_USAGE']
+
         # Evaluation settings
-        self.eval_camera_rawimage_dir = config['EVALUATION']['EVAL_RAW_IMAGE_DIR']
-        self.eval_static_case_run_time = config['EVALUATION']['EVAL_STATIC_CASE_RUN_TIME']
-        self.eval_dynamic_case_run_time = config['EVALUATION']['EVAL_DYNAMIC_CASE_RUN_TIME']
-        self.eval_save_ai_result_dir = config['EVALUATION']['EVAL_SAVE_AI_RESULT_DIR']
-        self.eval_save_jsonlog_dir = config['EVALUATION']['EVAL_SAVE_JSONLOG_DIR']
-        self.script_path = config['EVALUATION']['SCRIPT_PATH']
-        self.evaluationdata_dir = config['EVALUATION']['DATA_DIR']
-        self.remote_csv_file_path = config['EVALUATION']['CSV_FILE_PATH']
+        self.eval_static_case_run_time = config['EVALUATION']['RUN_TIME']['STATIC']
+        self.eval_dynamic_case_run_time = config['EVALUATION']['RUN_TIME']['DYNAMIC']
+
+        self.eval_camera_rawimage_dir = config['EVALUATION']['CAMERA']['DATASET_DIR']
+        self.script_path = config['EVALUATION']['CAMERA']['SCRIPT_PATH']
+        self.remote_csv_file_path = config['EVALUATION']['CAMERA']['CSV_FILE_PATH']
+        # self.eval_save_ai_result_dir = config['EVALUATION']['EVAL_SAVE_AI_RESULT_DIR']
+
+        self.eval_save_jsonlog_dir = config['EVALUATION']['LOCAL']['JSONLOG_DIR']
+        self.evaluationdata_dir = config['EVALUATION']['LOCAL']['DATASET_DIR']
+
+
+        # Analysis settings
+        self.analysis_run = config['ANALYSIS']['RUN']
+        self.analysis_json_log_path = config['ANALYSIS']['JSON_LOG_PATH']
+        self.analysis_jsonlog_dir = config['ANALYSIS']['JSON_LOG_DIR']
+

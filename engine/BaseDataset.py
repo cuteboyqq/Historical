@@ -13,6 +13,7 @@ from config.args import Args
 import colorlog
 from tqdm import tqdm
 import pandas as pd
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class BaseDataset:
@@ -96,8 +97,12 @@ class BaseDataset:
         #plot label
         self.plot_label = args.plot_label
 
+        self.mode = args.mode
 
-        # self.img_saver = ImageSaver(args)
+        if not self.mode=='eval' and not self.mode=='evaluation':
+            self.img_saver = ImageSaver(args)
+        else:
+            self.img_saver = None
 
 
         # Video extract frames parameters
@@ -110,69 +115,81 @@ class BaseDataset:
         self.model_w = args.model_w
         self.model_h = args.model_h
 
-        self.mode = args.mode
-
-        if not self.mode=='eval' and not self.mode=='evaluation':
-            self.img_saver = ImageSaver(args)
-        else:
-            self.img_saver = None
-            
-        
-    
 
     def display_parameters(self):
-        logging.info(f"IMAGE DIRECTORY: {self.im_dir}")
-        logging.info(f"IMAGE BASE NAME: {self.image_basename}")
-        logging.info(f"CSV FILE PATH: {self.csv_file_path}")
-        logging.info(f"CSV FILE: {self.csv_file}")
-        logging.info(f"IMAGE FORMAT: {self.image_format}")
-        logging.info(f"TFTP IP: {self.tftp_ip}")
-        logging.info(f"-------------SAVE:---------------------")
-        logging.info(f"SAVE AI RESULT IMAGE: {self.save_airesultimage}")
-        logging.info(f"SAVE RAW VIDEO: {self.save_rawvideo}")
-        logging.info(f"SAVE RAW VIDEO PATH: {self.save_rawvideopath}")
-        logging.info(f"SAVE JSON LOG: {self.save_jsonlog}")
-        logging.info(f"SAVE RAW IMAGES: {self.save_rawimages}")
-        logging.info(f"-------------SLEEP:---------------------")
-        logging.info(f"SLEEP: {self.sleep}")
-        logging.info(f"SLEEP ZERO ON ADAS: {self.sleep_zeroonadas}")
-        logging.info(f"SLEEP ON ADAS: {self.sleep_onadas}")
-        logging.info(f"-------------DISPLAY:---------------------")
-        logging.info(f"SHOW DISTANCE PLOT: {self.show_distanceplot}")
-        logging.info(f"SHOW AI RESULT IMAGE: {self.show_airesultimage}")
-        logging.info(f"SHOW DETECT OBJS: {self.show_detectobjs}")
-        logging.info(f"SHOW TAILING OBJS: {self.show_tailingobjs}")
-        logging.info(f"SHOW VANISH LINE: {self.show_vanishline}")
-        logging.info(f"SHOW ADAS OBJS: {self.show_adasobjs}")
-        logging.info(f"SHOW TAIL OBJ BB CORNER: {self.showtailobjBB_corner}")
-        logging.info(f"SHOW LANE LINE: {self.show_laneline}")
-        logging.info(f"SHOW DISTANCE TITLE: {self.show_distancetitle}")
-        logging.info(f"-------------LANE LINE:---------------------")
-        logging.info(f"LANE LINE ALPHA: {self.alpha}")
-        logging.info(f"-------------TAILING IBJS:---------------------")
-        logging.info(f"TAILING OBJS BB THICKNESS: {self.tailingobjs_BB_thickness}")
-        logging.info(f"TAILING OBJS BB COLOR (B, G, R): ({self.tailingobjs_BB_colorB}, {self.tailingobjs_BB_colorG}, {self.tailingobjs_BB_colorR})")
-        logging.info(f"TAILING OBJS TEXT SIZE: {self.tailingobjs_text_size}")
-        logging.info(f"TAILING OBJ X1: {self.tailingObj_x1}")
-        logging.info(f"TAILING OBJ Y1: {self.tailingObj_y1}")
-        logging.info(f"-------------ADAS:---------------------")
-        logging.info(f"ADAS FCW: {self.ADAS_FCW}")
-        logging.info(f"ADAS LDW: {self.ADAS_LDW}")
-        logging.info(f"-------------RESOLUTION:---------------------")
-        logging.info(f"RESIZE: {self.resize}")
-        logging.info(f"RESIZE WIDTH: {self.resize_w}")
-        logging.info(f"RESIZE HEIGHT: {self.resize_h}")
-        logging.info(f"CSV FILE LIST: {self.csv_file_list}")
-        logging.info(f"LIST LABEL: {self.list_label}")
-        logging.info(f"PLOT LABEL: {self.plot_label}")
-        logging.info(f"VIDEO SKIP FRAME: {self.skip_frame}")
-        logging.info(f"-------------CROP:---------------------")
-        logging.info(f"CROP: {self.crop}")
-        logging.info(f"CROP TOP: {self.crop_top}")
-        logging.info(f"CROP LEFT: {self.crop_left}")
-        logging.info(f"CROP RIGHT: {self.crop_right}")
-        logging.info(f"MODEL WIDTH: {self.model_w}")
-        logging.info(f"MODEL HEIGHT: {self.model_h}")
+        logging.info("--------------- 📊 BaseDataset Settings 📊 ---------------")
+        
+        logging.info(f"🗂️  IMAGE DIRECTORY          : {self.im_dir}")
+        logging.info(f"🖼️  IMAGE BASE NAME          : {self.image_basename}")
+        logging.info(f"📂 CSV FILE PATH            : {self.csv_file_path}")
+        logging.info(f"📄 CSV FILE                 : {self.csv_file}")
+        logging.info(f"🖼️  IMAGE FORMAT             : {self.image_format}")
+        logging.info(f"🌐 TFTP IP                  : {self.tftp_ip}")
+        
+        logging.info("------------- 💾 SAVE SETTINGS ---------------------")
+        logging.info(f"💾 SAVE AI RESULT IMAGE     : {self.save_airesultimage}")
+        logging.info(f"💾 SAVE RAW VIDEO           : {self.save_rawvideo}")
+        logging.info(f"💾 SAVE RAW VIDEO PATH      : {self.save_rawvideopath}")
+        logging.info(f"💾 SAVE JSON LOG            : {self.save_jsonlog}")
+        logging.info(f"💾 SAVE RAW IMAGES          : {self.save_rawimages}")
+
+        logging.info("------------- 💤 SLEEP SETTINGS ---------------------")
+        logging.info(f"💤 SLEEP                   : {self.sleep}")
+        logging.info(f"💤 SLEEP ZERO ON ADAS      : {self.sleep_zeroonadas}")
+        logging.info(f"💤 SLEEP ON ADAS           : {self.sleep_onadas}")
+
+        logging.info("------------- 📺 DISPLAY SETTINGS ---------------------")
+        logging.info(f"📊 SHOW DISTANCE PLOT       : {self.show_distanceplot}")
+        logging.info(f"🖼️  SHOW AI RESULT IMAGE    : {self.show_airesultimage}")
+        logging.info(f"🔍 SHOW DETECT OBJS         : {self.show_detectobjs}")
+        logging.info(f"🚗 SHOW TAILING OBJS        : {self.show_tailingobjs}")
+        logging.info(f"🧩 SHOW VANISH LINE         : {self.show_vanishline}")
+        logging.info(f"🚘 SHOW ADAS OBJS           : {self.show_adasobjs}")
+        logging.info(f"📏 SHOW TAIL OBJ BB CORNER  : {self.showtailobjBB_corner}")
+        logging.info(f"🛣️  SHOW LANE LINE          : {self.show_laneline}")
+        logging.info(f"📍 SHOW DISTANCE TITLE      : {self.show_distancetitle}")
+
+        logging.info("------------- 🚗 LANE LINE SETTINGS ---------------------")
+        logging.info(f"🚗 LANE LINE ALPHA          : {self.alpha}")
+        
+        logging.info("------------- 📏 TAILING OBJS SETTINGS ---------------------")
+        logging.info(f"📏 TAILING OBJS BB THICKNESS : {self.tailingobjs_BB_thickness}")
+        logging.info(f"🎨 TAILING OBJS BB COLOR (B, G, R): ({self.tailingobjs_BB_colorB}, {self.tailingobjs_BB_colorG}, {self.tailingobjs_BB_colorR})")
+        logging.info(f"🔠 TAILING OBJS TEXT SIZE   : {self.tailingobjs_text_size}")
+        logging.info(f"🔍 TAILING OBJ X1           : {self.tailingObj_x1}")
+        logging.info(f"🔍 TAILING OBJ Y1           : {self.tailingObj_y1}")
+
+        logging.info("------------- 🚗 ADAS SETTINGS ---------------------")
+        logging.info(f"🚗 ADAS FCW                 : {self.ADAS_FCW}")
+        logging.info(f"🚗 ADAS LDW                 : {self.ADAS_LDW}")
+        
+        logging.info("------------- 📐 RESOLUTION SETTINGS ---------------------")
+        logging.info(f"📐 RESIZE                  : {self.resize}")
+        logging.info(f"📏 RESIZE WIDTH            : {self.resize_w}")
+        logging.info(f"📏 RESIZE HEIGHT           : {self.resize_h}")
+
+        logging.info("------------- 📄 CSV FILE LIST SETTINGS ---------------------")
+        logging.info(f"📄 CSV FILE LIST           : {self.csv_file_list}")
+        logging.info(f"🏷️  LIST LABELS             : {self.list_label}")
+        
+        logging.info("------------- 📊 PLOT LABEL SETTINGS ---------------------")
+        logging.info(f"📊 PLOT LABEL              : {self.plot_label}")
+
+        logging.info("------------- 🎞️  VIDEO EXTRACT FRAMES SETTINGS ---------------------")
+        logging.info(f"⏯️  VIDEO SKIP FRAME        : {self.skip_frame}")
+        
+        logging.info("------------- ✂️  CROP SETTINGS ---------------------")
+        logging.info(f"✂️  CROP                   : {self.crop}")
+        logging.info(f"⬆️  CROP TOP               : {self.crop_top}")
+        logging.info(f"⬅️  CROP LEFT              : {self.crop_left}")
+        logging.info(f"➡️  CROP RIGHT             : {self.crop_right}")
+
+        logging.info("------------- 🛠️  MODEL SETTINGS ---------------------")
+        logging.info(f"🛠️  MODEL WIDTH            : {self.model_w}")
+        logging.info(f"🛠️  MODEL HEIGHT           : {self.model_h}")
+        
+        logging.info("------------------------------------------------------------")
+
 
 
 
@@ -240,7 +257,6 @@ class BaseDataset:
         '''
         return NotImplemented
     
-
 
     def start_server(self):
         '''

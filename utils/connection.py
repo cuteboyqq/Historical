@@ -14,13 +14,10 @@ import socket
 from engine.BaseDataset import BaseDataset
 from utils.drawer import Drawer
 import threading
-import watchdog.events
-import watchdog.observers
 global index
 index  = 0
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 class Connection(BaseDataset):
 
@@ -58,12 +55,23 @@ class Connection(BaseDataset):
         This method extends the base class method to include specific details for the Connection class.
         """
         super().display_parameters()
-        logging.info(f"CAMERA HOSTNAME: {self.camera_host_name}")
-        logging.info(f"CAMERA PORT: {self.camera_port}")
-        logging.info(f"CAMERA USERNAME: {self.camera_user_name}")
-        logging.info(f"CAMERA PASSWORD: {self.camera_password}")
-        logging.info(f"TFTP SERVER DIR: {self.tftpserver_dir}")
-        logging.info(f"SERVER PORT: {self.server_port}")
+        logging.info("\n" + "="*40)
+        logging.info("🔌 Connection Configuration:")
+        logging.info("="*40)
+        logging.info(f"📷 CAMERA SETTINGS")
+        logging.info(f"   📂 Raw Images Directory: {self.camera_rawimages_dir}")
+        logging.info(f"   📂 CSV File Directory: {self.camera_csvfile_dir}")
+        logging.info(f"   🌐 Hostname: {self.camera_host_name}")
+        logging.info(f"   🚪 Port: {self.camera_port}")
+        logging.info(f"   👤 Username: {self.camera_user_name}")
+        logging.info(f"   🔑 Password: {self.camera_password}")
+        logging.info(f"   🛠️  Config Directory: {self.camera_config_dir}")
+        logging.info("="*40)
+        logging.info(f"💾 TFTP SERVER")
+        logging.info(f"   📂 Directory: {self.tftpserver_dir}")
+        logging.info(f"   🚪 Port: {self.server_port}")
+        logging.info("="*40 + "\n")
+
 
     def start_server(self):
         """
@@ -77,18 +85,18 @@ class Connection(BaseDataset):
         try:
             server_socket.bind((self.tftp_ip, self.server_port))
         except PermissionError as e:
-            logging.error(f"PermissionError: {e}")
+            logging.error(f"❌ PermissionError: {e} - You may need root privileges to use this port.")
             return
         except Exception as e:
-            logging.error(f"Error: {e}")
+            logging.error(f"⚠️ Error: {e} - Could not bind to {self.tftp_ip}:{self.server_port}.")
             return
 
         server_socket.listen(5)
-        logging.info(f"Server started on {self.tftp_ip}:{self.server_port}")
+        logging.info(f"✅ Server started and listening on {self.tftp_ip}:{self.server_port}")
 
         while True:
             client_socket, addr = server_socket.accept()
-            logging.info(f"Connection from {addr}")
+            logging.info(f"🔗 Connection established with {addr}")
 
             # Receive JSON log data
             json_data = b''
@@ -102,13 +110,17 @@ class Connection(BaseDataset):
 
             try:
                 json_data = json_data.decode('utf-8')
+                logging.info(f"📥 Received JSON data from {addr}")
                 self.Drawer.process_json_log(json_data)
+                logging.info(f"✅ Successfully processed data from {addr}")
             except UnicodeDecodeError as e:
-                logging.error(f"UnicodeDecodeError: {e} - Raw data: {json_data}")
+                logging.error(f"❌ UnicodeDecodeError: {e} - Raw data: {json_data}")
             except Exception as e:
-                logging.error(f"Error: {e}")
+                logging.error(f"⚠️ Error: {e} - Failed to process data from {addr}")
 
             client_socket.close()
+            logging.info(f"🔒 Connection closed with {addr}")
+
 
 
     def start_server_ver2(self,custom_directory=None):
@@ -121,56 +133,142 @@ class Connection(BaseDataset):
         try:
             server_socket.bind((self.tftp_ip, self.server_port))
         except PermissionError as e:
-            logging.info(f"PermissionError: {e}")
+            logging.error(f"❌ PermissionError: {e} - Server cannot bind to {self.server_port}")
             return
         except Exception as e:
-            logging.info(f"Error: {e}")
+            logging.error(f"❌ Error: {e} - Server failed to start on {self.tftp_ip}:{self.server_port}")
             return
 
+        device_input_mode = self.check_device_input_mode()
+        if device_input_mode == 0:
+            mode = '🔴 Live Mode'
+        else:
+            mode = '📚 Historical Mode'
+
+        logging.info(f"🔍 Device LI80 input mode is {device_input_mode} : {mode}")
         server_socket.listen(5)
-        logging.info(f"Server started on {self.tftp_ip}:{self.server_port}")
+        logging.info(f"🟢 Server started on {self.tftp_ip}:{self.server_port}")
         os.makedirs(f'{self.im_dir}', exist_ok=True)
+        
+        # Run below will restart the info from frame_ID : 0
+        # logging.info(f"🟢 ADAS started on...")
+        # self.run_the_adas()
 
         while True:
             try:
                 client_socket, addr = server_socket.accept()
-                logging.info(f"Connection from {addr}")
-                self.receive_image_and_log(client_socket,custom_directory)
+                # logging.info(f"🌐 Connection from {addr}")
+                if mode == '🔴 Live Mode':
+                    self.receive_image_and_log(client_socket,custom_directory)
+                elif mode == '📚 Historical Mode':
+                    self.receive_image_and_log_and_imgpath(client_socket)
                 client_socket.close()
             except socket.timeout:
                 # Timeout exception allows the loop to periodically check the stop flag
                 continue
             except Exception as e:
-                logging.error(f"Error: {e}")
+                logging.error(f"❌ Error: {e} - Server loop encountered an issue")
+
+    def run_the_adas(self):
+        """
+        Execute the ADAS script and manage process cleanup.
+        """
+        try:
+            remote_command = (
+                f"cd / && "
+                # "ps -a | grep run_script | awk '{print $1}' | xargs -r kill -9 && "  # Use -r to avoid xargs error if no process is found
+                "cd /customer && "
+                "./run_script"
+            )
+            
+            output = self.execute_remote_command_with_progress_ver2(remote_command)
+            
+            logging.info(f"🚀 Command output: {output}")
+
+        except Exception as e:
+            logging.error(f"❌An error occurred while running the ADAS: {e}")
+
+        finally:
+            logging.info("ADAS execution command complete.")
+
+
+    def check_device_input_mode(self):
+        """
+        Checks the value of InputMode in the device's /customer/adas/config/config.txt file and returns it.
+        Adds emojis to the logging messages for better visual context.
+
+        Returns:
+            int: The value of InputMode (0 or 2). Returns -1 if InputMode is not found or an error occurs.
+        """
+        # Construct the command to read the InputMode value from the config file
+        check_command = 'grep "^InputMode\s*=" /customer/adas/config/config.txt | awk -F "=" \'{print $2}\' | awk \'{print $1}\''
+
+        try:
+            # Execute the remote command
+            result = self.execute_remote_command_with_progress_ver2(check_command)
+
+            # Check if result is not None
+            if result is not None:
+                # Clean up the result by stripping extra spaces and newlines
+                result = result.strip()
+                # Log the raw result for debugging
+                logging.info(f"📜 Raw result from remote command: '{result}'")
+
+                # Check if the result is a valid InputMode value
+                if result in ["0", "2"]:
+                    input_mode = int(result)
+                    logging.info(f"✅ InputMode value is {input_mode}.")
+                    return input_mode
+                else:
+                    logging.warning(f"⚠️ InputMode value is neither 0 nor 2. Result: '{result}'")
+                    return -1
+            else:
+                logging.error("❌ No result returned from remote command.")
+                return -1
+
+        except Exception as e:
+            logging.error(f"🚨 Error executing remote command: {e}")
+            return -1
+
+
 
     def start_server_ver3(self, custom_directory=None):
+        """
+        Start the third version of the TCP server to handle image and JSON log reception.
+        
+        This version includes improved logging and graceful shutdown handling.
+        """
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         try:
             server_socket.bind((self.tftp_ip, self.server_port))
-            # Bind to a random available port
-            # server_socket.bind((self.tftp_ip, 0))
             server_socket.listen(5)
-            logging.info(f"Server started on {self.tftp_ip}:{self.server_port}")
+            logging.info(f"🟢 Server started and listening on {self.tftp_ip}:{self.server_port}")
+            os.makedirs(f'{self.im_dir}', exist_ok=True)
         except Exception as e:
-            logging.error(f"Server failed to start: {e}")
+            logging.error(f"❌ Server failed to start: {e}")
             return
 
         while not self.stop_server.is_set():  # Check if the stop signal is set
             try:
                 client_socket, addr = server_socket.accept()
-                logging.info(f"Connection from {addr}")
-                self.receive_image_and_log_ver2(client_socket)
+                # logging.info(f"🔗 Connection established with {addr}")
+
+                self.receive_image_and_log_and_imgpath(client_socket)
+                # logging.info(f"📥 Data received and processed from {addr}")
+
                 client_socket.close()
+                # logging.info(f"🔒 Connection closed with {addr}")
             except socket.timeout:
-                continue  # Allow the loop to check for stop signal
+                continue  # Allow the loop to check for the stop signal
             except Exception as e:
-                logging.error(f"Error in server loop: {e}")
+                logging.error(f"❌ Error in server loop: {e}")
                 break
 
-        logging.info("Server is shutting down")
+        logging.info("⏹️ Server is shutting down")
         server_socket.close()
+
 
     def check_csv_for_completion(self):
         """
@@ -333,46 +431,7 @@ class Connection(BaseDataset):
         thread = threading.Thread(target=target)
         thread.start()
         return thread
-    def execute_remote_command_with_progress_ver3(self, command):
-        """
-        Execute a remote command via SSH and monitor its progress.
-        
-        Args:
-            command (str): The command to be executed on the remote server.
-        
-        Returns:
-            str: The output from the command.
-        """
-        try:
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(self.camera_host_name, self.port, self.username, self.password)
-            logging.info(f"Connected to {self.camera_host_name}")
-
-            stdin, stdout, stderr = ssh.exec_command(command, timeout=60)
-        
-            final_output = stdout.read().decode('utf-8').splitlines()
-            final_errors = stderr.read().decode('utf-8').splitlines()
-
-            if final_errors:
-                logging.error(f"Raw Final Errors: {''.join(final_errors)}")
-            if final_output:
-                logging.info(f"Raw Final Output: {''.join(final_output)}")
-
-            return ''.join(final_output).strip() if final_output else None
-
-        except paramiko.ssh_exception.AuthenticationException as auth_err:
-            logging.error(f"Authentication failed: {auth_err}")
-            return None
-        except paramiko.ssh_exception.SSHException as ssh_err:
-            logging.error(f"SSH error: {ssh_err}")
-            return None
-        except Exception as e:
-            logging.error(f"An error occurred: {e}")
-            return None
-        finally:
-            ssh.close()
-
+    
     def execute_remote_command_with_progress_ver2(self, command):
         """
         Execute a remote command via SSH and monitor its progress.
@@ -387,11 +446,11 @@ class Connection(BaseDataset):
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             ssh.connect(self.camera_host_name, self.camera_port, self.camera_user_name, self.camera_password)
-            logging.info(f"Connected to {self.camera_host_name}")
+            logging.info(f"🚀  Connected to IP:{self.camera_host_name} port:{self.camera_port} user:{self.camera_user_name} password:{self.camera_password}")
 
             # Execute the command with a timeout
             stdin, stdout, stderr = ssh.exec_command(command, timeout=10)  # Set an appropriate timeout
-            logging.info(f"Finished executing command: {command}")
+            logging.info(f"✅ Finished executing command: {command}")
 
             final_output = []
             final_errors = []
@@ -423,25 +482,23 @@ class Connection(BaseDataset):
 
             # Log final outputs and errors
             if final_errors:
-                logging.error(f"Final Errors: {''.join(final_errors)}")
+                logging.error(f"❌ Final Errors: {''.join(final_errors)}")
             if final_output:
-                logging.info(f"Final Output: {''.join(final_output)}")
+                logging.info(f"🚀 Final Output: {''.join(final_output)}")
 
             return ''.join(final_output).strip() if final_output else None
 
         except paramiko.ssh_exception.AuthenticationException as auth_err:
-            logging.error(f"Authentication failed: {auth_err}")
+            logging.error(f"❌ Authentication failed: {auth_err}")
             return None
         except paramiko.ssh_exception.SSHException as ssh_err:
-            logging.error(f"SSH error: {ssh_err}")
+            logging.error(f"❌ SSH error: {ssh_err}")
             return None
         except Exception as e:
-            logging.error(f"An error occurred: {e}")
+            logging.error(f"❌ An error occurred: {e}")
             return None
         finally:
             ssh.close()
-
-
 
 
     def execute_local_command(self, command):
@@ -467,12 +524,13 @@ class Connection(BaseDataset):
             logging.error("Errors:")
             logging.error(e.stderr.decode())
 
-    def receive_image_and_log(self, client_socket,custom_directory):
+    def receive_image_and_log(self, client_socket, custom_directory):
         """
         Receive image data and JSON logs from a client connection.
 
         Args:
             client_socket (socket.socket): The socket object for the client connection.
+            custom_directory: Custom directory to save the received data.
 
         This method processes and saves the received image and JSON log data.
         """
@@ -480,20 +538,20 @@ class Connection(BaseDataset):
             # Receive the frame_index
             frame_index_data = client_socket.recv(4)
             if not frame_index_data:
-                logging.error("Failed to receive frame index.")
+                logging.error("❌ Failed to receive frame index.")
                 return
 
             frame_index = int.from_bytes(frame_index_data, byteorder='big')
-            logging.info(f"Received frame index: {frame_index}")
+            # logging.info(f"📥 Received frame index: {frame_index}")
 
             # Receive the size of the image
             size_data = client_socket.recv(4)
             if not size_data:
-                logging.error("Failed to receive image size.")
+                logging.error("❌ Failed to receive image size.")
                 return
 
             size = int.from_bytes(size_data, byteorder='big')
-            logging.info(f"Expected image size: {size} bytes")
+            # logging.info(f"📏 Expected image size: {size} bytes")
 
             # Receive the image data
             buffer = b''
@@ -504,16 +562,16 @@ class Connection(BaseDataset):
                 buffer += data
 
             if len(buffer) != size:
-                logging.error(f"Failed to receive the complete image data. Received {len(buffer)} bytes out of {size}")
+                logging.error(f"❌ Failed to receive the complete image data. Received {len(buffer)} bytes out of {size}")
                 return
 
-            logging.info(f"Successfully received the complete image data. Total bytes: {len(buffer)}")
+            # logging.info(f"✅ Successfully received the complete image data. Total bytes: {len(buffer)}")
 
             # Save the image to a file
             image_path = f'{self.im_dir}/{self.image_basename}{frame_index}.{self.image_format}'
-
             with open(image_path, 'wb') as file:
                 file.write(buffer)
+            # logging.info(f"💾 Image saved at {image_path}")
 
             # Read the remaining data for JSON log
             json_data = b''
@@ -528,10 +586,12 @@ class Connection(BaseDataset):
             json_data = json_data.decode('utf-8')
 
             # Process the JSON log
-            self.Drawer.process_json_log(json_data,custom_directory)
-           
+            self.Drawer.process_json_log(json_data, custom_directory)
+            # logging.info("📜 JSON log processed successfully")
+
         except Exception as e:
-            logging.error(f"Error: {e} - An unexpected error occurred.")
+            logging.error(f"❌ Error: {e} - An unexpected error occurred.")
+
 
 
     def receive_fixed_size_data(self, sock, size):
@@ -539,8 +599,8 @@ class Connection(BaseDataset):
         while len(data) < size:
             packet = sock.recv(size - len(data))
             if not packet:
-                logging.error(f"Received incomplete data. Total received: {len(data)} bytes.")
-                raise ConnectionError("Failed to receive enough data.")
+                logging.error(f"❌ Received incomplete data. Total received: {len(data)} bytes.")
+                raise ConnectionError("❌ Failed to receive enough data.")
             data += packet
             logging.debug(f"Received packet: {packet.hex()} (Total: {len(data)}/{size} bytes)")
         return data
@@ -563,36 +623,47 @@ class Connection(BaseDataset):
         logging.info(f"InputMode value retrieved: {input_mode_value}")
         
         return input_mode_value
+    
 
-
-
-    def receive_image_and_log_ver2(self, client_socket):
+    def receive_image_and_log_and_imgpath(self, client_socket):
         """
-        Receive image data, JSON logs, and image path from a client connection.
+        Receives image data, JSON logs, and the image path from a client connection.
 
         Args:
             client_socket (socket.socket): The socket object for the client connection.
-            custom_directory (str): Directory where files are saved.
+            
+        Process:
+            1. Receives the frame index as a 4-byte integer.
+            2. Receives the size of the image data in bytes (4-byte integer).
+            3. Receives the image data based on the received size.
+            4. Saves the received image data to a file.
+            5. Receives the length of the image path (4-byte integer).
+            6. Receives the image path data based on the received length.
+            7. Receives the JSON log data until a termination sequence is detected.
+            8. Passes the JSON log and image path to the `Drawer.process_json_log` method for further processing.
+        
+        Exceptions:
+            Logs any errors that occur during the process and stops further execution.
         """
         try:
-            logging.info("------------------------------------------------------------------------------------")
+            # logging.info("------------------------------------------------------------------------------------")
             # Receive the frame_index
             frame_index_data = client_socket.recv(4)
             if not frame_index_data:
-                logging.error("Failed to receive frame index.")
+                logging.error("❌ Failed to receive frame index.")
                 return
 
             frame_index = int.from_bytes(frame_index_data, byteorder='big')
-            logging.info(f"Received frame index: {frame_index}")
+            # logging.info(f"📥 Received frame index: {frame_index}")
 
             # Receive the size of the image
             size_data = client_socket.recv(4)
             if not size_data:
-                logging.error("Failed to receive image size.")
+                logging.error("❌ Failed to receive image size.")
                 return
 
             size = int.from_bytes(size_data, byteorder='big')
-            logging.info(f"Received image size: {size} bytes")
+            # logging.info(f"Received image size: {size} bytes")
 
             # Receive the image data
             buffer = b''
@@ -603,35 +674,36 @@ class Connection(BaseDataset):
                 buffer += data
 
             if len(buffer) != size:
-                logging.error(f"Failed to receive the complete image data. Received {len(buffer)} bytes out of {size}")
+                logging.error(f"❌ Failed to receive the complete image data. Received {len(buffer)} bytes out of {size}")
                 return
 
-            logging.info(f"Received the complete image data. Total bytes: {len(buffer)}")
+            # logging.info(f"✅ Successfully received the complete image data. Total bytes: {len(buffer)}")
 
             # Save the image to a file
             image_path = f'{self.im_dir}/{self.image_basename}{frame_index}.{self.image_format}'
 
             with open(image_path, 'wb') as file:
                 file.write(buffer)
-            
+            # logging.info(f"💾 Image saved at {image_path}")
 
             # Receive the length of the image path
             path_length_data = client_socket.recv(4)
             if not path_length_data:
-                logging.error("Failed to receive image path length.")
+                logging.error("❌ Failed to receive image path length.")
                 return
+            # logging.info(f"📏 Received image path length: {path_length} bytes")
 
             path_length = int.from_bytes(path_length_data, byteorder='big')
-            logging.info(f"Received image path length: {path_length}")
+            # logging.info(f"📏 Received image path length: {path_length} bytes")
 
+            
 
             # Start receiving the image path
-            logging.info(f"Attempting to receive {path_length} bytes for image path")
+            # logging.info(f"Attempting to receive {path_length} bytes for image path")
             image_path_data = self.receive_fixed_size_data(client_socket, path_length)
-            logging.info(f"Received {len(image_path_data)} bytes for image path")
 
             image_path = image_path_data.decode('utf-8')
-            logging.info(f"Received image path: {image_path}")
+            # logging.info(f"🛤️ Received image path: {image_path_data.decode('utf-8')}")
 
             # Receive the JSON log
             json_data = b''
@@ -644,27 +716,15 @@ class Connection(BaseDataset):
                     break
 
             json_data = json_data.decode('utf-8')
-            logging.info(f"Received JSON log: {json_data}")
+            # logging.info(f"📜 Received JSON log")
 
           
          
             self.Drawer.process_json_log(json_data,image_path)
+            # logging.info("✅ JSON log processed successfully")
 
         except Exception as e:
-            logging.error(f"Error: {e} - An unexpected error occurred.")
-
-
-  
+            logging.error(f"❌ Error: {e} - An unexpected error occurred.")
 
 
 
-
-
-
-
-
-
-
-    
-    
-            

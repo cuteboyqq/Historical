@@ -59,9 +59,9 @@ class Drawer(BaseDataset):
         """
         try:
             log_data = json.loads(json_log)
-            logging.info("=======================================================================================")
-            logging.info("Received [JSON]: %s", json.dumps(log_data))
-            logging.info("=======================================================================================")
+            # logging.info("=======================================================================================")
+            # logging.info("Received [JSON]: %s", json.dumps(log_data))
+            # logging.info("=======================================================================================")
             # print("Received JSON:", json.dumps(log_data, indent=4))  # Print formatted JSON
 
             frame_ID = list(log_data["frame_ID"].keys())[0]  # Extract the first frame_ID key
@@ -74,7 +74,7 @@ class Drawer(BaseDataset):
             detect_objs = log_data["frame_ID"][frame_ID]["detectObj"]["VEHICLE"]
 
             image_path = f"{self.im_dir}/{self.image_basename}{frame_ID}.{self.image_format}"
-            logging.info(image_path)
+            # logging.info(image_path)
             image = cv2.imread(image_path)
             image = cv2.resize(image, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
 
@@ -84,8 +84,8 @@ class Drawer(BaseDataset):
                 for obj in ADAS_objs:
                     self.ADAS_FCW = obj["FCW"]
                     self.ADAS_LDW = obj["LDW"]
-                    logging.info(f'ADAS_FCW:{self.ADAS_FCW}')
-                    logging.info(f'ADAS_LDW:{self.ADAS_LDW}')
+                    # logging.info(f'ADAS_FCW:{self.ADAS_FCW}')
+                    # logging.info(f'ADAS_LDW:{self.ADAS_LDW}')
                     if self.ADAS_FCW==True or self.ADAS_FCW==1 or self.ADAS_FCW=="true":
                         cv2.putText(image, 'Forward Collision', (80,80), cv2.FONT_HERSHEY_SIMPLEX,1.3, (0, 0, 255), 2, cv2.LINE_AA)
                     if self.ADAS_LDW==True or self.ADAS_LDW==1 or self.ADAS_FCW=="true":
@@ -300,21 +300,20 @@ class Drawer(BaseDataset):
                 cv2.putText(image, base_directory_name, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
 
             if self.show_devicemode:
-
-                x = int(self.model_w * 2.0/ 4.0)
+                x = int(self.model_w * 2.0/ 5.0)
                 y = int(self.model_h / 20.0)
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                color = (0,0,255)
+                color = (255,255,0)
                 mode = 'Unknown'
                 if self.mode in ['eval','evaluation']:
-                    mode = 'Evaluation (Historical)'
+                    mode = 'Online evaluation(Historical)'
                 elif self.mode == 'online':
-                    mode = 'Visualize online'
+                    mode = 'Online'
+                elif self.mode == 'offline':
+                    mode = 'Offline'
                 # elif self.mode == 'sem-online':
                 #     mode = 'Visualize semi-online'
-            
-                cv2.putText(image, 'Mode : ' + mode, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
-
+                cv2.putText(image, 'Stream mode : ' + mode, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
 
             if self.resize:
                 image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
@@ -327,9 +326,6 @@ class Drawer(BaseDataset):
                         cv2.waitKey(self.sleep_onadas)
                 else:
                     cv2.waitKey(self.sleep)
-
-            
-
 
             if self.save_airesultimage:
                 if device_image_path is not None:
@@ -349,17 +345,17 @@ class Drawer(BaseDataset):
 
             if self.save_jsonlog:
                 if device_image_path is not None:
-                    logging.info(f"device_image_path:{device_image_path}")
+                    # logging.info(f"device_image_path:{device_image_path}")
                     base_directory_name = os.path.basename(os.path.dirname(device_image_path))
                     GT_dist = os.path.basename(os.path.dirname(os.path.dirname(device_image_path)))
                     data_folder = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(device_image_path))))
                     data_folder = data_folder + '_csv'
-                    logging.info(f"base_directory_name:{base_directory_name}")
+                    # logging.info(f"base_directory_name:{base_directory_name}")
                     current_directory = os.getcwd()
                     save_dir = os.path.join(current_directory,"runs",data_folder,GT_dist,base_directory_name)
                    
-                    logging.info(f"save_file:{save_file}")
-                    logging.info(f"current_directory:{current_directory}")
+                    # logging.info(f"save_file:{save_file}")
+                    # logging.info(f"current_directory:{current_directory}")
                     txt_file = base_directory_name + '.txt'  # Updated to '.txt' for the file extension
                     os.makedirs(save_dir, exist_ok=True)
                     txt_path = os.path.join(save_dir, txt_file)
@@ -369,7 +365,7 @@ class Drawer(BaseDataset):
                     
                     with open(txt_path, mode='a') as file:  # Opening file in append mode
                         file.write(json_log_str + '\n')  # Writing JSON log to the file without escape characters
-                    print(f"JSON log saved to {txt_path}")
+                    # print(f"JSON log saved to {txt_path}")
                 else:
                     self.img_saver.save_json_log(log_data)
                 # # Save the JSON log to a CSV file
@@ -378,11 +374,11 @@ class Drawer(BaseDataset):
                 #     writer.writerow([json.dumps(log_data)])  # Save frame_ID and JSON log
                     # writer.writerow([frame_ID, json.dumps(log_data)])  # Save frame_ID and JSON log
         except KeyError as e:
-            logging.error(f"KeyError: {e} - The key might be missing in the JSON data.")
+            logging.error(f"❌ KeyError: {e} - The key might be missing in the JSON data.")
         except json.JSONDecodeError as e:
-            logging.error(f"JSONDecodeError: {e} - The JSON data might be malformed.")
+            logging.error(f"❌ JSONDecodeError: {e} - The JSON data might be malformed.")
         except Exception as e:
-            logging.error(f"Error: {e} - An unexpected error occurred.")
+            logging.error(f"❌ Error: {e} - An unexpected error occurred.")
 
 
     

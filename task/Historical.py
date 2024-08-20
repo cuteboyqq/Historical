@@ -5,13 +5,14 @@ import os
 import cv2
 from engine.BaseDataset import BaseDataset
 from utils.connection import Connection
+from task.evaluation import Evaluation
+from utils.analysis import Analysis
 import numpy as np
 # from config.config import get_connection_args
 import logging
 import pandas as pd
 from utils.plotter import Plotter
 from utils.drawer import Drawer
-from task.evaluation import Evaluation
 # # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -32,9 +33,6 @@ class Historical(BaseDataset):
         self.Connect = Connection(args)
         self.tftpserver_dir = args.tftpserver_dir
         self.im_folder = os.path.basename(self.im_dir)
-        self.script_path = args.script_path
-        self.script_dir = os.path.dirname(self.script_path)
-        self.script_file = os.path.basename(self.script_path)
 
         # Commands for remote and local operations
         self.get_raw_images_remote_commands = (
@@ -61,13 +59,16 @@ class Historical(BaseDataset):
             f"cd {self.tftpserver_dir} && "
             f"mv {self.csv_file} {self.current_dir}/assets/csv_file"
         )
-    
+        
         self.display_parameters()
 
         self.Plotter = Plotter(args)
         self.Drawer = Drawer(args)
         self.Evaluation = Evaluation(args)
-        # self.initialize_image_saver(args)
+        # Analysis
+        self.analysis_run = args.analysis_run
+        if self.analysis_run:
+            self.Analysis = Analysis(args)
     
     def visualize(self, mode=None, 
                   jsonlog_from=None, 
@@ -81,8 +82,8 @@ class Historical(BaseDataset):
         Main function for visualizing AI results based on the specified mode and options.
 
         Args:
-            mode (str, optional): Operational mode. Options are "online", "semi-online", "offline", None.
-            jsonlog_from (str, optional): Source of JSON logs. Options are "camera" or "online", None.
+            mode (str, optional): Operational mode. Options are "online", "semi-online", "offline".
+            jsonlog_from (str, optional): Source of JSON logs. Options are "camera" or "online".
             plot_distance (bool, optional): If True, plots distance values on each frame ID.
             gen_raw_video (bool, optional): If True, generates a video from raw images.
             save_raw_image_dir (str, optional): Directory to save raw images.
@@ -107,7 +108,7 @@ class Historical(BaseDataset):
             if save_raw_image_dir:
                 self.im_dir = save_raw_image_dir
             self.visualize_online()
-        
+
         elif mode=="eval" or mode=="evaluation":
             logging.info("Running evaluation mode")
             self.Evaluation.run_golden_dataset()
@@ -121,18 +122,19 @@ class Historical(BaseDataset):
         if plot_distance:
             self.Plotter.plot_all_static_golden_dataset()
 
+        if self.analysis_run and mode=='analysis':
+            self.Analysis.calc_all_static_performance()
+            # avg_dist = self.Analysis.calc_avg_dist()
+            # self.Analysis.set_static_GT_dist_list(GT_dist_value=30)
+            # avg_err = self.Analysis.calc_avg_error_dist()
+            # avg_performance = self.Analysis.calc_static_performance()
+           
+
     def visualize_online(self):
         """
         Visualizes AI results in real-time by transferring JSON logs and raw images from the camera to the local computer.
         """
-        # self.remote_run_historical_mode_commands = (
-        #         f"cd {self.script_dir} && "
-        #         f"./{self.script_file}"
-        #     )
-        # self.Connect.execute_remote_command_async(self.remote_run_historical_mode_commands)
-        # self.Connect.execute_remote_command_with_progress(self.run_ADAS_remote_commands)
         self.Connect.start_server_ver2()
-        
 
     def visualize_semi_online(self):
         """
