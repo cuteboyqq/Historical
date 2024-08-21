@@ -54,8 +54,39 @@ class Connection(BaseDataset):
         
         This method extends the base class method to include specific details for the Connection class.
         """
-        super().display_parameters()
+        # ASCII art for headers
+        connection_art = """
+        ____  _       ____  _   _  _____ _   _ _   _ ____  
+        / ___|| |_   _| __ )| | | | |_ _| \ | | | | |  _ \ 
+        \___ \| | | | |  _ \| | | |  | ||  \| | | | | |_) |
+        ___) | | |_| | |_) | |_| |  | || |\  | |_| |  __/ 
+        |____/|_|\__, |____/ \___/  |___|_| \_|\___/|_|    
+                |___/                                    
+        """
+        camera_art = """
+        ____                                     
+        / ___| ___ _ __ ___  _   _ _ __ __ _ _ __  
+        | |  _ / _ \ '__/ _ \| | | | '__/ _` | '_ \ 
+        | |_| |  __/ | | (_) | |_| | | | (_| | | | |
+        \____|\___|_|  \___/ \__,_|_|  \__,_|_| |_| 
+        """
+        tftp_art = """
+        _____ _____ ____ _____  _____ ____  
+        |_   _|_   _/ ___|_   _|/  ___/ ___| 
+        | |   | || |     | | | |   \___ \ 
+        | |   | || |___  | | | |___ ___) |
+        |_|   |_| \____| |_|  \____|____/ 
+        """
+
+        print(connection_art)
+        logging.info("🎯 Connection Class Information 🎯")
+        logging.info(f"📦 Class Name: {self.__class__.__name__}")
+        logging.info(f"📝 Documentation: {self.__class__.__doc__}")
+        logging.info(f"🔧 Module: {self.__module__}")
+        logging.info(f"💡 Base Class: {self.__class__.__bases__}")
         logging.info("\n" + "="*40)
+        
+        print(camera_art)
         logging.info("🔌 Connection Configuration:")
         logging.info("="*40)
         logging.info(f"📷 CAMERA SETTINGS")
@@ -67,10 +98,13 @@ class Connection(BaseDataset):
         logging.info(f"   🔑 Password: {self.camera_password}")
         logging.info(f"   🛠️  Config Directory: {self.camera_config_dir}")
         logging.info("="*40)
+        
+        print(tftp_art)
         logging.info(f"💾 TFTP SERVER")
         logging.info(f"   📂 Directory: {self.tftpserver_dir}")
         logging.info(f"   🚪 Port: {self.server_port}")
         logging.info("="*40 + "\n")
+
 
 
     def start_server(self):

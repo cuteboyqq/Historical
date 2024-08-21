@@ -5,10 +5,15 @@ from datetime import datetime
 from utils.adas_log_parser import AdasLogParser
 
 class DetectionChecker:
-    def __init__(self, remote_host, config):
+    def __init__(self, remoteSSH, config):
+        """Initializes the DetectionChecker class.
 
+        Args:
+            remoteSSH (RemoteSSH): The remote SSH connection object.
+            config (Config): The configuration object.
+        """
         # Connect to the remote host
-        self.remote_host = remote_host
+        self.remoteSSH = remoteSSH
 
         # ADAS log parser
         self.adas_log_parser = AdasLogParser()
@@ -21,12 +26,19 @@ class DetectionChecker:
 
         # Get the latest log file path
         self.remote_log_path = self._get_remmote_latest_log_path()
+        if self.remote_log_path == False:
+            return False
 
         # Get the detection result
         self.detection_result_dict_list = []
         self.result = False
 
     def _get_latest_csv_file(self, log_file_list):
+        """Get the latest log file path from the remote host
+
+        Returns:
+            str: The latest log file path
+        """
         parsed_files = []
 
         for log_file in log_file_list:
@@ -39,10 +51,10 @@ class DetectionChecker:
                 parsed_files.append((token, date, subversion, log_file))
 
         if not parsed_files:
-            print("No valid ADAS detection log found! (1)")
+            print("❌ No valid ADAS detection log found on device (1)")
             return False
 
-        parsed_files.sort(key=lambda x: (-x[0], x[1], -x[2]), reverse=True)
+        parsed_files.sort(key=lambda x: (x[0], x[1], -x[2]), reverse=True)
 
         latest_token, latest_date, latest_subversion, latest_file = parsed_files[0]
 
@@ -51,14 +63,14 @@ class DetectionChecker:
                 if token == latest_token and date == latest_date and subversion == 0:
                     return log_file
             else:
-                print("No valid ADAS detection log found! (2)")
+                print("❌ No valid ADAS detection log found on device (2)")
                 return False
         else:
             for token, date, subversion, log_file in parsed_files:
                 if token == latest_token and date == latest_date and subversion == 0:
                     return log_file
             else:
-                print("No valid ADAS detection log found! (3)")
+                print("❌ No valid ADAS detection log found on device (3)")
                 return False
 
     def _get_remmote_latest_log_path(self):
@@ -68,18 +80,28 @@ class DetectionChecker:
             str: The latest log file path
         """
         command = f"ls /logging/video-adas/"
-        log_files_str = self.remote_host.execute_command(command)
+        log_files_str = self.remoteSSH.execute_command(command)
         log_files = []
         for line in log_files_str.split("\n"):
             log_files.append(line)
         latest_log_file = self._get_latest_csv_file(log_files)
+        if latest_log_file == False:
+            return False
         # print(f">>> latest_log_file = {latest_log_file}")
         log_file_path = f"/logging/video-adas/{latest_log_file}"
         return log_file_path
 
     def _get_latest_completed_json_log(self, log_file_path):
+        """Get the latest completed JSON log from the remote host
+
+        Args:
+            log_file_path (str): The path to the log file
+
+        Returns:
+            str: The latest completed JSON log
+        """
         command = f"tail -n 10 {log_file_path}"
-        recv_log_str = self.remote_host.execute_command(command)
+        recv_log_str = self.remoteSSH.execute_command(command)
         json_log_str = None
         for line in recv_log_str.split("\n"):
             if "[JSON] [debug] json:" in line:
@@ -87,7 +109,11 @@ class DetectionChecker:
         return json_log_str
 
     def _get_detection_result(self):
+        """Get the detection result from the remote host
 
+        Returns:
+            str: The detection result
+        """
         json_log_str = self._get_latest_completed_json_log(self.remote_log_path)
         self.adas_log_parser.parse(json_log_str)
         self.curr_frame_id = self.adas_log_parser.get_frame_id()
@@ -101,7 +127,6 @@ class DetectionChecker:
             "fcw_event": self.adas_log_parser.get_fcw_event(),
             "ldw_event": self.adas_log_parser.get_ldw_event()
         }
-        # print('e')
 
         if (self.curr_frame_id is not None) and (self.curr_frame_id is None):
             self.prev_frame_id = self.curr_frame_id
@@ -117,6 +142,8 @@ class DetectionChecker:
             return False, detection_result_dict
 
     def _monitor_detection_result(self):
+        """Monitor the detection result
+        """
         iterations = 0
         total_iterations = int(self.check_duration / self.check_interval)
         start_time = time.time()
@@ -130,6 +157,10 @@ class DetectionChecker:
                 pbar.update(1)
 
     def _is_detection_result_changed(self):
+        """Check if the detection result has changed
+        Returns:
+            bool: True if the detection result has changed, False otherwise
+        """
         if len(self.detection_result_dict_list) < 2:
             return True
 
@@ -153,7 +184,10 @@ class DetectionChecker:
         return True
 
     def _is_same_vehicles(self, vehicle1, vehicle2):
-        # Compare the two vehicle objects
+        """Compare the two vehicle objects
+        Returns:
+            bool: True if the two vehicle objects are the same, False otherwise
+        """
         if vehicle1.bbox.x1 != vehicle2.bbox.x1:
             # print(f"Vehicle box.x1 is different")
             return False
@@ -173,7 +207,10 @@ class DetectionChecker:
         return True
 
     def check_detection(self):
-
+        """Check the detection functionality
+        Returns:
+            bool: True if the detection functionality is OK, False otherwise
+        """
         is_detection_ok = True
 
         # Monitor the detection result
@@ -189,9 +226,12 @@ class DetectionChecker:
         return is_detection_ok
 
     def get_results(self):
+        """Get the results
+        Returns:
+            dict: The results
+        """
         result = {
             "Detection Functionality": "✅ Passed" if self.result else "❌ Failed",
-            # "overall": "✅ Passed" if self.result else "❌ Failed"
         }
         return result
 

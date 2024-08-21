@@ -5,8 +5,7 @@ from datetime import datetime
 
 class RemoteResourceChecker:
     def __init__(self, remoteSSH, config):
-        """
-        Initializes a RemoteResourceMonitor instance.
+        """Initializes a RemoteResourceMonitor instance.
 
         Args:
             remoteSSH: RemoteSSH instance
@@ -33,21 +32,25 @@ class RemoteResourceChecker:
         self.result = False
 
     def execute_command(self, command):
-        """
-        Executes a command on the remote host.
+        """Executes a command on the remote host.
+
+        Args:
+            command (str): The command to execute
+
+        Returns:
+            str: The command output
         """
         return self.remoteSSH.execute_command(command)
 
-    def get_disk_usage(self):
-        """
-        Retrieves the current disk usage percentage for the root partition.
+    def _get_process_resources(self, process_name):
+        """Retrieves the current CPU and memory usage for a given process.
+
+        Args:
+            process_name (str): The name of the process to check
 
         Returns:
-            Disk usage as a string percentage
+            list: The process resources
         """
-        return self.execute_command("df -h / | awk 'NR==2 {print $5}'")
-
-    def get_process_resources(self, process_name):
         try:
             cmd = f"top -bn1 | grep {process_name} | grep -v grep | grep -v logger | awk '{{print $1, $6, $7, $8}}'"
             result = self.execute_command(cmd)
@@ -65,21 +68,32 @@ class RemoteResourceChecker:
             return f"Error getting process resources: {str(e)}"
 
     def _get_cpu_usage(self):
+        """Retrieves the average CPU usage for a given process.
+
+        Returns:
+            float: The average CPU usage
+        """
         average_cpu = sum(self.cpu_usage_list) / len(self.cpu_usage_list)
         return average_cpu
 
     def _get_mem_usage(self):
+        """Retrieves the average memory usage for a given process.
+
+        Returns:
+            float: The average memory usage
+        """
         average_mem = sum(self.mem_usage_list) / len(self.mem_usage_list)
         return average_mem
 
     def _monitor_resources(self):
+        """Monitors the resources for a given process.
+        """
         start_time = time.time()
         iterations = 0
         total_iterations = int(self.check_duration / self.check_interval)
-        
         with tqdm.tqdm(total=total_iterations, desc="Monitoring ADAS resources", unit="check") as pbar:
             while iterations < total_iterations:
-                pid, mem, cpu = self.get_process_resources(self.adas_process_name)
+                pid, mem, cpu = self._get_process_resources(self.adas_process_name)
 
                 # Update results
                 self.cpu_usage_list.append(float(cpu))
@@ -90,8 +104,10 @@ class RemoteResourceChecker:
                 pbar.update(1)
 
     def check_resource(self):
-        """
-        Monitors system resources for a specified duration.
+        """Monitors system resources for a specified duration.
+
+        Returns:
+            bool: True if the resources are within the threshold, False otherwise
         """
         is_resource_ok = True
 
@@ -113,13 +129,14 @@ class RemoteResourceChecker:
         return is_resource_ok
 
     def get_results(self):
-        """
-        Returns the results of the resource check.
+        """Returns the results of the resource check.
+
+        Returns:
+            dict: The results
         """
         res = " ✅ Passed" if self.result else " ❌ Failed"
         return {
-            "Average CPU usage": f"{self.cpu_usage:.2f}" + "%" + res,
-            "Average Memory usage": f"{self.mem_usage:.2f}" + "%" + res,
-            # "overall": "✅ Passed" if self.result else "❌ Failed"
+            "Average CPU usage":    f"{self.cpu_usage:.2f}" + "%" + res,
+            "Average Memory usage": f"{self.mem_usage:.2f}" + "%" + res
         }
 

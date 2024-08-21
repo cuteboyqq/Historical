@@ -1,9 +1,14 @@
 
 class VersionChecker:
     def __init__(self, remote_ssh, config):
+        """Initialize the version checker
 
+        Args:
+            remote_ssh (RemoteSSH): The remote SSH object
+            config (Config): The configuration object
+        """
         # Connection to the remote host
-        self.remote_host = remote_ssh
+        self.remoteSSH = remote_ssh
 
         # Get the versions
         self.firmware_version = None
@@ -19,33 +24,18 @@ class VersionChecker:
         # Result
         self.result = False
 
-    def _get_versions(self):
-        """
-        Get the versions of the remote host.
-
-        Returns:
-            versions_dict (dict): The versions of the remote host.
-        """
-        versions_dict = {
-            "firmware_version": self.firmware_version,
-            "mcu_version": self.mcu_version,
-            "adas_version": self.adas_version
-        }
-        return versions_dict
-
     def _parse_remote_versions(self):
-        """
-        Parse the versions of the remote host.
+        """Parse the versions of the remote host.
         """
         command = "cat /etc/WNC_VERSION"
-        versions_str = self.remote_host.execute_command(command)
+        versions_str = self.remoteSSH.execute_command(command)
         self.firmware_version = self._get_firmware_version(versions_str)
         self.mcu_version = self._get_mcu_version(versions_str)
         self.adas_version = self._get_adas_version(versions_str)
 
     def _get_firmware_version(self, versions_str):
-        """
-        Get the firmware version of the remote host.
+        """Get the firmware version of the remote host.
+
         Args:
             versions_str (str): The versions string.
         Returns:
@@ -60,8 +50,8 @@ class VersionChecker:
         return firmware_version
 
     def _get_mcu_version(self, versions_str):
-        """
-        Get the mcu version of the remote host.
+        """Get the MCU version of the remote host.
+
         Args:
             versions_str (str): The versions string.
         Returns:
@@ -76,12 +66,12 @@ class VersionChecker:
         return mcu_version
 
     def _get_adas_version(self, versions_str):
-        """
-        Get the adas version of the remote host.
+        """Get the ADAS version of the remote host.
+
         Args:
             versions_str (str): The versions string.
         Returns:
-            adas_version (str): The adas version.
+            adas_version (str): The ADAS version.
         """
         adas_version = None
         for line in versions_str.split("\n"):
@@ -91,15 +81,28 @@ class VersionChecker:
 
         return adas_version
 
-    def check_versions(self):
+    def _get_versions(self):
+        """Get the versions of the remote host.
+
+        Returns:
+            versions_dict (dict): The versions of the remote host.
         """
-        Check the versions of the remote host.
+        versions_dict = {
+            "firmware_version": self.firmware_version,
+            "mcu_version":      self.mcu_version,
+            "adas_version":     self.adas_version
+        }
+        return versions_dict
+
+    def check_versions(self):
+        """Check the versions of the remote host.
+
         Returns:
             True if the versions are correct, False otherwise.
         """
         is_version_ok = True
 
-        # Get the versions
+        # Step0. Get the versions
         versions_dict = self._get_versions()
 
         # Step1. Check firmware version
@@ -132,9 +135,8 @@ class VersionChecker:
         res = "\t ✅ Passed" if self.result else "\t ❌ Failed"
         results = {
             "Firmware Version": self.firmware_version + res,
-            "MCU Version": self.mcu_version + res,
-            "ADAS Version": self.adas_version + res,
-            # "overall": "✅ Passed" if self.result else "❌ Failed"
+            "MCU Version":      self.mcu_version + res,
+            "ADAS Version":     self.adas_version + res
         }
         return results
 

@@ -25,22 +25,27 @@ class Plotter(BaseDataset):
 
     def display_init_params(self):
         ascii_art = """
-         ____  _       _     _              _   _                 
-        |  _ \| |     | |   | |            | | (_)                
-        | |_) | |_   _| |__ | |__  _ __ ___| |_ _  ___  _ __  ___ 
-        |  _ <| | | | | '_ \| '_ \| '__/ _ \ __| |/ _ \| '_ \/ __|
-        | |_) | | |_| | |_) | | | | | |  __/ |_| | (_) | | | \__ \\
-        |____/|_|\__,_|_.__/|_| |_|_|  \___|\__|_|\___/|_| |_|___/
+                ____  _       _   _                   
+        |  _ \| |_   _| | | |_ __  _   _  ___  
+        | |_) | | | | | | | | '_ \| | | |/ _ \ 
+        |  __/| | |_| | |_| | | | | |_| | (_) |
+        |_|   |_|\__,_|\___/|_| |_|\__, |\___/ 
+                                |___/       
+
         """
         print(ascii_art)
-        
-        print("📂 Initialized Parameters:")
-        print(f"  📄 JSON Log Path:         {self.json_log_path}")
-        print(f"  📁 Evaluation Save Dir:   {self.eval_save_jsonlog_dir}")
-        print(f"  💾 Save Plot:             {self.save_plot}")
-        print(f"  📂 Save Plot Directory:   {self.save_plot_dir}")
-        print(f"  🔍 Type:                  {self.type if self.type else 'Not Set'}")
-        print("\n")
+        logging.info("🎯 Plotter Class Information 🎯")
+        logging.info(f"📦 Class Name: {self.__class__.__name__}")
+        logging.info(f"📝 Documentation: {self.__class__.__doc__}")
+        logging.info(f"🔧 Module: {self.__module__}")
+        logging.info(f"💡 Base Class: {self.__class__.__bases__}")
+        logging.info("📂 Initialized Parameters:")
+        logging.info(f"  📄 JSON Log Path:         {self.json_log_path}")
+        logging.info(f"  📁 Evaluation Save Dir:   {self.eval_save_jsonlog_dir}")
+        logging.info(f"  💾 Save Plot:             {self.save_plot}")
+        logging.info(f"  📂 Save Plot Directory:   {self.save_plot_dir}")
+        logging.info(f"  🔍 Type:                  {self.type if self.type else 'Not Set'}")
+        logging.info("\n")
 
     def parse_GT_dist(self,GT_dist=None):
         if len(GT_dist.split("m"))== 2:

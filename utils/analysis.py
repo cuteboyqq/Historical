@@ -42,7 +42,7 @@ class Analysis(BaseDataset):
         self.GT_label_list = []
         self.scenary_label_list = ["0","1","2"]
 
-        self.set_frameids_distance_list()
+        # self.set_frameids_distance_list()
         # self.set_static_GT_dist_list(GT_dist_value=30)
         self.display_parameters()
 
@@ -147,10 +147,10 @@ class Analysis(BaseDataset):
             
             logging.info(f"---------------------------------------------------------------------------------------")
             logging.info(f"   📏 Static GT_label: {GT_label}m")
-            logging.info( "                          " + "    ".join(f"{header:<10}" for header in headers))
-            logging.info(f"   📊 Predict Distance:   " + "    ".join(f"{round(value,4):<10}" for value in avg_dist_row))
-            logging.info(f"   ⚖️ Avg Error Distance:  " + "    ".join(f"{round(value,4):<10}" for value in avg_error_dist_row))
-            logging.info(f"   🚀 Static Performance: " + "    ".join(f"{round(value,4):<10}" for value in static_performance_row))
+            logging.info( "                              " + "    ".join(f"{header:<10}" for header in headers))
+            logging.info(f"   📊 Avg Predict Distance:   " + "    ".join(f"{round(value,4):<10}" for value in avg_dist_row))
+            logging.info(f"   ⚖️ Avg Error Distance:      " + "    ".join(f"{round(value,4):<10}" for value in avg_error_dist_row))
+            logging.info(f"   🚀 Static Performance:     " + "    ".join(f"{round(value,4):<10}" for value in static_performance_row))
 
         # Call the function with the desired file path
         self.save_summary_to_txt('static_performance_report.txt')
@@ -173,10 +173,10 @@ class Analysis(BaseDataset):
                 
                 file.write(f"---------------------------------------------------------------------------------------\n")
                 file.write(f"   📏 Static GT_label: {GT_label}m\n")
-                file.write("                          " + "    ".join(f"{header:<10}" for header in headers) + "\n")
-                file.write(f"   📊 Predict Distance:   " + "    ".join(f"{round(value,4) if value != 'N/A' else 'N/A':<10}" for value in avg_dist_row) + "\n")
-                file.write(f"   ⚖️ Avg Error Distance:  " + "    ".join(f"{round(value,4) if value != 'N/A' else 'N/A':<10}" for value in avg_error_dist_row) + "\n")
-                file.write(f"   🚀 Static Performance: " + "    ".join(f"{round(value,4) if value != 'N/A' else 'N/A':<10}" for value in static_performance_row) + "\n")
+                file.write("                                " + "    ".join(f"{header:<10}" for header in headers) + "\n")
+                file.write(f"   📊 Avg. Predict Distance:   " + "    ".join(f"{round(value,4) if value != 'N/A' else 'N/A':<10}" for value in avg_dist_row) + "\n")
+                file.write(f"   ⚖️ Avg. Error Distance:      " + "    ".join(f"{round(value,4) if value != 'N/A' else 'N/A':<10}" for value in avg_error_dist_row) + "\n")
+                file.write(f"   🚀 Static Performance:      " + "    ".join(f"{round(value,4) if value != 'N/A' else 'N/A':<10}" for value in static_performance_row) + "\n")
 
     
     def save_summary_to_csv(self, file_path):

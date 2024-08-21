@@ -60,8 +60,7 @@ class Historical(BaseDataset):
             f"mv {self.csv_file} {self.current_dir}/assets/csv_file"
         )
         
-        self.display_parameters()
-
+        # self.display_parameters()
         self.Plotter = Plotter(args)
         self.Drawer = Drawer(args)
         self.Evaluation = Evaluation(args)
@@ -69,7 +68,44 @@ class Historical(BaseDataset):
         self.analysis_run = args.analysis_run
         if self.analysis_run:
             self.Analysis = Analysis(args)
-    
+
+        # Evaluation settings
+        self.eval_camera_raw_im_dir = args.eval_camera_rawimage_dir
+
+        self.tar_golden_dataset_and_put_to_TFTP_folder_local_commands = (
+            f"cd {self.Evaluation.evaluationdata_dir} && "
+            f"cd .. && "
+            f"tar cvf {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar {os.path.basename(self.Evaluation.evaluationdata_dir)} && "
+            f"sudo chmod 777 {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar && "
+            f"mv {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar {self.tftpserver_dir}"
+        )
+
+        # self.transfer_golden_dataset_to_LI80_camera_remote_commands = (
+        #     f"cd {self.camera_rawimages_dir} && "
+        #     f"tftp -gr {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar {self.tftp_ip} && "
+        #     f"tar -xvf {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar && "
+        #     f"chmod 777 -R {os.path.basename(self.Evaluation.evaluationdata_dir)} && "
+        #     f"rm {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar"
+        # )
+        self.transfer_golden_dataset_to_LI80_camera_remote_commands = (
+            f"cd {self.camera_rawimages_dir} && "
+            f"tftp -gr {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar {self.tftp_ip} && "
+            f"tar -xv --checkpoint=1 --checkpoint-action=dot -f {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar && "
+            f"chmod 777 -R {os.path.basename(self.Evaluation.evaluationdata_dir)} && "
+            f"rm {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar"
+        )
+
+        # self.transfer_golden_dataset_to_LI80_camera_remote_commands = (
+        # f"cd {self.camera_rawimages_dir} && "
+        # f"stdbuf -oL tftp -gr {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar {self.tftp_ip} && "
+        # f"tar -xvf {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar && "
+        # f"chmod 777 -R {os.path.basename(self.Evaluation.evaluationdata_dir)} && "
+        # f"rm {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar"
+        # )
+
+
+        super().display_parameters()
+
     def visualize(self, mode=None, 
                   jsonlog_from=None, 
                   plot_distance=False, 
@@ -111,7 +147,8 @@ class Historical(BaseDataset):
 
         elif mode=="eval" or mode=="evaluation":
             logging.info("Running evaluation mode")
-            self.Evaluation.run_golden_dataset()
+            self.auto_evaluate_golden_dataset()
+            # self.Evaluation.run_golden_dataset()
         
         if extract_video_to_frames:
             self.video_extract_frame(extract_video_to_frames, crop)
@@ -129,6 +166,31 @@ class Historical(BaseDataset):
             # avg_err = self.Analysis.calc_avg_error_dist()
             # avg_performance = self.Analysis.calc_static_performance()
            
+
+    def auto_evaluate_golden_dataset(self):
+        DEVICE_HAVE_IMAGES = self.Evaluation.check_directory_exists(self.eval_camera_raw_im_dir)
+        golden_dataset_folder_name = os.path.basename(self.eval_camera_raw_im_dir)
+        logging.info(f"📷 DEVICE_HAVE_IMAGES: {DEVICE_HAVE_IMAGES}")
+
+        if not DEVICE_HAVE_IMAGES:
+            tar_path = f'{self.tftpserver_dir}{os.sep}{golden_dataset_folder_name}.tar'
+            
+            if not os.path.exists(tar_path):
+                logging.info(f"❌ Tar file {golden_dataset_folder_name}.tar does not exist in local TFTP folder.")
+                logging.info("📦 Tar the Golden Dataset and put it in the local TFTP folder...")
+                logging.info(f"🚀 Start executing local command: {self.tar_golden_dataset_and_put_to_TFTP_folder_local_commands}")
+                self.Connect.execute_local_command(self.tar_golden_dataset_and_put_to_TFTP_folder_local_commands)
+            
+            logging.info(f"✅ Tar file {golden_dataset_folder_name}.tar exists in TFTP folder, moving to device {self.camera_rawimages_dir}")
+            logging.info(f"🌐 Start executing remote command: {self.transfer_golden_dataset_to_LI80_camera_remote_commands}")
+        
+            self.Connect.execute_remote_command_with_progress(self.transfer_golden_dataset_to_LI80_camera_remote_commands,st=20)
+           
+
+        self.Evaluation.run_golden_dataset()
+
+
+
 
     def visualize_online(self):
         """

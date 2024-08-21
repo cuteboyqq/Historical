@@ -1,15 +1,17 @@
 from datetime import datetime
-from utils.remote_ssh import RemoteSSH
+from utils.display import DisplayUtils
+from utils.connection_handler import ConnectionHandler
+from utils.adas_runner import AdasRunner
 from test_tools.version_checker import VersionChecker
 from test_tools.config_checker import ConfigChecker
 from test_tools.performance_checker import PerformanceChecker
 from test_tools.detection_checker import DetectionChecker
 from test_tools.resource_checker import RemoteResourceChecker
 
-__version__ = "0.0.1.alpha"
+__version__ = "0.0.1.beta"
 
 class TestRunner:
-    def __init__(self, config):
+    def __init__(self, connection, config):
         """
         Initialize the TestRunner object
         Args:
@@ -25,12 +27,14 @@ class TestRunner:
         # Initialize the configuration object
         self.config = config
 
+        # Initialize the message displaying object
+        self.display = DisplayUtils()
+
+        # Initialize the ADAS runner object
+        self.adas_runner = AdasRunner(connection, config)
+
         # Initialize the RemoteSSH object
-        self.remote_ssh = RemoteSSH(
-            hostname=config.host_name,
-            username=config.user_name,
-            password=config.password,
-            port=config.port)
+        self.remote_ssh = connection.remote_ssh
 
         # Initialize the checker objects
         self.version_checker        = None
@@ -46,17 +50,15 @@ class TestRunner:
         self.check_results          = {}
 
     def is_setup_success(self):
-        return self.is_setup            
+        return self.is_setup
 
     def setup(self):
+        """Setup the test runner
+
+        Returns:
+            bool: True if the setup is successful, False otherwise
+        """
         separator = "-" * 50
-        print("🚀 Starting device connection...")
-        print(separator)
-        print()
-
-        if not self.remote_ssh.connect():
-            return False
-
         print('\n')
         print("🚀 Starting checker initialization...")
         print(separator)
@@ -82,71 +84,55 @@ class TestRunner:
         Run the tests
         """
         separator = "-" * 50
-        
-        # print("🚀 Starting test execution...")
-        # print(separator)
-        # print()
+        print("🚀 Starting test execution...")
+        print(separator)
+        print()
 
-        # verifications = [
-        #     ("Version", self.version_checker.check_versions),
-        #     ("Configuration", self.config_checker.check_config),
-        #     ("Performance", self.performance_checker.check_performance),
-        #     ("Detection", self.detection_checker.check_detection),
-        #     ("Resource", self.resource_checker.check_resource)
-        # ]
+        # Stop ADAS
+        if not self.adas_runner.stop_adas():
+            self.display.show_status(self.role, "Failed to stop ADAS", False)
+            return False
 
-        # for i, (name, check_func) in enumerate(verifications, 1):
-        #     print(f"[ {i}. {name} Verification ]")
-        #     print(separator)
-        #     result = check_func()
-        #     status = "✅ Passed" if result else "❌ Failed"
-        #     if result:
-        #         print(f"✅ Verification ... \033[32mPassed\033[0m \n")
-        #     else:
-        #         print(f"❌ Verification ... \033[31mFailed\033[0m \n")    
+        # Modify remote config
+        if not self.adas_runner.modify_remote_config(enable_show_debug_profiling=True):
+            self.display.show_status(self.role, "Failed to modify remote config", False)
+            return False
 
-        #     # Store the check results
-        #     self.check_results[name] = {
-        #         "status": status,
-        #         "result": result
-        #     }
+        # Run remote ADAS script
+        if not self.adas_runner.run_adas():
+            self.display.show_status(self.role, "Failed to run remote ADAS script", False)
+            return False
 
-        # print("🏁 All tests completed")
+        verifications = [
+            ("Version", self.version_checker.check_versions),
+            ("Configuration", self.config_checker.check_config),
+            ("Performance", self.performance_checker.check_performance),
+            ("Detection", self.detection_checker.check_detection),
+            ("Resource", self.resource_checker.check_resource)
+        ]
 
-        try:
-            
-            print("🚀 Starting test execution...\n")
+        for i, (name, check_func) in enumerate(verifications, 1):
+            print(f"[ {i}. {name} Verification ]")
+            print(separator)
+            result = check_func()
+            status = "✅ Passed" if result else "❌ Failed"
+            if result:
+                print(f"✅ Verification ... \033[32mPassed\033[0m \n")
+            else:
+                print(f"❌ Verification ... \033[31mFailed\033[0m \n")
 
-            verifications = [
-                ("Version", self.version_checker.check_versions),
-                ("Configuration", self.config_checker.check_config),
-                ("Performance", self.performance_checker.check_performance),
-                ("Detection", self.detection_checker.check_detection),
-                ("Resource", self.resource_checker.check_resource)
-            ]
+            # Store the check results
+            self.check_results[name] = {
+                "status": status,
+                "result": result
+            }
 
-            for i, (name, check_func) in enumerate(verifications, 1):
-                print(f"{i}. {name} verification...")
-                print(separator)
-                result = check_func()
-                status = "✅ Passed" if result else "❌ Failed"
-                if result:
-                    print(f"✅ Verification ... \033[32mPassed\033[0m \n")
-                else:
-                    print(f"❌ Verification ... \033[31mFailed\033[0m \n")    
+        # Modify remote config
+        if not self.adas_runner.modify_remote_config(enable_show_debug_profiling=False):
+            self.display.show_status(self.role, "Failed to modify remote config", False)
+            return False
 
-                # Store the check results
-                self.check_results[name] = {
-                    "status": status,
-                    "result": result
-                }
-
-            print("🏁 All tests completed")
-
-        except Exception as e:
-            print(f"❗ An error occurred during testing: {str(e)}")
-        finally:
-            self.teardown()
+        print("🏁 All tests completed")
 
     def teardown(self):
         """
@@ -176,8 +162,8 @@ class TestRunner:
         report.append(head_separator)
         report.append(f"ADAS Test Runner v{__version__}")
         report.append(f"Test Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        report.append(f"Host: {self.config.host_name}")
-        report.append(f"User: {self.config.user_name}")
+        report.append(f"Host: {self.config.camera_host_name}")
+        report.append(f"User: {self.config.camera_user_name}")
         report.append(head_separator)
 
         # Version information
@@ -260,9 +246,21 @@ if __name__ == "__main__":
     # Initialize Args object with the loaded configuration
     config = Args(config_yaml)
 
-    runner = TestRunner(config)
-    if runner.is_setup_success():
+    # Initialize ConnectionHandler
+    connection_handler = ConnectionHandler(config)
+
+    # Check if the connection is setup successfully
+    if connection_handler.is_setup_success():
+
+        # Initialize TestRunner
+        runner = TestRunner(connection_handler, config)
+
+        # Run the tests
         runner.run_tests()
 
-    report = runner.gen_test_report()
-    print(report)
+        #
+        connection_handler.close_connection()
+
+        # Generate the test report
+        report = runner.gen_test_report()
+        print(report)

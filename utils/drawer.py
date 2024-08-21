@@ -71,7 +71,18 @@ class Drawer(BaseDataset):
             vanishline_objs = log_data["frame_ID"][frame_ID]["vanishLine"]
             ADAS_objs = log_data["frame_ID"][frame_ID]["ADAS"]
             lane_info = log_data["frame_ID"][frame_ID]["LaneInfo"]
-            detect_objs = log_data["frame_ID"][frame_ID]["detectObj"]["VEHICLE"]
+
+            detect_objs = None
+            if "detectObj" in log_data["frame_ID"][frame_ID]:
+                if "VEHICLE" in log_data["frame_ID"][frame_ID]["detectObj"]:
+                    detect_objs = log_data["frame_ID"][frame_ID]["detectObj"]["VEHICLE"]
+
+
+            detect_human_objs = None
+            if "detectObj" in log_data["frame_ID"][frame_ID]:
+                if "HUMAN" in log_data["frame_ID"][frame_ID]["detectObj"]:
+                    detect_human_objs = log_data["frame_ID"][frame_ID]["detectObj"]["HUMAN"]
+
 
             image_path = f"{self.im_dir}/{self.image_basename}{frame_ID}.{self.image_format}"
             # logging.info(image_path)
@@ -98,6 +109,17 @@ class Drawer(BaseDataset):
                     cv2.line(image, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
                     cv2.putText(image, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
             
+            if self.show_detectobjs and detect_human_objs:
+                for obj in detect_human_objs:
+                    x1, y1 = obj["detectObj.x1"], obj["detectObj.y1"]
+                    x2, y2 = obj["detectObj.x2"], obj["detectObj.y2"]
+                    confidence = obj["detectObj.confidence"]
+                    label = obj["detectObj.label"]
+                    
+                    cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 255), 1)
+                    if self.show_detectobjinfo:
+                        cv2.putText(image, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 0, 255), 1)
+                 
 
 
             if self.show_detectobjs and detect_objs:

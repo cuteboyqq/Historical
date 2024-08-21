@@ -2,8 +2,7 @@ import os
 
 class ConfigChecker:
     def __init__(self, remoteSSH, config):
-        """
-        Initializes a ConfigChecker instance.
+        """Initializes a ConfigChecker instance.
 
         Args:
             remoteSSH: RemoteSSH instance
@@ -15,10 +14,10 @@ class ConfigChecker:
 
         # Read the golden config file
         self.golden_config_path = config.test_adas_config_path
-        self.golden_config_dict = self.parse_config(is_from_remote=False)
+        self.golden_config_dict = self._parse_config(is_from_remote=False)
 
         # Read the remote config file
-        self.remote_config_dict = self.parse_config(is_from_remote=True)
+        self.remote_config_dict = self._parse_config(is_from_remote=True)
 
         # Ignore the config keys
         self.ignore_config_list = [
@@ -33,26 +32,23 @@ class ConfigChecker:
         self.is_enable_showtime_flags   = False
         self.result                     = False
 
-    def get_config_from_remote(self):
-        """
-        Gets the configuration file from the remote host.
+    def _get_config_from_remote(self):
+        """Gets the configuration file from the remote host.
         """
         command = f"cat /customer/adas/config/config.txt"
         return self.remoteSSH.execute_command(command)
 
-    def get_config_from_local(self):
-        """
-        Gets the configuration file from the local host.
+    def _get_config_from_local(self):
+        """Gets the configuration file from the local host.
         """
         if not os.path.exists(self.golden_config_path):
             raise FileNotFoundError(f"The golden config file {self.golden_config_path} does not exist.")
 
-        with open(self.golden_config_path, "r") as file:
+        with open(self.golden_config_path, "r", encoding="utf-8") as file:
             return file.read()
 
-    def parse_config(self, is_from_remote=True):
-        """
-        Parses the configuration file.
+    def _parse_config(self, is_from_remote=True):
+        """Parses the configuration file.
 
         Args:
             is_from_remote (bool, optional):
@@ -60,10 +56,9 @@ class ConfigChecker:
                 Defaults to True.
         """
         if is_from_remote:
-            config_str = self.get_config_from_remote()
+            config_str = self._get_config_from_remote()
         else:
-            config_str = self.get_config_from_local()
-            # print(f"local config str: {config_str}")
+            config_str = self._get_config_from_local()
 
         config_dict = {}
         for line in config_str.split("\n"):
@@ -79,9 +74,9 @@ class ConfigChecker:
 
         return config_dict
 
-    def is_remote_config_missing_key(self):
-        """
-        Checks if the remote configuration file is missing any keys.
+    def _is_remote_config_missing_key(self):
+        """Checks if the remote configuration file is missing any keys.
+
         Returns:
             bool: True if the configuration file is valid, False otherwise.
         """
@@ -93,7 +88,12 @@ class ConfigChecker:
 
         return no_missing_key
 
-    def is_remote_config_different_values(self):
+    def _is_remote_config_different_values(self):
+        """Checks if the remote configuration file has different values.
+
+        Returns:
+            bool: True if the configuration file is valid, False otherwise.
+        """
         no_diff_value = True
         for key, value in self.golden_config_dict.items():
             if key in self.ignore_config_list:
@@ -104,12 +104,11 @@ class ConfigChecker:
 
         return no_diff_value
 
-    def is_remote_config_enable_debug_flags(self):
-        """
-        Checks if the remote configuration file is disabled debug mode.
+    def _is_remote_config_enable_debug_flags(self):
+        """Checks if the remote configuration file is disabled debug mode.
 
         Returns:
-            _type_: _description_
+            bool: True if the configuration file is valid, False otherwise.
         """
         is_debug_enable = False
         for key, value in self.remote_config_dict.items():
@@ -121,12 +120,11 @@ class ConfigChecker:
 
         return is_debug_enable
 
-    def is_remote_config_enable_display_flags(self):
-        """
-        Checks if the remote configuration file is disabled debug mode.
+    def _is_remote_config_enable_display_flags(self):
+        """Checks if the remote configuration file is disabled debug mode.
 
         Returns:
-            _type_: _description_
+            bool: True if the configuration file is valid, False otherwise.
         """
         is_display_enable = False
         for key, value in self.remote_config_dict.items():
@@ -138,12 +136,11 @@ class ConfigChecker:
 
         return is_display_enable
 
-    def is_remote_config_enable_showtime_flags(self):
-        """
-        Checks if the remote configuration file is disabled debug mode.
+    def _is_remote_config_enable_showtime_flags(self):
+        """Checks if the remote configuration file is disabled debug mode.
 
         Returns:
-            _type_: _description_
+            bool: True if the configuration file is valid, False otherwise.
         """
         is_show_enable = False
         for key, value in self.remote_config_dict.items():
@@ -158,38 +155,34 @@ class ConfigChecker:
     def check_config(self):
         """
         Checks the configuration file on the remote host against the golden configuration file.
+
         Returns:
             bool: True if the configuration file is valid, False otherwise.
         """
         is_config_valid = True
 
         # Step1. Check if the remote config is missing any keys
-        if not self.is_remote_config_missing_key():
-            print(f"❌ Remote config is missing key")
+        if not self._is_remote_config_missing_key():
             self.is_missing_key = True
             is_config_valid = False
 
         # Step2. Check if the remote config has different values
-        if not self.is_remote_config_different_values():
-            print(f"❌ Remote config has different values")
+        if not self._is_remote_config_different_values():
             self.is_different_values = True
             is_config_valid = False
 
         # Step3. Check if the remote config is disabled debug mode
-        if self.is_remote_config_enable_debug_flags():
-            # print(f"❌ Remote config enabled some debug flags")
+        if self._is_remote_config_enable_debug_flags():
             self.is_enable_debug_flags = True
             is_config_valid = False
 
         # Step4. Check if the remote config is disabled debug mode
-        if self.is_remote_config_enable_display_flags():
-            # print(f"❌ Remote config enabled some display flags")
+        if self._is_remote_config_enable_display_flags():
             self.is_enable_display_flags = True
             is_config_valid = False
 
         # Step5. Check if the remote config is disabled debug mode
-        if self.is_remote_config_enable_showtime_flags():
-            # print(f"❌ Remote config enabled some show processing time flags")
+        if self._is_remote_config_enable_showtime_flags():
             self.is_enable_showtime_flags = True
             is_config_valid = False
 
@@ -203,12 +196,11 @@ class ConfigChecker:
             dict: The config test results
         """
         results = {
-            "Missing Key": "✅ Passed" if not self.is_missing_key else "❌ Failed",
-            "Different Parameters": "✅ Passed" if not self.is_different_values else "❌ Failed",
-            "Disable All Debug Flags": "✅ Passed" if not self.is_enable_debug_flags else "❌ Failed",
-            "Disable All Display Flags": "✅ Passed" if not self.is_enable_display_flags else "❌ Failed",
+            "Missing Key":                  "✅ Passed" if not self.is_missing_key else "❌ Failed",
+            "Different Parameters":         "✅ Passed" if not self.is_different_values else "❌ Failed",
+            "Disable All Debug Flags":      "✅ Passed" if not self.is_enable_debug_flags else "❌ Failed",
+            "Disable All Display Flags":    "✅ Passed" if not self.is_enable_display_flags else "❌ Failed",
             "Disable All Show Processing Time Flags": "✅ Passed" if not self.is_enable_showtime_flags else "❌ Failed",
-            # "overall": "✅ Passed" if self.result else "❌ Failed"
         }
         return results
 
