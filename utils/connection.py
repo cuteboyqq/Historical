@@ -386,7 +386,7 @@ class Connection(BaseDataset):
             # Sleep for a short interval before checking again
             time.sleep(10)
 
-    def execute_remote_command_with_progress(self, command):
+    def execute_remote_command_with_progress(self, command, st=0.5):
         """
         Execute a remote command via SSH and monitor its progress.
 
@@ -398,37 +398,90 @@ class Connection(BaseDataset):
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            logging.info(f'hostname:{self.camera_host_name}')
-            logging.info(f'port:{self.camera_port}')
-            logging.info(f'username:{self.camera_user_name}')
-            logging.info(f'password:{self.camera_password}')
+            logging.info(f'🖥️ hostname: {self.camera_host_name}')
+            logging.info(f'🔌 port: {self.camera_port}')
+            logging.info(f'👤 username: {self.camera_user_name}')
+            logging.info(f'🔑 password: {self.camera_password}')
             ssh.connect(self.camera_host_name, self.camera_port, self.camera_user_name, self.camera_password)
-            print(f"Connected to {self.camera_host_name}")
+            print(f"✅ Connected to {self.camera_host_name}")
 
             # Execute the command
             stdin, stdout, stderr = ssh.exec_command(command)
 
             # Initialize progress bar
-            with tqdm(total=100, desc="Processing", unit="%", dynamic_ncols=True) as pbar:
+            progress = 0
+            with tqdm(total=100, desc="🚀 Processing", unit="%", dynamic_ncols=True) as pbar:
                 while not stdout.channel.exit_status_ready():
-                    line = stdout.readline().strip()
-                    if line:
-                        pbar.set_description(f"Progress: {line}")
+                    if progress < 90:  # Increment progress up to 90%
+                        progress += 1
                         pbar.update(1)
-                    time.sleep(1) 
-              
-                final_output = stdout.read().strip()
-                final_errors = stderr.read().strip()
-                logging.info(f"Final Output: {final_output}")
-                logging.error(f"Final Errors: {final_errors}")
+                    time.sleep(st)  # Adjust sleep to simulate progress timing
+                
+                # Ensure the progress bar reaches 100% when the command completes
+                while progress < 100:
+                    pbar.update(1)
+                    progress += 1
+                    time.sleep(0.1)  # Faster updates for the final stretch
+
+                # Catch any remaining output
+                final_output = stdout.read().decode().strip()
+                final_errors = stderr.read().decode().strip()
+                logging.info(f"📄 Final Output: {final_output}")
+                if final_errors:
+                    logging.error(f"⚠️ Final Errors: {final_errors}")
 
             ssh.close()
         except paramiko.ssh_exception.AuthenticationException as auth_err:
-            logging.error(f"Authentication failed: {auth_err}")
+            logging.error(f"❌ Authentication failed: {auth_err}")
         except paramiko.ssh_exception.SSHException as ssh_err:
-            logging.error(f"SSH error: {ssh_err}")
+            logging.error(f"❌ SSH error: {ssh_err}")
         except Exception as e:
-            logging.error(f"An error occurred: {e}")
+            logging.error(f"❌ An error occurred: {e}")
+
+
+    # def execute_remote_command_with_progress(self, command):
+    #     """
+    #     Execute a remote command via SSH and monitor its progress.
+
+    #     Args:
+    #         command (str): The command to be executed on the remote server.
+
+    #     This method provides real-time progress feedback and logs output and errors.
+    #     """
+    #     try:
+    #         ssh = paramiko.SSHClient()
+    #         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    #         logging.info(f'hostname:{self.camera_host_name}')
+    #         logging.info(f'port:{self.camera_port}')
+    #         logging.info(f'username:{self.camera_user_name}')
+    #         logging.info(f'password:{self.camera_password}')
+    #         ssh.connect(self.camera_host_name, self.camera_port, self.camera_user_name, self.camera_password)
+    #         print(f"Connected to {self.camera_host_name}")
+
+    #         # Execute the command
+    #         stdin, stdout, stderr = ssh.exec_command(command)
+
+    #         # Initialize progress bar
+    #         with tqdm(total=100, desc="Processing", unit="%", dynamic_ncols=True) as pbar:
+    #             while not stdout.channel.exit_status_ready():
+    #                 line = stdout.readline().strip()
+    #                 if line:
+    #                     pbar.set_description(f"Progress: {line}")
+    #                     pbar.update(1)
+    #                 time.sleep(1) 
+              
+    #             final_output = stdout.read().strip()
+    #             final_errors = stderr.read().strip()
+    #             logging.info(f"Final Output: {final_output}")
+    #             logging.error(f"Final Errors: {final_errors}")
+
+    #         ssh.close()
+    #     except paramiko.ssh_exception.AuthenticationException as auth_err:
+    #         logging.error(f"Authentication failed: {auth_err}")
+    #     except paramiko.ssh_exception.SSHException as ssh_err:
+    #         logging.error(f"SSH error: {ssh_err}")
+    #     except Exception as e:
+    #         logging.error(f"An error occurred: {e}")
 
 
     def execute_remote_command_async(self, command):

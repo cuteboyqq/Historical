@@ -7,7 +7,7 @@ MODEL:
 
 # Mode configuration
 MODE:
-  VISUALIZE_HISTORICAL_MODE: online  # Mode of run visualize historical mode (online / offline / semi-online / eval / analysis/ None)
+  VISUALIZE_HISTORICAL_MODE:  online  # Mode of run visualize historical mode (online / offline / semi-online / eval / analysis/ None)
 
 # Visualize configuration
 VISUALIZE:
@@ -30,10 +30,10 @@ CAMERA:
 
 # Server configuration
 SERVER:
-  PORT: 3530  # Port number for the local server
+  PORT: 3550  # Port number for the local server
   TFTP_DIR: '/home/ali/Public/tftp'  # Directory on the server for TFTP file transfers
-  TFTP_IP: '192.168.1.11'  # IP address of the TFTP server
-  IP: '192.168.1.11'  # IP address of the TFTP server
+  TFTP_IP: '192.168.1.12'  # IP address of the TFTP server
+  IP: '192.168.1.12'  # IP address of the TFTP server
 
 # Local configuration
 LOCAL:
@@ -77,7 +77,7 @@ LANE_LINE:
 RESIZE:
   ENABLED: false  # Flag to enable or disable image resizing
   WIDTH:  1600 # Width of the resized images
-  HEIGHT: 900  # Height of the resized images
+  HEIGHT:  900 # Height of the resized images
 
 # Wait settings
 WAIT:
@@ -125,11 +125,11 @@ EVALUATION:
     STATIC: 50  # Duration (in seconds) to run evaluation for static cases.
     DYNAMIC: 20  # Duration (in seconds) to run evaluation for dynamic cases.
   CAMERA:
-    DATASET_DIR: '/mnt/mmc/adas/debug/raw_images/Golden_Data_20240805-2'  # Directory on the device where raw images for evaluation are stored.
+    DATASET_DIR: '/mnt/mmc/adas/debug/raw_images/Golden_Data_20240805-3'  # Directory on the device where raw images for evaluation are stored.
     SCRIPT_PATH: '/customer/Run_Historical-Mode.sh'  # Path to the script that initiates the historical mode evaluation process.
     CSV_FILE_PATH: '/logging/video-adas/180-xxxxxxxx'
   LOCAL:
-    DATASET_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/images/Golden_Data_20240805-2'  # Local directory containing the dataset images for evaluation.
+    DATASET_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/images/Golden_Data_20240805-3'  # Local directory containing the dataset images for evaluation.
     JSONLOG_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/csv_file/Golden_Data_20240805'
 
 
@@ -145,3 +145,10 @@ REMOTE:
   REMOTE_ADAS_CONFIG_PATH: '/customer/adas/config/config.txt'
   BACKUP_ADAS_CONFIG_PATH: '/customer/adas/config/config_backup.txt'
   ADAS_RUN_DURATION: 10 # Duration of the ADAS run in seconds
+
+VARIFY:
+  CAMERA:
+    CONFIG_PATH: ''
+    RUN_HISTORICAL_TIME: 60
+  LOCAL:
+    SAVE_JSONLOG_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/csv_file/varify'

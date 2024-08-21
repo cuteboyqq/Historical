@@ -132,6 +132,14 @@ class Args:
         self.test_cpu_threshold = config['TEST']['THRESHOLD']['CPU_USAGE']
         self.test_mem_threshold = config['TEST']['THRESHOLD']['MEMORY_USAGE']
 
+
+        # Varify settings
+        self.varify_camera_config_file_path = config['VARIFY']['CAMERA']['CONFIG_PATH']
+        self.varify_run_historical_time = config['VARIFY']['CAMERA']['RUN_HISTORICAL_TIME']
+        self.varify_save_jsonlog_dir = config['VARIFY']['LOCAL']['SAVE_JSONLOG_DIR']
+
+
+
         # Check if the operating system is Windows
         if os.name == 'nt':  # 'nt' is the name for Windows systems
             self.csv_file = os.path.normpath(self.csv_file).strip('"')
