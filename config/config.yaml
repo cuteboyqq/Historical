@@ -7,7 +7,7 @@ MODEL:
 
 # Mode configuration
 MODE:
-  VISUALIZE_HISTORICAL_MODE:  online  # Mode of run visualize historical mode (online / offline / semi-online / eval / analysis/ None)
+  VISUALIZE_MODE:  varify  # Mode of run visualize mode (online / offline / semi-online / eval / analysis/ varify / None)
 
 # Visualize configuration
 VISUALIZE:
@@ -30,7 +30,7 @@ CAMERA:
 
 # Server configuration
 SERVER:
-  PORT: 3550  # Port number for the local server
+  PORT: 3570  # Port number for the local server
   TFTP_DIR: '/home/ali/Public/tftp'  # Directory on the server for TFTP file transfers
   TFTP_IP: '192.168.1.12'  # IP address of the TFTP server
   IP: '192.168.1.12'  # IP address of the TFTP server
@@ -99,7 +99,7 @@ SAVE:
   AI_RESULT_IMAGE: false  # Flag to save AI result images
   RAW_VIDEO: false  # Flag to save raw video
   VIDEO_FPS: 7 # FPS of the saved video
-  JSON_LOG: false  # Flag to save JSON log
+  JSON_LOG: true  # Flag to save JSON log
   EXTRACT_FRAME: false # Flag to save frames extracted from the video stream
 
 # Test settings
@@ -148,7 +148,7 @@ REMOTE:
 
 VARIFY:
   CAMERA:
-    CONFIG_PATH: ''
-    RUN_HISTORICAL_TIME: 60
+    CONFIG_PATH: '/customer/adas/config/config.txt'
+    RUN_HISTORICAL_DURATION: 120
   LOCAL:
     SAVE_JSONLOG_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/csv_file/varify'
