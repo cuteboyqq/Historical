@@ -15,12 +15,7 @@
 
 using json = nlohmann::json;
 
-JSON_LOG::JSON_LOG(std::string file, ADAS_Config_S* _config)
-    : m_jsonFilePath(file),
-      m_modelWidth(_config->modelWidth),
-      m_modelHeight(_config->modelHeight),
-      m_frameWidth(_config->frameWidth),
-      m_frameHeight(_config->frameHeight)
+JSON_LOG::JSON_LOG(std::string file, ADAS_Config_S* _config) : m_jsonFilePath(file)
 {
 #ifdef SPDLOG_USE_SYSLOG
     auto logger = spdlog::syslog_logger_mt("adas-output", "adas-output", LOG_CONS | LOG_NDELAY, LOG_SYSLOG);
@@ -30,15 +25,16 @@ JSON_LOG::JSON_LOG(std::string file, ADAS_Config_S* _config)
 #endif
 
     logger->set_level(_config->stDebugConfig.enableJson ? spdlog::level::debug : spdlog::level::info);
+    m_bDebugProfiling = _config->stDebugProfiling;
 }
 
 JSON_LOG::~JSON_LOG()
 {
 }
 
-std::string JSON_LOG::logInfo(WNC_ADAS_Results adasResult, std::vector<BoundingBox> m_humanBBoxList,
-                              std::vector<BoundingBox> m_vehicleBBoxList, std::vector<BoundingBox> m_roadSignBBoxList,
-                              Object& m_tailingObject, int m_frameIdx)
+std::string JSON_LOG::logInfo(WNC_ADAS_Results& adasResult, std::vector<BoundingBox>& humanBBoxList,
+                              std::vector<BoundingBox>& vehicleBBoxList, std::vector<BoundingBox>& roadSignBBoxList,
+                              Object& tailingObject, int frameIdx, float inferenceTime, int bufferSize)
 {
     auto logger = spdlog::get(
 #ifdef SPDLOG_USE_SYSLOG
@@ -70,74 +66,88 @@ std::string JSON_LOG::logInfo(WNC_ADAS_Results adasResult, std::vector<BoundingB
     if (m_bSaveFCWLog)
         adasStr["FCW"] = (adasResult.eventType == ADAS_EVENT_FCW || adasResult.eventType == ADAS_EVENT_LDW_FCW);
 
-    jsonData["frame_ID"][std::to_string(m_frameIdx)]["ADAS"].push_back(adasStr);
-    jsonDataCurrentFrame["frame_ID"][std::to_string(m_frameIdx)]["ADAS"].push_back(adasStr);
+    jsonData["frame_ID"][std::to_string(frameIdx)]["ADAS"].push_back(adasStr);
+    jsonDataCurrentFrame["frame_ID"][std::to_string(frameIdx)]["ADAS"].push_back(adasStr);
 
     // Create an "Vanisjline" array for each frame
     if (m_bSaveVanishLine)
     {
-        json vanishline = {{"vanishlineY", adasResult.yVanish}};
-        jsonData["frame_ID"][std::to_string(m_frameIdx)]["vanishLineY"].push_back(vanishline);
-        jsonDataCurrentFrame["frame_ID"][std::to_string(m_frameIdx)]["vanishLineY"].push_back(vanishline);
+        json vanishline = {{"vanishLineY", adasResult.yVanish}};
+        jsonData["frame_ID"][std::to_string(frameIdx)]["vanishLine"].push_back(vanishline);
+        jsonDataCurrentFrame["frame_ID"][std::to_string(frameIdx)]["vanishLine"].push_back(vanishline);
     }
 
     if (m_bSaveLaneInfo)
     {
-        for (auto& box : m_vehicleBBoxList)
-        {
-            BoundingBox rescaleBox;
-            utils::rescaleBBox(box, rescaleBox, m_modelWidth, m_modelHeight, m_frameWidth, m_frameHeight);
-            json det = {{"detectObj.x1", rescaleBox.x1}, {"detectObj.y1", rescaleBox.y1},
-                        {"detectObj.x2", rescaleBox.x2}, {"detectObj.y2", rescaleBox.y2},
-                        {"detectObj.label", "VEHICLE"},  {"detectObj.confidence", rescaleBox.confidence}};
-            jsonData["frame_ID"][std::to_string(m_frameIdx)]["detectObj"]["VEHICLE"].push_back(det);
-            jsonDataCurrentFrame["frame_ID"][std::to_string(m_frameIdx)]["detectObj"]["VEHICLE"].push_back(det);
-        }
+        json laneArray;
+        // Add lane info
+        json obj;
+        obj["pLeftFar.x"]      = adasResult.pLeftFar.x;
+        obj["pLeftFar.y"]      = adasResult.pLeftFar.y;
+        obj["pLeftCarhood.x"]  = adasResult.pLeftCarhood.x;
+        obj["pLeftCarhood.y"]  = adasResult.pLeftCarhood.y;
+        obj["pRightFar.x"]     = adasResult.pRightFar.x;
+        obj["pRightFar.y"]     = adasResult.pRightFar.y;
+        obj["pRightCarhood.x"] = adasResult.pRightCarhood.x;
+        obj["pRightCarhood.y"] = adasResult.pRightCarhood.y;
+        obj["isDetectLine"]    = adasResult.isDetectLine;
+        // Add the object to the "Obj" array
+        laneArray.push_back(obj);
+
+        // Add the "Obj" array to the frame
+        jsonData["frame_ID"][std::to_string(frameIdx)]["LaneInfo"]             = laneArray;
+        jsonDataCurrentFrame["frame_ID"][std::to_string(frameIdx)]["LaneInfo"] = laneArray;
     }
 
     if (m_bSaveDetObjLog)
     {
         // VEHICLE
-        for (auto& box : m_vehicleBBoxList)
+        for (auto& box : vehicleBBoxList)
         {
             BoundingBox rescaleBox;
-            utils::rescaleBBox(box, rescaleBox, m_modelWidth, m_modelHeight, m_frameWidth, m_frameHeight);
+            utils::rescaleBBox(box, rescaleBox, MODEL_WIDTH, MODEL_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
             json det = {{"detectObj.x1", rescaleBox.x1}, {"detectObj.y1", rescaleBox.y1},
                         {"detectObj.x2", rescaleBox.x2}, {"detectObj.y2", rescaleBox.y2},
                         {"detectObj.label", "VEHICLE"},  {"detectObj.confidence", rescaleBox.confidence}};
-            jsonData["frame_ID"][std::to_string(m_frameIdx)]["detectObj"]["VEHICLE"].push_back(det);
-            jsonDataCurrentFrame["frame_ID"][std::to_string(m_frameIdx)]["detectObj"]["VEHICLE"].push_back(det);
+            jsonData["frame_ID"][std::to_string(frameIdx)]["detectObj"]["VEHICLE"].push_back(det);
+            jsonDataCurrentFrame["frame_ID"][std::to_string(frameIdx)]["detectObj"]["VEHICLE"].push_back(det);
         }
 
-        for (auto& box : m_humanBBoxList)
+        for (auto& box : humanBBoxList)
         {
             BoundingBox rescaleBox;
-            utils::rescaleBBox(box, rescaleBox, m_modelWidth, m_modelHeight, m_frameWidth, m_frameHeight);
+            utils::rescaleBBox(box, rescaleBox, MODEL_WIDTH, MODEL_HEIGHT, FRAME_WIDTH, FRAME_HEIGHT);
             json det = {{"detectObj.x1", rescaleBox.x1}, {"detectObj.y1", rescaleBox.y1},
                         {"detectObj.x2", rescaleBox.x2}, {"detectObj.y2", rescaleBox.y2},
                         {"detectObj.label", "HUMAN"},    {"detectObj.confidence", rescaleBox.confidence}};
-            jsonData["frame_ID"][std::to_string(m_frameIdx)]["detectObj"]["HUMAN"].push_back(det);
-            jsonDataCurrentFrame["frame_ID"][std::to_string(m_frameIdx)]["detectObj"]["HUMAN"].push_back(det);
+            jsonData["frame_ID"][std::to_string(frameIdx)]["detectObj"]["HUMAN"].push_back(det);
+            jsonDataCurrentFrame["frame_ID"][std::to_string(frameIdx)]["detectObj"]["HUMAN"].push_back(det);
         }
     }
 
     if (m_bSaveTrackObj)
     {
-        json track = {{"tailingObj.x1", m_tailingObject.bbox.x1},
-                      {"tailingObj.y1", m_tailingObject.bbox.y1},
-                      {"tailingObj.x2", m_tailingObject.bbox.x2},
-                      {"tailingObj.y2", m_tailingObject.bbox.y2},
-                      {"tailingObj.label", m_tailingObject.classStr},
-                      {"tailingObj.distanceToCamera", m_tailingObject.distanceToCamera},
-                      {"tailingObj.id", m_tailingObject.id}};
-        jsonData["frame_ID"][std::to_string(m_frameIdx)]["tailingObj"].push_back(track);
-        jsonDataCurrentFrame["frame_ID"][std::to_string(m_frameIdx)]["tailingObj"].push_back(track);
+        json track = {{"tailingObj.x1", tailingObject.bbox.x1},
+                      {"tailingObj.y1", tailingObject.bbox.y1},
+                      {"tailingObj.x2", tailingObject.bbox.x2},
+                      {"tailingObj.y2", tailingObject.bbox.y2},
+                      {"tailingObj.label", tailingObject.classStr},
+                      {"tailingObj.distanceToCamera", tailingObject.distanceToCamera},
+                      {"tailingObj.id", tailingObject.id}};
+        jsonData["frame_ID"][std::to_string(frameIdx)]["tailingObj"].push_back(track);
+        jsonDataCurrentFrame["frame_ID"][std::to_string(frameIdx)]["tailingObj"].push_back(track);
     }
-    std::string jsonCurrentFrameString;
+
+    if (m_bDebugProfiling)
+    {
+        json profile = {{"inferenceTime", inferenceTime}, {"bufferSize", bufferSize}};
+        jsonData["frame_ID"][std::to_string(frameIdx)]["debugProfile"].push_back(profile);
+        jsonDataCurrentFrame["frame_ID"][std::to_string(frameIdx)]["debugProfile"].push_back(profile);
+    }
+    std::string jsonCurrentFrameString = jsonDataCurrentFrame.dump();
     // Convert the JSON object to a string with indentation
     if (m_bShowJson)
     {
-        jsonCurrentFrameString = jsonDataCurrentFrame.dump();
 #ifndef SPDLOG_USE_SYSLOG
         logger->debug("====================================================================================");
 #endif
@@ -145,16 +155,38 @@ std::string JSON_LOG::logInfo(WNC_ADAS_Results adasResult, std::vector<BoundingB
 #ifndef SPDLOG_USE_SYSLOG
         logger->debug("====================================================================================");
 #endif
-        // if (m_sendJSONLog)
-        // {
-        //     send_json_log(jsonCurrentFrameString.c_str(), m_serverIP.c_str(), m_port);
-        // }
     }
-    std::string jsonString = jsonData.dump(4);
+
+    std::string jsonString = jsonDataCurrentFrame.dump(4);
     if (m_bSaveToJSONFile)
         _saveJsonLogFile(jsonString);
 
     return jsonCurrentFrameString;
+}
+
+void JSON_LOG::_saveJsonLogFile(std::string jsonString)
+{
+    auto logger = spdlog::get(
+#ifdef SPDLOG_USE_SYSLOG
+        "adas-output"
+#else
+        "JSON"
+#endif
+        );
+
+    // Write the updated JSON to the file
+    std::ofstream outFile(m_jsonFilePath, std::ios::app);
+    if (outFile)
+    {
+        // Add a newline before the new entry if the file is not empty
+        if (outFile.tellp() > 0)
+            outFile << std::endl;
+
+        outFile << jsonString; // Adjust the indentation as needed
+        logger->debug("Append new line to the file");
+    }
+    else
+        logger->error("Unable to open the file for writing");
 }
 
 // Alsiter add 2024-07-29
@@ -188,65 +220,4 @@ void JSON_LOG::send_json_log(const char* json_log, const char* server_ip, int se
 
     send(sock, message, strlen(message), 0);
     close(sock);
-}
-
-// int main() {
-//     const char *json_log =
-//     "{\"frame_ID\":{\"71\":{\"ADAS\":[{\"FCW\":false,\"LDW\":false}],\"detectObj\":{\"VEHICLE\":[{\"detectObj.confidence\":0.86842942237854,\"detectObj.label\":\"VEHICLE\",\"detectObj.x1\":268,\"detectObj.x2\":311,\"detectObj.y1\":158,\"detectObj.y2\":201}]},\"tailingObj\":[{\"tailingObj.distanceToCamera\":23.71468162536621,\"tailingObj.id\":3,\"tailingObj.label\":\"VEHICLE\",\"tailingObj.x1\":228,\"tailingObj.x2\":256,\"tailingObj.y1\":165,\"tailingObj.y2\":193}],\"vanishLineY\":[{\"vanishlineY\":168}]}}}";
-//     const char *server_ip = "127.0.0.1"; // Replace with the actual server IP address
-//     int server_port = 12345; // Replace with the actual server port
-
-//     send_json_log(json_log, server_ip, server_port);
-//     return 0;
-// }
-
-std::string JSON_LOG::get_local_ip()
-{
-    struct ifaddrs* interfaces = nullptr;
-    struct ifaddrs* temp_addr  = nullptr;
-    int             success    = 0;
-
-    success = getifaddrs(&interfaces);
-    if (success == 0)
-    {
-        temp_addr = interfaces;
-        while (temp_addr != nullptr)
-        {
-            if (temp_addr->ifa_addr->sa_family == AF_INET)
-            {
-                if (strcmp(temp_addr->ifa_name, "lo") != 0) // Ignore the loopback interface
-                {
-                    char  address_buffer[INET_ADDRSTRLEN];
-                    void* address_ptr = &((struct sockaddr_in*)temp_addr->ifa_addr)->sin_addr;
-                    inet_ntop(AF_INET, address_ptr, address_buffer, INET_ADDRSTRLEN);
-                    freeifaddrs(interfaces);
-                    return std::string(address_buffer);
-                }
-            }
-            temp_addr = temp_addr->ifa_next;
-        }
-    }
-    freeifaddrs(interfaces);
-    return "";
-}
-
-void JSON_LOG::_saveJsonLogFile(std::string jsonString)
-{
-    auto logger = spdlog::get(
-#ifdef SPDLOG_USE_SYSLOG
-        "adas-output"
-#else
-        "JSON"
-#endif
-        );
-
-    // Write the updated JSON to the file
-    std::ofstream outFile(m_jsonFilePath);
-    if (outFile)
-    {
-        outFile << jsonString; // Adjust the indentation as needed
-        logger->debug("Additional frame IDs appended to the JSON file");
-    }
-    else
-        logger->error("Unable to open the file for writing");
 }
