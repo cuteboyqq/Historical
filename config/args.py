@@ -10,7 +10,7 @@ class Args:
         self.model_h = config['MODEL']['INPUT_HEIGHT']
 
         # Mode
-        self.mode = config['MODE']['VISUALIZE_HISTORICAL_MODE']
+        self.mode = config['MODE']['VISUALIZE_MODE']
 
         # Visualize configuration
         self.visualize_mode = config['VISUALIZE']['MODE']
@@ -135,7 +135,7 @@ class Args:
 
         # Varify settings
         self.varify_camera_config_file_path = config['VARIFY']['CAMERA']['CONFIG_PATH']
-        self.varify_run_historical_time = config['VARIFY']['CAMERA']['RUN_HISTORICAL_TIME']
+        self.varify_run_historical_time = config['VARIFY']['CAMERA']['RUN_HISTORICAL_DURATION']
         self.varify_save_jsonlog_dir = config['VARIFY']['LOCAL']['SAVE_JSONLOG_DIR']
 
 
