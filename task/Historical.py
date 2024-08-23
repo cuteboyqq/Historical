@@ -7,6 +7,7 @@ from engine.BaseDataset import BaseDataset
 from utils.connection import Connection
 from task.evaluation import Evaluation
 from utils.analysis import Analysis
+from task.varify import Varify
 import numpy as np
 # from config.config import get_connection_args
 import logging
@@ -69,6 +70,8 @@ class Historical(BaseDataset):
         if self.analysis_run:
             self.Analysis = Analysis(args)
 
+        self.Varify = Varify(args)
+
         # Evaluation settings
         self.eval_camera_raw_im_dir = args.eval_camera_rawimage_dir
 
@@ -105,7 +108,6 @@ class Historical(BaseDataset):
 
 
         super().display_parameters()
-
     def visualize(self, mode=None, 
                   jsonlog_from=None, 
                   plot_distance=False, 
@@ -129,43 +131,59 @@ class Historical(BaseDataset):
         """
         if mode == "offline":
             if jsonlog_from == "camera":
-                logging.info("Running offline mode with JSON log from camera...")
+                logging.info("📷 Running offline mode with JSON log from camera...")
                 self.visualize_offline_jsonlog_from_camera()
             elif jsonlog_from == "online":
-                logging.info("Running offline mode with JSON log from online...")
+                logging.info("🌐 Running offline mode with JSON log from online...")
                 self.visualize_offline_jsonlog_from_online()
         
         elif mode == "semi-online":
-            logging.info("Running semi-online mode, waiting for client (Camera running historical mode)...")
+            logging.info("🔄 Running semi-online mode, waiting for client (Camera running historical mode)...")
             self.visualize_semi_online()
 
         elif mode == "online":
-            logging.info("Running online mode of historical visualization, waiting for client (Camera running historical mode)...")
+            logging.info("💻 Running online mode visualization, waiting for client ...")
             if save_raw_image_dir:
                 self.im_dir = save_raw_image_dir
+                logging.info(f"💾 Saving raw images to directory: {save_raw_image_dir}")
             self.visualize_online()
 
-        elif mode=="eval" or mode=="evaluation":
-            logging.info("Running evaluation mode")
+        elif mode == "eval" or mode == "evaluation":
+            logging.info("📝 Running evaluation mode...")
             self.auto_evaluate_golden_dataset()
             # self.Evaluation.run_golden_dataset()
         
+        # Alister add 2024-08-22
+        elif mode == "varify":
+            # self.transfer_jsonlog_only()
+            self.Varify.varify_historical_match_rate()
+        
         if extract_video_to_frames:
+            logging.info(f"🎞️ Extracting frames from video: {extract_video_to_frames} (Crop: {'Yes' if crop else 'No'})")
             self.video_extract_frame(extract_video_to_frames, crop)
 
         if gen_raw_video:
+            logging.info("🎥 Generating video from raw images...")
             self.convert_rawimages_to_videoclip(im_dir=raw_images_dir)
 
         if plot_distance:
+            logging.info("📊 Plotting distance values for each frame ID...")
             self.Plotter.plot_all_static_golden_dataset()
 
-        if self.analysis_run and mode=='analysis':
+        if self.analysis_run and mode == 'analysis':
+            logging.info("📈 Running analysis and calculating all static performance...")
             self.Analysis.calc_all_static_performance()
-            # avg_dist = self.Analysis.calc_avg_dist()
-            # self.Analysis.set_static_GT_dist_list(GT_dist_value=30)
-            # avg_err = self.Analysis.calc_avg_error_dist()
-            # avg_performance = self.Analysis.calc_static_performance()
-           
+
+
+    def transfer_jsonlog_only(self):
+        logging.info("🚀 Starting the server to receive JSON log...")
+        
+        self.Connect.start_server(draw_jsonlog=False,save_dir="live mode json log")
+        logging.info("✅ JSON log received successfully.")
+        
+        # self.img_saver.save_json_log_txt(json_log)  
+        # logging.info("💾 JSON log saved to text file successfully.")
+
 
     def auto_evaluate_golden_dataset(self):
         DEVICE_HAVE_IMAGES = self.Evaluation.check_directory_exists(self.eval_camera_raw_im_dir)
