@@ -1013,6 +1013,10 @@ static S32 ADAS_GetSrcImage(ADAS_Context *adas_ctx, U8 **source_image, MI_SYS_BU
                 send_image_and_log_live_mode(g_IpuIntfObject->m_aiInputImage, jsonlog.c_str(), server_ip.c_str(),
                                              server_port, g_IpuIntfObject->m_resultFrameIdx);
             }
+            else if (g_IpuIntfObject->m_config->HistoricalFeedModeConfig.visualizeMode == 1)
+            {
+                g_IpuIntfObject->m_jsonLog->send_json_log(jsonlog.c_str(), server_ip.c_str(), server_port);
+            }
         }
         else
         {
@@ -1029,6 +1033,10 @@ static S32 ADAS_GetSrcImage(ADAS_Context *adas_ctx, U8 **source_image, MI_SYS_BU
                 {
                     send_image_and_log_live_mode(g_IpuIntfObject->m_aiInputImage, jsonlog.c_str(), server_ip.c_str(),
                                                  server_port, g_IpuIntfObject->m_resultFrameIdx);
+                }
+                else if (g_IpuIntfObject->m_config->HistoricalFeedModeConfig.visualizeMode == 1)
+                {
+                    g_IpuIntfObject->m_jsonLog->send_json_log(jsonlog.c_str(), server_ip.c_str(), server_port);
                 }
             }
         }
