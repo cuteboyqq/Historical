@@ -19,6 +19,7 @@
 #include <vector>
 #include "bounding_box.hpp"
 #include "dataStructures.h"
+#include "yolo_adas.hpp"
 #include "adas_config_reader.hpp"
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -39,39 +40,30 @@ public:
     JSON_LOG(std::string file, ADAS_Config_S* m_config);
     ~JSON_LOG();
 
-    std::string logInfo(WNC_ADAS_Results adasResult, std::vector<BoundingBox> m_humanBBoxList,
-                 std::vector<BoundingBox> m_vehicleBBoxList, std::vector<BoundingBox> m_roadSignBBoxList,
-                 Object& m_tailingObject, int m_frameIdx);
-
-    void send_json_log(const char *json_log, const char *server_ip, int server_port);
-    std::string get_local_ip();
+    std::string logInfo(WNC_ADAS_Results& adasResult, std::vector<BoundingBox>& humanBBoxList,
+                 std::vector<BoundingBox>& vehicleBBoxList, std::vector<BoundingBox>& roadSignBBoxList,
+                 Object& tailingObject, int frameIdx, float inferenceTime, int bufferSize);
+    
+    void send_json_log(const char* json_log, const char* server_ip, int server_port);
+    bool m_bSaveLaneInfo   = false;
+    bool m_bSaveDetObjLog  = false;
 
 protected:
     void _saveJsonLogFile(std::string jsonString);
 
-    int m_modelWidth  = 576;
-    int m_modelHeight = 320;
-    int m_frameWidth  = 576;
-    int m_frameHeight = 320;
-
     bool m_bShowJson       = true;
     bool m_bSaveTrackObj   = true;
-    bool m_bSaveLaneInfo   = true;
-    bool m_bSaveDetObjLog  = true;
     bool m_bSaveVanishLine = true;
     bool m_bSaveLDWLog     = true;
     bool m_bSaveFCWLog     = true;
-    bool m_bSaveToJSONFile = 
+    bool m_bDebugProfiling = false;
+    bool m_bSaveToJSONFile =
 #ifdef SAV837
         false
 #else
-        true
+        false
 #endif
         ;
-    bool m_sendJSONLog = true;
-
-    std::string m_serverIP = "192.168.1.10";
-    int m_port = 5000;
 
     std::string m_jsonFilePath;
 };
