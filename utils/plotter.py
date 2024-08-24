@@ -351,3 +351,89 @@ class Plotter(BaseDataset):
                         logging.info(f"Unexpected error: {e}")
 
         return frame_ids, distances
+    
+    def extract_distance_to_camera_txt(self, file_path):
+        frame_ids = []
+        distances = []
+
+        with open(file_path, 'r') as file:
+            for line in file:
+                try:
+                    data = json.loads(line.strip())
+                    # Extracting frame ID and its associated data
+                    for frame_id, frame_data in data["frame_ID"].items():
+                        # Accessing the 'tailingObj' data
+                        tailing_obj = frame_data.get("tailingObj", [{}])[0]
+                        distance = tailing_obj.get("tailingObj.distanceToCamera", None)
+                        if distance is not None:
+                            frame_ids.append(int(frame_id))
+                            distances.append(distance)
+                except json.JSONDecodeError as e:
+                    print(f"Error parsing JSON: {e}")
+                except KeyError as e:
+                    print(f"Key error: {e}")
+
+        return frame_ids, distances
+    
+    def plot_distances(self, file1, file2):
+        # Extract distances and frame IDs from both files
+        frame_ids1, distances1 = self.extract_distance_to_camera_txt(file1)
+        frame_ids2, distances2 = self.extract_distance_to_camera_txt(file2)
+
+        # Plot the distances
+        plt.figure(figsize=(24, 12))
+        plt.plot(frame_ids1, distances1, label='Historical mode', marker='o')
+        plt.plot(frame_ids2, distances2, label='Live mode', marker='x')
+
+        plt.xlabel('Frame ID')
+        plt.ylabel('tailingObj.distanceToCamera')
+        plt.title('Distance to Camera per Frame')
+        plt.legend()
+        plt.grid(True)
+        
+        # Save the plot as a file
+        plt.savefig('distance_to_camera_plot.png')
+        print("Plot saved as 'distance_to_camera_plot.png'")
+
+
+
+    def extract_distance_to_camera_txt_ver2(self, file_path):
+        frame_distances = {}
+
+        with open(file_path, 'r') as file:
+            for line in file:
+                try:
+                    data = json.loads(line.strip())
+                    for frame_id, frame_data in data["frame_ID"].items():
+                        tailing_obj = frame_data.get("tailingObj", [{}])[0]
+                        distance = tailing_obj.get("tailingObj.distanceToCamera", None)
+                        if distance is not None:
+                            frame_distances[int(frame_id)] = distance
+                except json.JSONDecodeError as e:
+                    print(f"Error parsing JSON: {e}")
+                except KeyError as e:
+                    print(f"Key error: {e}")
+
+        return frame_distances
+
+    def calculate_match_rate(self, file1, file2, tolerance=0.0):
+        # Extract distances for each file
+        distances1 = self.extract_distance_to_camera_txt_ver2(file1)
+        distances2 = self.extract_distance_to_camera_txt_ver2(file2)
+
+        # Initialize counters
+        match_count = 0
+        total_count = 0
+
+        # Compare distances for each frame ID
+        for frame_id in distances1:
+            if frame_id in distances2:
+                total_count += 1
+                if abs(distances1[frame_id] - distances2[frame_id]) <= tolerance:
+                    match_count += 1
+
+        # Calculate match rate
+        if total_count == 0:
+            return 0.0  # Avoid division by zero
+        match_rate = (match_count / total_count) * 100
+        return match_rate

@@ -59,12 +59,12 @@ class ImageSaver:
         """Save the image to the current directory."""
         try:
             # Determine where to save the image
-            save_dir = self.custom_dir if self.custom_dir is not None else self.current_dir
+            save_dirs = self.custom_dir if self.custom_dir is not None else self.current_dir
 
             # logging.error(f"self.custom_dir is {self.custom_dir}")
             # logging.error(f"self.current_dir is {self.current_dir}")
 
-            image_path = os.path.join(save_dir, f'frame_{frame_ID}.{self.image_format}')
+            image_path = os.path.join(save_dirs, f'frame_{frame_ID}.{self.image_format}')
             success = cv2.imwrite(image_path, image)
             # if success:
             #     logging.info(f"Image saved to {image_path}")

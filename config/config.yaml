@@ -7,12 +7,12 @@ MODEL:
 
 # Mode configuration
 MODE:
-  VISUALIZE_MODE:  varify  # Mode of run visualize mode (online / offline / semi-online / eval / analysis/ varify / None)
+  VISUALIZE_MODE: online  # Mode of run visualize mode (online / offline / semi-online / eval / analysis/ varify / None)
 
 # Visualize configuration
 VISUALIZE:
   MODE: 'online' # Mode of run visualize historical mode (online / offline / semi-online )
-  DEVICE_MODE: 'historical' # live mode / historical
+  DEVICE_MODE: 'live' # Device mode (historical / live)
 
 # JSON log configuration
 JSONLOG:
@@ -30,7 +30,7 @@ CAMERA:
 
 # Server configuration
 SERVER:
-  PORT: 3570  # Port number for the local server
+  PORT: 3580  # Port number for the local server
   TFTP_DIR: '/home/ali/Public/tftp'  # Directory on the server for TFTP file transfers
   TFTP_IP: '192.168.1.12'  # IP address of the TFTP server
   IP: '192.168.1.12'  # IP address of the TFTP server
@@ -38,13 +38,13 @@ SERVER:
 # Local configuration
 LOCAL:
   CSV_FILE: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/csv_file'  # Path to the local CSV file
-  RAW_IMG_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/images'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
+  RAW_IMG_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/images/2024-08-24-20-11'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
   SAVE_RAW_VIDEO_PATH: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/videos'  # Path to save the raw video file
 
 # Image configuration
 IMAGE:
   BASE_NAME: 'RawFrame_'  # Base name for image files
-  FORMAT: 'png'  # Format of the image files
+  FORMAT: 'jpg'  # Format of the image files
 
 # Display settings
 DISPLAY:
@@ -77,7 +77,7 @@ LANE_LINE:
 RESIZE:
   ENABLED: false  # Flag to enable or disable image resizing
   WIDTH:  1600 # Width of the resized images
-  HEIGHT:  900 # Height of the resized images
+  HEIGHT: 900  # Height of the resized images
 
 # Wait settings
 WAIT:
@@ -99,7 +99,7 @@ SAVE:
   AI_RESULT_IMAGE: false  # Flag to save AI result images
   RAW_VIDEO: false  # Flag to save raw video
   VIDEO_FPS: 7 # FPS of the saved video
-  JSON_LOG: true  # Flag to save JSON log
+  JSON_LOG: false  # Flag to save JSON log
   EXTRACT_FRAME: false # Flag to save frames extracted from the video stream
 
 # Test settings
@@ -125,11 +125,11 @@ EVALUATION:
     STATIC: 50  # Duration (in seconds) to run evaluation for static cases.
     DYNAMIC: 20  # Duration (in seconds) to run evaluation for dynamic cases.
   CAMERA:
-    DATASET_DIR: '/mnt/mmc/adas/debug/raw_images/Golden_Data_20240805-3'  # Directory on the device where raw images for evaluation are stored.
+    DATASET_DIR: '/mnt/mmc/adas/debug/raw_images/Golden_Data_20240805-2'  # Directory on the device where raw images for evaluation are stored.
     SCRIPT_PATH: '/customer/Run_Historical-Mode.sh'  # Path to the script that initiates the historical mode evaluation process.
     CSV_FILE_PATH: '/logging/video-adas/180-xxxxxxxx'
   LOCAL:
-    DATASET_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/images/Golden_Data_20240805-3'  # Local directory containing the dataset images for evaluation.
+    DATASET_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/images/Golden_Data_20240805-2'  # Local directory containing the dataset images for evaluation.
     JSONLOG_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/csv_file/Golden_Data_20240805'
 
 
@@ -149,6 +149,6 @@ REMOTE:
 VARIFY:
   CAMERA:
     CONFIG_PATH: '/customer/adas/config/config.txt'
-    RUN_HISTORICAL_DURATION: 120
+    RUN_HISTORICAL_DURATION: 60
   LOCAL:
     SAVE_JSONLOG_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/csv_file/varify'

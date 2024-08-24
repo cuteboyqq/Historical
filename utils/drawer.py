@@ -18,7 +18,7 @@ class Drawer(BaseDataset):
     def __init__(self, args):
         super().__init__(args)
 
-    def process_json_log(self,json_log,device_image_path):
+    def process_json_log(self,json_log, img_buffer=None, device_image_path=None):
         """
         Processes a JSON log, performs various visualizations and actions based on its content, and handles exceptions.
 
@@ -86,9 +86,14 @@ class Drawer(BaseDataset):
 
             image_path = f"{self.im_dir}/{self.image_basename}{frame_ID}.{self.image_format}"
             # logging.info(image_path)
-            image = cv2.imread(image_path)
-            image = cv2.resize(image, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
 
+            if os.path.exists(image_path):
+                image = cv2.imread(image_path)
+                image = cv2.resize(image, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
+            else:
+                image = img_buffer
+                image = cv2.resize(image, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
+               
             cv2.putText(image, 'frame_ID:'+str(frame_ID), (10,15), cv2.FONT_HERSHEY_SIMPLEX,0.60, (0, 255, 255), 1, cv2.LINE_AA)
 
             if self.show_adasobjs:

@@ -99,10 +99,10 @@ class BaseDataset:
 
         self.mode = args.mode
 
-        if not self.mode=='eval' and not self.mode=='evaluation' and self.save_rawimages:
-            self.img_saver = ImageSaver(args)
-        else:
-            self.img_saver = None
+        # if not self.mode=='eval' and not self.mode=='evaluation' and self.save_rawimages:
+        self.img_saver = ImageSaver(args)
+        # else:
+        #     self.img_saver = None
 
 
         # Video extract frames parameters

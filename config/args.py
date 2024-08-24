@@ -139,7 +139,6 @@ class Args:
         self.varify_save_jsonlog_dir = config['VARIFY']['LOCAL']['SAVE_JSONLOG_DIR']
 
 
-
         # Check if the operating system is Windows
         if os.name == 'nt':  # 'nt' is the name for Windows systems
             self.csv_file = os.path.normpath(self.csv_file).strip('"')

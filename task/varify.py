@@ -35,8 +35,8 @@ class Varify(BaseDataset):
         self.Plot = Plotter(args)
         self.Connect = Connection(args)
         self.tftpserver_dir = args.tftpserver_dir
-        self.varify_save_jsonlog_dir = args.varify_save_jsonlog_dir
-        os.makedirs(self.varify_save_jsonlog_dir,exist_ok=True)
+        self.save_jsonlog_dir = args.varify_save_jsonlog_dir
+        os.makedirs(self.save_jsonlog_dir,exist_ok=True)
         self.camera_rawimages_dir = args.camera_rawimages_dir
         self.camera_host_name = args.camera_host_name
         self.camera_port = args.camera_port
@@ -81,7 +81,7 @@ class Varify(BaseDataset):
         logging.info(f"  📁 Camera Config File Path: {self.varify_camera_config_file_path}")
         logging.info(f"  📂 Camera CSV File Directory: {self.varify_camera_csv_file_dir}")
         logging.info(f"  📦 TFTP Server Directory: {self.tftpserver_dir}")
-        logging.info(f"  📂 Save JSON Log Directory: {self.varify_save_jsonlog_dir}")
+        logging.info(f"  📂 Save JSON Log Directory: {self.save_jsonlog_dir}")
         
         # Historical and Live Mode
         logging.info("📅 **Historical and Live Mode Settings:**")
@@ -141,18 +141,19 @@ class Varify(BaseDataset):
     
         logging.info("🔧 Configuring live mode settings...")
         
-        def start_server_thread(draw, folder_name):
+        def start_server_thread(draw, folder_name,visual_mode):
             logging.info(f"🚀 Starting server thread with folder name: {folder_name}")
-            self.Connect.start_server(draw_jsonlog=draw, save_dir=folder_name)
+            self.Connect.start_server(draw_jsonlog=draw, save_folder=folder_name, visual_mode=visual_mode)
 
         self.varify_device_input_mode = 0  # live mode
         self.varify_enable_save_raw_images = 1  # enable save raw images
+        self.visualize_mode = 1 # semi-online
 
         logging.info("📝 Modifying configuration file for live mode...")
         self.modify_config_file()
 
         logging.info("🧵 Starting the server in a separate thread...")
-        server_th = threading.Thread(target=start_server_thread, args=(False, str(self.date_time),))
+        server_th = threading.Thread(target=start_server_thread, args=(False, str(self.date_time),"semi-online",))
         server_th.start()
 
         logging.info("🚗 Running the ADAS system in live mode...")
@@ -175,10 +176,11 @@ class Varify(BaseDataset):
         logging.info("🔄 Resetting the server stop event for the next run...")
         self.Connect.stop_server.clear()
 
-        logging.info(f"📂 Moving files to {self.curret_dir}/runs/{str(self.date_time)}")
+        logging.info(f"📂 Moving files to {self.curret_dir}/assets/{str(self.date_time)}/{str(self.date_time)}.txt")
         self.move_file(f"{self.curret_dir}/runs/{str(self.date_time)}")
 
-        self.live_mode_txt_file = f"{self.varify_save_jsonlog_dir}/{str(self.date_time)}/json_logs.txt"
+        # self.live_mode_txt_file = f"{self.save_jsonlog_dir}/{str(self.date_time)}/{str(self.date_time)}.txt"
+        self.live_mode_txt_file = f"{self.curret_dir}/runs/{str(self.date_time)}/{str(self.date_time)}.txt"
         logging.info(f"💾 Live mode JSON log file saved at: {self.live_mode_txt_file}")
 
 
@@ -188,7 +190,8 @@ class Varify(BaseDataset):
 
         def start_server_thread():
             logging.info("🚀 Starting server for historical mode...")
-            self.Connect.start_server_ver3()
+            # self.Connect.start_server_ver3()
+            self.Connect.start_server(visual_mode="online")
 
         self.varify_device_input_mode = 2  # historical mode
         self.varify_enable_save_raw_images = 0  # disable save raw images
@@ -204,7 +207,7 @@ class Varify(BaseDataset):
         logging.info("🚗 Running the ADAS system in historical mode...")
         self.run_the_adas()
 
-        t = int(self.varify_run_historical_time * 1.2)
+        t = int(self.varify_run_historical_time * 1.4)
         logging.info(f"⏳ Running historical mode for {t} seconds with progress...")
 
         for _ in tqdm(range(t), desc="⏳ Running historical Mode...", unit="s"):
@@ -215,10 +218,12 @@ class Varify(BaseDataset):
         self.stop_run_adas()
         logging.info("🏁 ADAS system stopped successfully!")
 
-        logging.info(f"📂 Moving files to {self.curret_dir}/runs/debug_csv/raw_images/{self.varify_raw_image_folder}")
+        logging.info(f"📂 Moving files to {self.save_jsonlog_dir}/{self.varify_raw_image_folder}")
         self.move_file(f"{self.curret_dir}/runs/debug_csv/raw_images/{self.varify_raw_image_folder}")
 
-        self.historical_mode_txt_file = f"{self.varify_save_jsonlog_dir}/{self.varify_raw_image_folder}/{self.varify_raw_image_folder}.txt"
+        # self.historical_mode_txt_file = f"{self.save_jsonlog_dir}/{self.varify_raw_image_folder}/{self.varify_raw_image_folder}.txt"
+        self.historical_mode_txt_file = f"{self.curret_dir}/runs/debug_csv/raw_images/{self.varify_raw_image_folder}/{self.varify_raw_image_folder}.txt"
+        
         logging.info(f"💾 Historical mode JSON log file saved at: {self.historical_mode_txt_file}")
 
     
@@ -242,7 +247,7 @@ class Varify(BaseDataset):
         commands = (
             f"killall -9 cardv"
         )
-        self.Connect.execute_remote_command_with_progress_ver2(commands)
+        self.Connect.SSH.execute_remote_command_with_progress_ver2(commands)
     
 
 
@@ -327,7 +332,7 @@ class Varify(BaseDataset):
             f"tftp -l {csv_file} -p {self.server_ip}"
         )
     
-        self.Connect.execute_remote_command_with_progress_ver2(remote_commands)
+        self.Connect.SSH.execute_remote_command_with_progress_ver2(remote_commands)
 
         # Go to tftp sever folder directory and move the csv file to the ADAS evaluation tools directory
         local_command = (
@@ -355,7 +360,7 @@ class Varify(BaseDataset):
             f"sed -i 's/^DebugSaveRawImages = [0-1]*/DebugSaveRawImages = {self.varify_enable_save_raw_images}/' {config_file_path}"
         )
         # logging.info(f"remote modify config : {commands}")
-        self.Connect.execute_remote_command_with_progress_ver2(commands)
+        self.Connect.SSH.execute_remote_command_with_progress_ver2(commands)
     
 
     def run_the_adas(self):
@@ -367,10 +372,10 @@ class Varify(BaseDataset):
                 f"cd / && "
                 # "ps -a | grep run_script | awk '{print $1}' | xargs -r kill -9 && "  # Use -r to avoid xargs error if no process is found
                 "cd /customer && "
-                "./run_script"
+                "./run_adas.sh"
             )
             
-            output = self.Connect.execute_remote_command_with_progress_ver2(remote_command)
+            output = self.Connect.SSH.execute_remote_command_with_progress_ver3(remote_command)
             
             logging.info(f"🚀 Command output: {output}")
 
@@ -384,7 +389,7 @@ class Varify(BaseDataset):
     def move_file(self,file):
         try:
             local_command = (
-                f"mv {file} {self.varify_save_jsonlog_dir}"
+                f"mv {file} {self.save_jsonlog_dir}"
             )
             
             output = self.Connect.execute_local_command(local_command)
