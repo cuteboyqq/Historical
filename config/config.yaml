@@ -7,16 +7,16 @@ MODEL:
 
 # Mode configuration
 MODE:
-  VISUALIZE_MODE: online  # Mode of run visualize mode (online / offline / semi-online / eval / analysis/ varify / None)
-
-# Visualize configuration
-VISUALIZE:
-  MODE: 'online' # Mode of run visualize historical mode (online / offline / semi-online )
-  DEVICE_MODE: 'live' # Device mode (historical / live)
+  VISUALIZE_MODE: varify  # Mode of run visualize mode (online / offline / semi-online / eval / analysis/ varify / None)
 
 # JSON log configuration
 JSONLOG:
   FROM: None # Where is the  JSON log from  ('online' / 'camera' / None)
+
+# Visualize configuration
+# VISUALIZE:
+#   MODE: 'online' # Mode of run visualize historical mode (online / offline / semi-online )
+#   DEVICE_MODE: 'live' # Device mode (historical / live)
 
 # Camera configuration
 CAMERA:
@@ -37,8 +37,8 @@ SERVER:
 
 # Local configuration
 LOCAL:
-  CSV_FILE: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/csv_file'  # Path to the local CSV file
-  RAW_IMG_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/images/2024-08-24-20-11'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
+  CSV_FILE: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/csv_file/json_logs.csv'  # Path to the local CSV file
+  RAW_IMG_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/2024-08-25-01-20'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
   SAVE_RAW_VIDEO_PATH: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/videos'  # Path to save the raw video file
 
 # Image configuration
@@ -71,7 +71,7 @@ TAILING_OBJ:
 
 LANE_LINE:
   ALPHA: 0.35
-  THICKNESS: 4
+  THICKNESS: 5
 
 # Resize settings
 RESIZE:
@@ -81,9 +81,9 @@ RESIZE:
 
 # Wait settings
 WAIT:
-  VALUE: 1  # Wait time in milliseconds for image display
+  VALUE: 10  # Wait time in milliseconds for image display
   ZERO_ON_ADAS_EVENT: false  # Flag to set wait time to zero when ADAS event occurs
-  ON_ADAS_EVENT: 1  # Wait time in milliseconds when an ADAS event occurs
+  ON_ADAS_EVENT: 120  # Wait time in milliseconds when an ADAS event occurs
 
 # Plot settings
 PLOT:
@@ -103,21 +103,21 @@ SAVE:
   EXTRACT_FRAME: false # Flag to save frames extracted from the video stream
 
 # Test settings
-TEST:
-  VERSION:
-    FW_VERSION: 1.0.14.1
-    MCU_VERSION: 0.0.2.5
-    ADAS_VERSION: 0.6.7.1
-  CONFIG_PARAMS:
-    CONFIG_PATH: assets/config/passenger_config.txt
-  MONITOR:
-    DURATION: 10  # Duration of the test in seconds
-    INTERVAL: 0.5 # Interval of the test in seconds
-  THRESHOLD:
-    INFERENCE_TIME: 0.125   # Inference time threshold seconds
-    BUFFER_SIZE_RATIO: 0.9  # Buffer size threshold
-    CPU_USAGE: 60
-    MEMORY_USAGE: 40
+# TEST:
+#   VERSION:
+#     FW_VERSION: 1.0.14.1
+#     MCU_VERSION: 0.0.2.5
+#     ADAS_VERSION: 0.6.7.1
+#   CONFIG_PARAMS:
+#     CONFIG_PATH: assets/config/passenger_config.txt
+#   MONITOR:
+#     DURATION: 10  # Duration of the test in seconds
+#     INTERVAL: 0.5 # Interval of the test in seconds
+#   THRESHOLD:
+#     INFERENCE_TIME: 0.125   # Inference time threshold seconds
+#     BUFFER_SIZE_RATIO: 0.9  # Buffer size threshold
+#     CPU_USAGE: 60
+#     MEMORY_USAGE: 40
 
 # Evaluation settings
 EVALUATION:
@@ -139,16 +139,16 @@ ANALYSIS:
   JSON_LOG_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/csv_file/Golden_Data_20240805/static_csv'
 
 # Remote configuration
-REMOTE:
-  ADAS_START_SCRIPT_PATH: './customer/run_adas.sh'
-  ADAS_STOP_SCRIPT_PATH: './customer/stop_adas.sh'
-  REMOTE_ADAS_CONFIG_PATH: '/customer/adas/config/config.txt'
-  BACKUP_ADAS_CONFIG_PATH: '/customer/adas/config/config_backup.txt'
-  ADAS_RUN_DURATION: 10 # Duration of the ADAS run in seconds
+# REMOTE:
+#   ADAS_START_SCRIPT_PATH: './customer/run_adas.sh'
+#   ADAS_STOP_SCRIPT_PATH: './customer/stop_adas.sh'
+#   REMOTE_ADAS_CONFIG_PATH: '/customer/adas/config/config.txt'
+#   BACKUP_ADAS_CONFIG_PATH: '/customer/adas/config/config_backup.txt'
+#   ADAS_RUN_DURATION: 10 # Duration of the ADAS run in seconds
 
 VARIFY:
   CAMERA:
     CONFIG_PATH: '/customer/adas/config/config.txt'
-    RUN_HISTORICAL_DURATION: 60
+    RUN_HISTORICAL_DURATION: 600
   LOCAL:
     SAVE_JSONLOG_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/csv_file/varify'

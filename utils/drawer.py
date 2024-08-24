@@ -330,7 +330,7 @@ class Drawer(BaseDataset):
                 x = int(self.model_w * 2.0/ 5.0)
                 y = int(self.model_h / 20.0)
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                color = (255,255,0)
+                color = (255,255,255)
                 mode = 'Unknown'
                 if self.mode in ['eval','evaluation']:
                     mode = 'Online evaluation(Historical)'
@@ -602,7 +602,7 @@ class Drawer(BaseDataset):
         Returns:
         - None. The image `im` is modified in place with bounding boxes and labels drawn on it.
         """
-        image_path = os.path.join(self.im_dir, f'{self.image_basename}{frame_ID}.png')
+        image_path = os.path.join(self.im_dir, f'{self.image_basename}{frame_ID}.{self.image_format}')
         image = cv2.imread(image_path)
         image = cv2.resize(image, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
 
@@ -646,6 +646,11 @@ class Drawer(BaseDataset):
                 # cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)           
                 im = image
 
+                if self.show_distancetitle:
+                        text = f"Distance:{round(distance_to_camera,self.tailingobjs_distance_decimal_length)}m" 
+                        xy = (int(self.model_w/3.0), int(self.model_h*11.0/12.0))
+                        cv2.putText(image, text, xy, cv2.FONT_HERSHEY_SIMPLEX,1.0, (0,255,255), 2, cv2.LINE_AA)
+
                 if self.showtailobjBB_corner and self.show_tailingobjs:
                     top_left = (tailingObj_x1, tailingObj_y1)
                     bottom_right = (tailingObj_x2, tailingObj_y2)
@@ -657,15 +662,15 @@ class Drawer(BaseDataset):
                     
                     if distance>=10:
                         color = (0,255,255)                
-                        thickness = 3                  
+                        thickness = 1                  
                         text_thickness = 0.40
                     elif distance>=7 and distance<10:
                         color = (0,100,255)
-                        thickness = 5
+                        thickness = 2
                         text_thickness = 0.45
                     elif distance<7:
                         color = (0,25,255)
-                        thickness = 7
+                        thickness = 4
                         text_thickness = 0.50
 
                     # Draw each side of the rectangle
@@ -685,14 +690,42 @@ class Drawer(BaseDataset):
                     cv2.rectangle(im, (tailingObj_x1, tailingObj_y1), (tailingObj_x2, tailingObj_y2), custom_color, custom_thickness)
                     # cv2.putText(image, f"{tailingObj_label} ({distance:.2f}m)", (tailingObj_x1, tailingObj_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
-                if self.show_tailingobjs:
-                    if not self.showtailobjBB_corner:
-                        cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, custom_text_thickness, custom_color, 1, cv2.LINE_AA)
-                        cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,custom_text_thickness+0.05, custom_color, 1, cv2.LINE_AA)
-                    else:
-                        cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
-                        cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
-                
+
+        if self.show_tailingobjs and tailing_objs:
+            if not self.showtailobjBB_corner:
+                cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
+                cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
+            else:
+                # Get text size for label
+                text_label = f'{tailingObj_label},ID:{tailingObj_id}'
+                text_distance = f'Distance:{round(distance_to_camera,3)}m'
+                font = cv2.FONT_HERSHEY_SIMPLEX
+
+                text_size_label, _ = cv2.getTextSize(text_label, font, text_thickness, 1)
+                text_size_distance, _ = cv2.getTextSize(text_distance, font, text_thickness + 0.05, 1)
+
+                # Calculate the rectangle size
+                rect_x1 = tailingObj_x1
+                rect_y1 = tailingObj_y1 - 10 -  text_size_label[1]  # Adjust height to fit text
+                rect_x2 = tailingObj_x1 + text_size_label[0]
+                rect_y2 = tailingObj_y1 - 10  # Adjust height to fit text
+
+                # Draw the rectangle
+                cv2.rectangle(im, (rect_x1, rect_y1), (rect_x2, rect_y2), (0, 0, 0), -1)
+
+
+                # Calculate the rectangle size
+                rect_x1_d = tailingObj_x1
+                rect_y1_d = tailingObj_y1 - 25 - text_size_distance[1]  # Adjust height to fit text
+                rect_x2_d = tailingObj_x1 + text_size_distance[0]
+                rect_y2_d = tailingObj_y1 - 25    # Adjust height to fit text
+
+                # Draw the rectangle
+                cv2.rectangle(im, (rect_x1_d, rect_y1_d), (rect_x2_d, rect_y2_d), (0, 0, 0), -1)
+
+                # Draw the text
+                cv2.putText(im, text_label, (tailingObj_x1, tailingObj_y1 - 10), font, text_thickness, color, 1, cv2.LINE_AA)
+                cv2.putText(im, text_distance, (tailingObj_x1, tailingObj_y1 - 25), font, text_thickness + 0.05, color, 1, cv2.LINE_AA)
 
 
         # Draw lane lines if LaneInfo is present
@@ -711,7 +744,7 @@ class Drawer(BaseDataset):
                     cv2.putText(image, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 200, 0), 1)
         
         if vanish_objs and self.show_vanishline:
-            vanishlineY = vanish_objs[0].get('vanishlineY', None)
+            vanishlineY = vanish_objs[0].get('vanishLineY', None)
             logging.info(f'vanishlineY:{vanishlineY}')
             x2 = im.shape[1]
             cv2.line(im, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
@@ -726,6 +759,23 @@ class Drawer(BaseDataset):
                 cv2.putText(im, 'Collision Warning', (150,50), cv2.FONT_HERSHEY_SIMPLEX,1.3, (0, 128, 255), 2, cv2.LINE_AA)
             if self.ADAS_LDW==True:
                 cv2.putText(im, 'Departure Warning', (150,80), cv2.FONT_HERSHEY_SIMPLEX,1.3, (128, 0, 255), 2, cv2.LINE_AA)
+
+        if self.show_devicemode:
+                x = int(self.model_w * 2.0/ 5.0)
+                y = int(self.model_h / 20.0)
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                color = (255,255,255)
+                mode = 'Unknown'
+                if self.mode in ['eval','evaluation']:
+                    mode = 'Online evaluation(Historical)'
+                elif self.mode == 'online':
+                    mode = 'Online'
+                elif self.mode == 'offline':
+                    mode = 'Offline'
+                # elif self.mode == 'sem-online':
+                #     mode = 'Visualize semi-online'
+                cv2.putText(image, 'Stream mode : ' + mode, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
+
 
         if self.resize:
             image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
@@ -975,7 +1025,7 @@ class Drawer(BaseDataset):
         cv2.fillPoly(overlay, [points_mainlane], color=(0, 255, 0))  # Green filled polygon
 
         # Blend the overlay with the original image
-        alpha = 0.35  # Transparency factor
+        alpha = self.alpha  # Transparency factor
         cv2.addWeighted(overlay, alpha, im, 1 - alpha, 0, im)
 
         # Optionally, draw the polygon border
@@ -987,6 +1037,6 @@ class Drawer(BaseDataset):
         # cv2.line(image, pmiddleFar_mainlane, pmiddleCarhood_mainlane, (0, 255, 255), 1)  # Blue line
 
         # Draw left lane line
-        cv2.line(im, pLeftCarhood, pLeftFar, (255, 0, 0), 2)  # Blue line
+        cv2.line(im, pLeftCarhood, pLeftFar, (255, 0, 0), self.laneline_thickness)  # Blue line
         # Draw right lane line
-        cv2.line(im, pRightCarhood, pRightFar, (0, 0, 255), 2)  # Red line
+        cv2.line(im, pRightCarhood, pRightFar, (0, 0, 255), self.laneline_thickness)  # Red line

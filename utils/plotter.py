@@ -382,8 +382,8 @@ class Plotter(BaseDataset):
 
         # Plot the distances
         plt.figure(figsize=(24, 12))
-        plt.plot(frame_ids1, distances1, label='Historical mode', marker='o')
-        plt.plot(frame_ids2, distances2, label='Live mode', marker='x')
+        plt.plot(frame_ids1, distances1, label='Historical mode')
+        plt.plot(frame_ids2, distances2, label='Live mode')
 
         plt.xlabel('Frame ID')
         plt.ylabel('tailingObj.distanceToCamera')

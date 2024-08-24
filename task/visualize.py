@@ -138,7 +138,7 @@ class Visualize(BaseDataset):
                 self.visualize_offline_jsonlog_from_online()
         elif mode == "online" or mode == "semi-online":
             logging.info("Running online or semi-online mode, waiting for client (Camera running historical mode)...")
-            self.Connect.start_server(mode)
+            self.Connect.start_server(visual_mode=mode)
         # elif mode == "semi-online":
         #     logging.info("Running semi-online mode, waiting for client (Camera running historical mode)...")
         #     self.visualize_semi_online()
@@ -268,7 +268,7 @@ class Visualize(BaseDataset):
                 for frame_id, frame_data in json_data["frame_ID"].items():
                     tailing_objs = frame_data.get("tailingObj", [])
                     detect_objs = frame_data.get("detectObj", {}).get("VEHICLE", []) + frame_data.get("detectObj", {}).get("HUMAN", [])
-                    vanish_objs = frame_data.get("vanishLineY", [])
+                    vanish_objs = frame_data.get("vanishLine", [])
                     ADAS_objs = frame_data.get("ADAS", [])
                     lane_info = frame_data.get("LaneInfo", [])
                     self.Drawer.draw_bounding_boxes(frame_id, tailing_objs, detect_objs, vanish_objs, ADAS_objs, lane_info)

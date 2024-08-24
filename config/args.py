@@ -13,8 +13,8 @@ class Args:
         self.mode = config['MODE']['VISUALIZE_MODE']
 
         # Visualize configuration
-        self.visualize_mode = config['VISUALIZE']['MODE']
-        self.device_mode = config['VISUALIZE']['DEVICE_MODE']
+        # self.visualize_mode = config['VISUALIZE']['MODE']
+        # self.device_mode = config['VISUALIZE']['DEVICE_MODE']
 
         # JSON log
         self.jsonlog_from = config['JSONLOG']['FROM']
@@ -40,11 +40,11 @@ class Args:
         self.save_rawvideopath = config['LOCAL']['SAVE_RAW_VIDEO_PATH']
 
         # Remote configuration
-        self.remote_adas_script_path = config['REMOTE']['ADAS_START_SCRIPT_PATH']
-        self.remote_adas_stop_script_path = config['REMOTE']['ADAS_STOP_SCRIPT_PATH']
-        self.remote_adas_config_path = config['REMOTE']['REMOTE_ADAS_CONFIG_PATH']
-        self.backup_adas_config_path = config['REMOTE']['BACKUP_ADAS_CONFIG_PATH']
-        self.adas_run_duration = config['REMOTE']['ADAS_RUN_DURATION']
+        # self.remote_adas_script_path = config['REMOTE']['ADAS_START_SCRIPT_PATH']
+        # self.remote_adas_stop_script_path = config['REMOTE']['ADAS_STOP_SCRIPT_PATH']
+        # self.remote_adas_config_path = config['REMOTE']['REMOTE_ADAS_CONFIG_PATH']
+        # self.backup_adas_config_path = config['REMOTE']['BACKUP_ADAS_CONFIG_PATH']
+        # self.adas_run_duration = config['REMOTE']['ADAS_RUN_DURATION']
 
 
 
@@ -121,16 +121,16 @@ class Args:
         self.analysis_jsonlog_dir = config['ANALYSIS']['JSON_LOG_DIR']
 
         # Test settings
-        self.test_version_fw_version = config['TEST']['VERSION']['FW_VERSION']
-        self.test_version_mcu_version = config['TEST']['VERSION']['MCU_VERSION']
-        self.test_version_adas_version = config['TEST']['VERSION']['ADAS_VERSION']
-        self.test_adas_config_path = config['TEST']['CONFIG_PARAMS']['CONFIG_PATH']
-        self.test_check_duration = config['TEST']['MONITOR']['DURATION']
-        self.test_check_interval = config['TEST']['MONITOR']['INTERVAL']
-        self.test_threshold_inference_time = config['TEST']['THRESHOLD']['INFERENCE_TIME']
-        self.test_threshold_buffer_size_ratio = config['TEST']['THRESHOLD']['BUFFER_SIZE_RATIO']
-        self.test_cpu_threshold = config['TEST']['THRESHOLD']['CPU_USAGE']
-        self.test_mem_threshold = config['TEST']['THRESHOLD']['MEMORY_USAGE']
+        # self.test_version_fw_version = config['TEST']['VERSION']['FW_VERSION']
+        # self.test_version_mcu_version = config['TEST']['VERSION']['MCU_VERSION']
+        # self.test_version_adas_version = config['TEST']['VERSION']['ADAS_VERSION']
+        # self.test_adas_config_path = config['TEST']['CONFIG_PARAMS']['CONFIG_PATH']
+        # self.test_check_duration = config['TEST']['MONITOR']['DURATION']
+        # self.test_check_interval = config['TEST']['MONITOR']['INTERVAL']
+        # self.test_threshold_inference_time = config['TEST']['THRESHOLD']['INFERENCE_TIME']
+        # self.test_threshold_buffer_size_ratio = config['TEST']['THRESHOLD']['BUFFER_SIZE_RATIO']
+        # self.test_cpu_threshold = config['TEST']['THRESHOLD']['CPU_USAGE']
+        # self.test_mem_threshold = config['TEST']['THRESHOLD']['MEMORY_USAGE']
 
 
         # Varify settings
