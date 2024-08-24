@@ -30,7 +30,6 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <fcntl.h>
-#include <chrono>
 
 #include "module_common.h"
 #include "module_adas.h"
@@ -62,11 +61,6 @@ using namespace std;
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
-#include <string>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-const int DISCOVERY_PORT = 8000;
 
 // CIpuInterface* g_IpuIntfObject;
 // CIpuCommon* g_IpuIntfObject;
@@ -752,125 +746,89 @@ void cardv_send_to_adas_fifo()
 #endif
 }
 
-int get_server_port(const std::string &server_ip)
-{
-    int discovery_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (discovery_socket < 0)
-    {
-        std::cerr << "Socket creation error" << std::endl;
-        return -1;
-    }
+// void send_image_and_log_live_mode(const cv::Mat &displayImg, const char *json_log, const char *server_ip,
+//                                   int server_port, int frame_index)
+// {
+//     int                sock = 0;
+//     struct sockaddr_in serv_addr;
+//     const char *       json_log_message = json_log;
 
-    sockaddr_in discovery_addr{};
-    discovery_addr.sin_family      = AF_INET;
-    discovery_addr.sin_addr.s_addr = inet_addr(server_ip.c_str());
-    discovery_addr.sin_port        = htons(DISCOVERY_PORT);
+//     // Create socket
+//     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+//     {
+//         std::cerr << "\nSocket creation error\n";
+//         return;
+//     }
 
-    if (connect(discovery_socket, (struct sockaddr *)&discovery_addr, sizeof(discovery_addr)) < 0)
-    {
-        std::cerr << "Connection to discovery service failed" << std::endl;
-        close(discovery_socket);
-        return -1;
-    }
+//     serv_addr.sin_family = AF_INET;
+//     serv_addr.sin_port   = htons(server_port);
 
-    char    buffer[10];
-    ssize_t recv_size = recv(discovery_socket, buffer, sizeof(buffer) - 1, 0);
-    if (recv_size < 0)
-    {
-        std::cerr << "Receive failed" << std::endl;
-        close(discovery_socket);
-        return -1;
-    }
+//     // Convert IPv4 and IPv6 addresses from text to binary form
+//     if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0)
+//     {
+//         std::cerr << "\nInvalid address/Address not supported\n";
+//         close(sock); // Ensure the socket is closed in case of failure
+//         return;
+//     }
 
-    buffer[recv_size] = '\0';
-    int port          = std::stoi(buffer);
-    close(discovery_socket);
-    return port;
-}
+//     // Attempt to connect to the server
+//     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+//     {
+//         std::cerr << "\nConnection Failed\n";
+//         close(sock); // Ensure the socket is closed in case of failure
+//         return;
+//     }
 
-void send_image_and_log_live_mode(const cv::Mat &displayImg, const char *json_log, const char *server_ip,
-                                  int server_port, int frame_index)
-{
-    int                sock = 0;
-    struct sockaddr_in serv_addr;
-    const char *       json_log_message = json_log;
+//     // Check the image
+//     if (displayImg.empty())
+//     {
+//         std::cerr << "Error: The cv::Mat image is empty.\n";
+//         close(sock);
+//         return;
+//     }
 
-    // Create socket
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        std::cerr << "\nSocket creation error\n";
-        return;
-    }
+//     if (displayImg.cols == 0 || displayImg.rows == 0)
+//     {
+//         std::cerr << "Error: The cv::Mat image has zero width or height.\n";
+//         close(sock);
+//         return;
+//     }
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port   = htons(server_port);
+//     // Encode the cv::Mat image to a byte buffer
+//     std::vector<uchar> buffer;
+//     // std::vector<int>   params = {cv::IMWRITE_PNG_COMPRESSION, 3}; // PNG with compression level 3
+//     if (!cv::imencode(".jpg", displayImg, buffer)) // params
+//     {
+//         std::cerr << "Error encoding the image.\n";
+//         close(sock);
+//         return;
+//     }
 
-    // Convert IPv4 and IPv6 addresses from text to binary form
-    if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0)
-    {
-        std::cerr << "\nInvalid address/Address not supported\n";
-        close(sock); // Ensure the socket is closed in case of failure
-        return;
-    }
+//     std::cout << "Sending image of size: " << buffer.size() << " bytes\n";
 
-    // Attempt to connect to the server
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        std::cerr << "\nConnection Failed\n";
-        close(sock); // Ensure the socket is closed in case of failure
-        return;
-    }
+//     // Send the frame_index
+//     uint32_t frame_index_net = htonl(frame_index); // Convert to network byte order
+//     send(sock, reinterpret_cast<const char *>(&frame_index_net), sizeof(frame_index_net), 0);
 
-    // Check the image
-    if (displayImg.empty())
-    {
-        std::cerr << "Error: The cv::Mat image is empty.\n";
-        close(sock);
-        return;
-    }
+//     // Send the size of the image
+//     uint32_t image_size = static_cast<uint32_t>(buffer.size());
+//     image_size          = htonl(image_size); // Convert to network byte order
+//     send(sock, reinterpret_cast<const char *>(&image_size), sizeof(image_size), 0);
 
-    if (displayImg.cols == 0 || displayImg.rows == 0)
-    {
-        std::cerr << "Error: The cv::Mat image has zero width or height.\n";
-        close(sock);
-        return;
-    }
+//     // Send the image data
+//     send(sock, buffer.data(), buffer.size(), 0);
 
-    // Encode the cv::Mat image to a byte buffer
-    std::vector<uchar> buffer;
-    // std::vector<int>   params = {cv::IMWRITE_PNG_COMPRESSION, 3}; // PNG with compression level 3
-    if (!cv::imencode(".jpg", displayImg, buffer)) // params
-    {
-        std::cerr << "Error encoding the image.\n";
-        close(sock);
-        return;
-    }
+//     std::cout << "Image data sent.\n";
 
-    std::cout << "Sending image of size: " << buffer.size() << " bytes\n";
+//     // Send the JSON log
+//     send(sock, json_log_message, strlen(json_log_message), 0);
 
-    // Send the frame_index
-    uint32_t frame_index_net = htonl(frame_index); // Convert to network byte order
-    send(sock, reinterpret_cast<const char *>(&frame_index_net), sizeof(frame_index_net), 0);
+//     std::cout << "JSON log sent.\n";
 
-    // Send the size of the image
-    uint32_t image_size = static_cast<uint32_t>(buffer.size());
-    image_size          = htonl(image_size); // Convert to network byte order
-    send(sock, reinterpret_cast<const char *>(&image_size), sizeof(image_size), 0);
-
-    // Send the image data
-    send(sock, buffer.data(), buffer.size(), 0);
-
-    std::cout << "Image data sent.\n";
-
-    // Send the JSON log
-    send(sock, json_log_message, strlen(json_log_message), 0);
-
-    std::cout << "JSON log sent.\n";
-
-    // Close the socket
-    close(sock);
-    std::cout << "Connection closed.\n";
-}
+//     // Close the socket
+//     close(sock);
+//     std::cout << "Connection closed.\n";
+// }
 
 static S32 ADAS_GetSrcImage(ADAS_Context *adas_ctx, U8 **source_image, MI_SYS_BUF_HANDLE *hHandle)
 {
@@ -1002,7 +960,7 @@ static S32 ADAS_GetSrcImage(ADAS_Context *adas_ctx, U8 **source_image, MI_SYS_BU
             || g_IpuIntfObject->m_config->HistoricalFeedModeConfig.inputMode == 2)
         {
             g_IpuIntfObject->getResults(adasResult);
-            std::string jsonlog = g_IpuIntfObject->m_jsonLog->logInfo(
+            std::string jsonLog = g_IpuIntfObject->m_jsonLog->logInfo(
                 adasResult, g_IpuIntfObject->m_humanBBoxList, g_IpuIntfObject->m_vehicleBBoxList,
                 g_IpuIntfObject->m_roadSignBBoxList, g_IpuIntfObject->m_tailingObject,
                 g_IpuIntfObject->m_resultFrameIdx, g_IpuIntfObject->m_inferenceTime,
@@ -1010,12 +968,16 @@ static S32 ADAS_GetSrcImage(ADAS_Context *adas_ctx, U8 **source_image, MI_SYS_BU
 
             if (g_IpuIntfObject->m_config->HistoricalFeedModeConfig.visualizeMode == 0)
             {
-                send_image_and_log_live_mode(g_IpuIntfObject->m_aiInputImage, jsonlog.c_str(), server_ip.c_str(),
-                                             server_port, g_IpuIntfObject->m_resultFrameIdx);
+                // send_image_and_log_live_mode(g_IpuIntfObject->m_aiInputImage, jsonlog.c_str(), server_ip.c_str(),
+                //                              server_port, g_IpuIntfObject->m_resultFrameIdx);
+                g_IpuIntfObject->m_socket->send_image_and_log_live_mode(g_IpuIntfObject->m_aiInputImage,
+                                                                        jsonLog.c_str(), server_ip.c_str(), server_port,
+                                                                        g_IpuIntfObject->m_resultFrameIdx);
             }
             else if (g_IpuIntfObject->m_config->HistoricalFeedModeConfig.visualizeMode == 1)
             {
-                g_IpuIntfObject->m_jsonLog->send_json_log(jsonlog.c_str(), server_ip.c_str(), server_port);
+                // g_IpuIntfObject->m_jsonLog->send_json_log(jsonlog.c_str(), server_ip.c_str(), server_port);
+                g_IpuIntfObject->m_socket->send_json_log(jsonLog.c_str(), server_ip.c_str(), server_port);
             }
         }
         else
@@ -1023,7 +985,7 @@ static S32 ADAS_GetSrcImage(ADAS_Context *adas_ctx, U8 **source_image, MI_SYS_BU
             if (success == ADAS_SUCCESS)
             {
                 g_IpuIntfObject->getResults(adasResult);
-                std::string jsonlog = g_IpuIntfObject->m_jsonLog->logInfo(
+                std::string jsonLog = g_IpuIntfObject->m_jsonLog->logInfo(
                     adasResult, g_IpuIntfObject->m_humanBBoxList, g_IpuIntfObject->m_vehicleBBoxList,
                     g_IpuIntfObject->m_roadSignBBoxList, g_IpuIntfObject->m_tailingObject,
                     g_IpuIntfObject->m_resultFrameIdx, g_IpuIntfObject->m_inferenceTime,
@@ -1031,12 +993,16 @@ static S32 ADAS_GetSrcImage(ADAS_Context *adas_ctx, U8 **source_image, MI_SYS_BU
 
                 if (g_IpuIntfObject->m_config->HistoricalFeedModeConfig.visualizeMode == 0)
                 {
-                    send_image_and_log_live_mode(g_IpuIntfObject->m_aiInputImage, jsonlog.c_str(), server_ip.c_str(),
-                                                 server_port, g_IpuIntfObject->m_resultFrameIdx);
+                    // send_image_and_log_live_mode(g_IpuIntfObject->m_aiInputImage, jsonLog.c_str(), server_ip.c_str(),
+                    //                              server_port, g_IpuIntfObject->m_resultFrameIdx);
+                    g_IpuIntfObject->m_socket->send_image_and_log_live_mode(
+                        g_IpuIntfObject->m_aiInputImage, jsonLog.c_str(), server_ip.c_str(), server_port,
+                        g_IpuIntfObject->m_resultFrameIdx);
                 }
                 else if (g_IpuIntfObject->m_config->HistoricalFeedModeConfig.visualizeMode == 1)
                 {
-                    g_IpuIntfObject->m_jsonLog->send_json_log(jsonlog.c_str(), server_ip.c_str(), server_port);
+                    // g_IpuIntfObject->m_jsonLog->send_json_log(jsonlog.c_str(), server_ip.c_str(), server_port);
+                    g_IpuIntfObject->m_socket->send_json_log(jsonLog.c_str(), server_ip.c_str(), server_port);
                 }
             }
         }
@@ -1148,368 +1114,148 @@ static S32 ADAS_GetSrcImage(ADAS_Context *adas_ctx, U8 **source_image, MI_SYS_BU
     return -1;
 }
 
-void send_image(const std::string &image_path, const char *server_ip, int server_port)
-{
-    int                sock = 0;
-    struct sockaddr_in serv_addr;
+// void send_image(const std::string &image_path, const char *server_ip, int server_port)
+// {
+//     int                sock = 0;
+//     struct sockaddr_in serv_addr;
 
-    // Create socket
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        std::cerr << "\nSocket creation error\n";
-        return;
-    }
+//     // Create socket
+//     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+//     {
+//         std::cerr << "\nSocket creation error\n";
+//         return;
+//     }
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port   = htons(server_port);
+//     serv_addr.sin_family = AF_INET;
+//     serv_addr.sin_port   = htons(server_port);
 
-    // Convert IPv4 and IPv6 addresses from text to binary form
-    if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0)
-    {
-        std::cerr << "\nInvalid address/Address not supported\n";
-        close(sock); // Ensure the socket is closed in case of failure
-        return;
-    }
+//     // Convert IPv4 and IPv6 addresses from text to binary form
+//     if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0)
+//     {
+//         std::cerr << "\nInvalid address/Address not supported\n";
+//         close(sock); // Ensure the socket is closed in case of failure
+//         return;
+//     }
 
-    // Attempt to connect to the server
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        std::cerr << "\nConnection Failed\n";
-        close(sock); // Ensure the socket is closed in case of failure
-        return;
-    }
+//     // Attempt to connect to the server
+//     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+//     {
+//         std::cerr << "\nConnection Failed\n";
+//         close(sock); // Ensure the socket is closed in case of failure
+//         return;
+//     }
 
-    // Read the image file
-    std::ifstream file(image_path, std::ios::binary);
-    if (!file)
-    {
-        std::cerr << "Could not open the file: " << image_path << std::endl;
-        close(sock);
-        return;
-    }
+//     // Read the image file
+//     std::ifstream file(image_path, std::ios::binary);
+//     if (!file)
+//     {
+//         std::cerr << "Could not open the file: " << image_path << std::endl;
+//         close(sock);
+//         return;
+//     }
 
-    // Read the file content into a buffer
-    file.seekg(0, std::ios::end);
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-    std::vector<char> buffer(size);
-    if (!file.read(buffer.data(), size))
-    {
-        std::cerr << "Error reading the file: " << image_path << std::endl;
-        close(sock);
-        return;
-    }
+//     // Read the file content into a buffer
+//     file.seekg(0, std::ios::end);
+//     std::streamsize size = file.tellg();
+//     file.seekg(0, std::ios::beg);
+//     std::vector<char> buffer(size);
+//     if (!file.read(buffer.data(), size))
+//     {
+//         std::cerr << "Error reading the file: " << image_path << std::endl;
+//         close(sock);
+//         return;
+//     }
 
-    // Send the size of the image
-    int image_size = buffer.size();
-    send(sock, reinterpret_cast<const char *>(&image_size), sizeof(image_size), 0);
+//     // Send the size of the image
+//     int image_size = buffer.size();
+//     send(sock, reinterpret_cast<const char *>(&image_size), sizeof(image_size), 0);
 
-    // Send the image data
-    send(sock, buffer.data(), buffer.size(), 0);
+//     // Send the image data
+//     send(sock, buffer.data(), buffer.size(), 0);
 
-    // Close the socket
-    close(sock);
-}
+//     // Close the socket
+//     close(sock);
+// }
 
-void send_image_and_log(const std::string &image_path, const char *json_log, const char *server_ip, int server_port,
-                        int frame_index)
-{
-    int                sock = 0;
-    struct sockaddr_in serv_addr;
-    char *             json_log_message = (char *)json_log;
+// void send_image_and_log(const std::string &image_path, const char *json_log, const char *server_ip, int server_port,
+//                         int frame_index)
+// {
+//     int                sock = 0;
+//     struct sockaddr_in serv_addr;
+//     char *             json_log_message = (char *)json_log;
 
-    // Create socket
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        std::cerr << "\nSocket creation error\n";
-        return;
-    }
+//     // Create socket
+//     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+//     {
+//         std::cerr << "\nSocket creation error\n";
+//         return;
+//     }
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port   = htons(server_port);
+//     serv_addr.sin_family = AF_INET;
+//     serv_addr.sin_port   = htons(server_port);
 
-    // Alister add 2024-08-17
-    // sockaddr_in serv_addr{};
-    // serv_addr.sin_family      = AF_INET;
-    // serv_addr.sin_addr.s_addr = inet_addr(server_ip);
-    // serv_addr.sin_port        = htons(server_port);
+//     // Convert IPv4 and IPv6 addresses from text to binary form
+//     if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0)
+//     {
+//         std::cerr << "\nInvalid address/Address not supported\n";
+//         close(sock); // Ensure the socket is closed in case of failure
+//         return;
+//     }
 
-    // Convert IPv4 and IPv6 addresses from text to binary form
-    if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0)
-    {
-        std::cerr << "\nInvalid address/Address not supported\n";
-        close(sock); // Ensure the socket is closed in case of failure
-        return;
-    }
+//     // Attempt to connect to the server
+//     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+//     {
+//         std::cerr << "\nConnection Failed\n";
+//         close(sock); // Ensure the socket is closed in case of failure
+//         return;
+//     }
 
-    // Attempt to connect to the server
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        std::cerr << "\nConnection Failed\n";
-        close(sock); // Ensure the socket is closed in case of failure
-        return;
-    }
+//     // Read the image file
+//     std::ifstream file(image_path, std::ios::binary);
+//     if (!file)
+//     {
+//         std::cerr << "Could not open the file: " << image_path << std::endl;
+//         close(sock);
+//         return;
+//     }
 
-    // Read the image file
-    std::ifstream file(image_path, std::ios::binary);
-    if (!file)
-    {
-        std::cerr << "Could not open the file: " << image_path << std::endl;
-        close(sock);
-        return;
-    }
+//     // Read the file content into a buffer
+//     file.seekg(0, std::ios::end);
+//     std::streamsize size = file.tellg();
+//     file.seekg(0, std::ios::beg);
+//     std::vector<char> buffer(size);
+//     if (!file.read(buffer.data(), size))
+//     {
+//         std::cerr << "Error reading the file: " << image_path << std::endl;
+//         close(sock);
+//         return;
+//     }
 
-    // Read the file content into a buffer
-    file.seekg(0, std::ios::end);
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-    std::vector<char> buffer(size);
-    if (!file.read(buffer.data(), size))
-    {
-        std::cerr << "Error reading the file: " << image_path << std::endl;
-        close(sock);
-        return;
-    }
+//     std::cout << "Sending image of size: " << size << " bytes\n";
 
-    std::cout << "Sending image of size: " << size << " bytes\n";
+//     // Send the frame_index
+//     uint32_t frame_index_net = htonl(frame_index); // Convert to network byte order
+//     send(sock, reinterpret_cast<const char *>(&frame_index_net), sizeof(frame_index_net), 0);
 
-    // Send the frame_index
-    uint32_t frame_index_net = htonl(frame_index); // Convert to network byte order
-    send(sock, reinterpret_cast<const char *>(&frame_index_net), sizeof(frame_index_net), 0);
+//     // Send the size of the image
+//     uint32_t image_size = static_cast<uint32_t>(size);
+//     image_size          = htonl(image_size); // Convert to network byte order
+//     send(sock, reinterpret_cast<const char *>(&image_size), sizeof(image_size), 0);
 
-    // Send the size of the image
-    uint32_t image_size = static_cast<uint32_t>(size);
-    image_size          = htonl(image_size); // Convert to network byte order
-    send(sock, reinterpret_cast<const char *>(&image_size), sizeof(image_size), 0);
+//     // Send the image data
+//     send(sock, buffer.data(), buffer.size(), 0);
 
-    // Send the image data
-    send(sock, buffer.data(), buffer.size(), 0);
+//     std::cout << "Image data sent.\n";
 
-    std::cout << "Image data sent.\n";
+//     // Send the JSON log
+//     send(sock, json_log_message, strlen(json_log_message), 0);
 
-    // Send the JSON log
-    send(sock, json_log_message, strlen(json_log_message), 0);
+//     std::cout << "JSON log sent.\n";
 
-    std::cout << "JSON log sent.\n";
-
-    // Close the socket
-    close(sock);
-    std::cout << "Connection closed.\n";
-}
-
-void send_image_and_log_and_frameIdx_and_imgPath(const std::string &image_path, const char *json_log,
-                                                 const char *server_ip, int server_port, int frame_index)
-{
-    int                sock = 0;
-    struct sockaddr_in serv_addr;
-
-    // Create socket
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        std::cerr << "Socket creation error" << std::endl;
-        return;
-    }
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port   = htons(server_port);
-
-    // Convert IPv4 and IPv6 addresses from text to binary form
-    if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0)
-    {
-        std::cerr << "Invalid address/Address not supported" << std::endl;
-        close(sock); // Ensure the socket is closed in case of failure
-        return;
-    }
-
-    // Attempt to connect to the server
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        std::cerr << "Connection Failed" << std::endl;
-        close(sock); // Ensure the socket is closed in case of failure
-        return;
-    }
-
-    // Read the image file
-    std::ifstream file(image_path, std::ios::binary);
-    if (!file)
-    {
-        std::cerr << "Could not open the file: " << image_path << std::endl;
-        close(sock);
-        return;
-    }
-
-    // Read the file content into a buffer
-    file.seekg(0, std::ios::end);
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-    std::vector<char> buffer(size);
-    if (!file.read(buffer.data(), size))
-    {
-        std::cerr << "Error reading the file: " << image_path << std::endl;
-        close(sock);
-        return;
-    }
-
-    std::cout << "Sending image of size: " << size << " bytes" << std::endl;
-
-    // Send the frame_index
-    uint32_t frame_index_net = htonl(frame_index); // Convert to network byte order
-    send(sock, reinterpret_cast<const char *>(&frame_index_net), sizeof(frame_index_net), 0);
-
-    // Send the size of the image
-    uint32_t image_size = static_cast<uint32_t>(size);
-    image_size          = htonl(image_size); // Convert to network byte order
-    send(sock, reinterpret_cast<const char *>(&image_size), sizeof(image_size), 0);
-
-    // Send the image data
-    send(sock, buffer.data(), buffer.size(), 0);
-
-    std::cout << "Image data sent." << std::endl;
-
-    // Send the JSON log
-    send(sock, json_log, strlen(json_log), 0);
-
-    std::cout << "JSON log sent." << std::endl;
-
-    // // Send the image path
-    // std::string image_path_str = image_path + "\n"; // Adding newline to delimit the end of the path
-    // send(sock, image_path_str.c_str(), image_path_str.length(), 0);
-
-    // std::cout << "Image path sent." << std::endl;
-
-    // Send the length of the image path
-    uint32_t path_length = image_path.size();
-    path_length          = htonl(path_length);
-    send(sock, reinterpret_cast<const char *>(&path_length), sizeof(path_length), 0);
-
-    // Send the image path
-    send(sock, image_path.c_str(), image_path.size(), 0);
-
-    // Close the socket
-    close(sock);
-    std::cout << "Connection closed." << std::endl;
-}
-
-void send_image_and_log_and_frameIdx_and_imgPath_ver2(const std::string &image_path, const char *json_log,
-                                                      const char *server_ip, int server_port, int frame_index)
-{
-    int                sock = 0;
-    struct sockaddr_in serv_addr;
-
-    // Create socket
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-    {
-        std::cerr << "Socket creation error" << std::endl;
-        return;
-    }
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port   = htons(server_port);
-
-    // Convert IPv4 and IPv6 addresses from text to binary form
-    if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0)
-    {
-        std::cerr << "Invalid address/Address not supported" << std::endl;
-        close(sock);
-        return;
-    }
-
-    // Attempt to connect to the server
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        std::cerr << "Connection Failed" << std::endl;
-        close(sock);
-        return;
-    }
-
-    // Read the image file
-    std::ifstream file(image_path, std::ios::binary);
-    if (!file)
-    {
-        std::cerr << "Could not open the file: " << image_path << std::endl;
-        close(sock);
-        return;
-    }
-
-    // Read the file content into a buffer
-    file.seekg(0, std::ios::end);
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-    std::vector<char> buffer(size);
-    if (!file.read(buffer.data(), size))
-    {
-        std::cerr << "Error reading the file: " << image_path << std::endl;
-        close(sock);
-        return;
-    }
-
-    std::cout << "Sending image of size: " << size << " bytes" << std::endl;
-
-    // Send the frame_index
-    uint32_t frame_index_net = htonl(frame_index);
-    if (send(sock, reinterpret_cast<const char *>(&frame_index_net), sizeof(frame_index_net), 0) < 0)
-    {
-        std::cerr << "Failed to send frame index" << std::endl;
-        close(sock);
-        return;
-    }
-
-    // Send the size of the image
-    uint32_t image_size = static_cast<uint32_t>(size);
-    image_size          = htonl(image_size);
-    if (send(sock, reinterpret_cast<const char *>(&image_size), sizeof(image_size), 0) < 0)
-    {
-        std::cerr << "Failed to send image size" << std::endl;
-        close(sock);
-        return;
-    }
-
-    // Send the image data
-    if (send(sock, buffer.data(), buffer.size(), 0) < 0)
-    {
-        std::cerr << "Failed to send image data" << std::endl;
-        close(sock);
-        return;
-    }
-
-    std::cout << "Image data sent." << std::endl;
-
-    // Send the length of the image path
-    std::cerr << "image_path :" << image_path << std::endl;
-    uint32_t path_length = static_cast<uint32_t>(image_path.size());
-    path_length          = htonl(path_length); // Convert to network byte order
-    if (send(sock, reinterpret_cast<const char *>(&path_length), sizeof(path_length), 0) < 0)
-    {
-        std::cerr << "Failed to send path length" << std::endl;
-        close(sock);
-        return;
-    }
-    std::cout << "Path length sent. " << ntohl(path_length) << " bytes" << std::endl;
-
-    // Send image path
-    if (send(sock, image_path.c_str(), image_path.size(), 0) < 0)
-    {
-        std::cerr << "Failed to send image path" << std::endl;
-        close(sock);
-        return;
-    }
-
-    std::cout << "Image path sent." << std::endl;
-
-    // Send the JSON log
-    if (send(sock, json_log, strlen(json_log), 0) < 0)
-    {
-        std::cerr << "Failed to send JSON log" << std::endl;
-        close(sock);
-        return;
-    }
-
-    std::cout << "JSON log sent." << std::endl;
-
-    // Close the socket
-    close(sock);
-    std::cout << "Connection closed." << std::endl;
-}
+//     // Close the socket
+//     close(sock);
+//     std::cout << "Connection closed.\n";
+// }
 
 static S32 ADAS_GetSrcImage_FromImage(ADAS_Context *adas_ctx, U8 **source_image, MI_SYS_BUF_HANDLE *hHandle)
 {
@@ -1584,9 +1330,8 @@ static S32 ADAS_GetSrcImage_FromImage(ADAS_Context *adas_ctx, U8 **source_image,
         }
 
         // Alsiter add 2024-07-31
-        std::string server_ip = g_IpuIntfObject->m_config->HistoricalFeedModeConfig.serverIP;
-        // int         server_port = get_server_port(server_ip);
-        int server_port = g_IpuIntfObject->m_config->HistoricalFeedModeConfig.serverPort;
+        std::string server_ip   = g_IpuIntfObject->m_config->HistoricalFeedModeConfig.serverIP;
+        int         server_port = g_IpuIntfObject->m_config->HistoricalFeedModeConfig.serverPort;
 
         cv::cvtColor(imgFrame, imgFrame, cv::COLOR_RGB2RGBA);
 
@@ -1687,25 +1432,25 @@ static S32 ADAS_GetSrcImage_FromImage(ADAS_Context *adas_ctx, U8 **source_image,
                 // {
                 // JSON Format Info
                 g_IpuIntfObject->getResults(adasResult);
-                std::string jsonlog = g_IpuIntfObject->m_jsonLog->logInfo(
+                std::string jsonLog = g_IpuIntfObject->m_jsonLog->logInfo(
                     adasResult, g_IpuIntfObject->m_humanBBoxList, g_IpuIntfObject->m_vehicleBBoxList,
                     g_IpuIntfObject->m_roadSignBBoxList, g_IpuIntfObject->m_tailingObject, resultFrameIdx,
                     g_IpuIntfObject->m_inferenceTime, g_IpuIntfObject->m_inputBufferSize);
 
                 if (g_IpuIntfObject->m_config->HistoricalFeedModeConfig.visualizeMode == 0)
                 {
-                    // send_image_and_log(imagePath, jsonlog.c_str(), server_ip.c_str(), server_port,
+                    // send_image_and_log(imagePath, json_log.c_str(), server_ip.c_str(), server_port,
                     //                    resultFrameIdx); // Alister add 2024-05-05
-                    // Alister add 2024-08-17
-                    send_image_and_log_and_frameIdx_and_imgPath_ver2(imagePath, jsonlog.c_str(), server_ip.c_str(),
-                                                                     server_port, resultFrameIdx);
 
-                    // send_image_and_log_live_mode(imgFrame_3ch, jsonlog.c_str(), server_ip.c_str(), server_port,
+                    g_IpuIntfObject->m_socket->send_image_and_log_and_frameIdx_and_imgPath(
+                        imagePath, jsonLog.c_str(), server_ip.c_str(), server_port, resultFrameIdx);
+                    // send_image_and_log_live_mode(imgFrame_3ch, jsonLog.c_str(), server_ip.c_str(), server_port,
                     //                              resultFrameIdx); // Alister add 2024-05-05
                 }
                 else if (g_IpuIntfObject->m_config->HistoricalFeedModeConfig.visualizeMode == 1)
                 {
-                    g_IpuIntfObject->m_jsonLog->send_json_log(jsonlog.c_str(), server_ip.c_str(), server_port);
+                    // g_IpuIntfObject->m_jsonLog->send_json_log(jsonlog.c_str(), server_ip.c_str(), server_port);
+                    g_IpuIntfObject->m_socket->send_json_log(jsonLog.c_str(), server_ip.c_str(), server_port);
                 }
 
                 // printf(json_log_str.c_str()); // Alister add 2024-05-23
