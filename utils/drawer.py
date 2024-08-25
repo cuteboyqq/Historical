@@ -611,8 +611,8 @@ class Drawer(BaseDataset):
             return
         
         cv2.putText(image, 'frame_ID:'+str(frame_ID), (10,10), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
-        logging.info("============================")
-        logging.info(f"frame_ID:{frame_ID}")
+        # logging.info("============================")
+        # logging.info(f"frame_ID:{frame_ID}")
         if tailing_objs and self.show_tailingobjs:
             custom_text_thickness = 0.45
             if self.tailingobjs_text_size is not None:
@@ -745,7 +745,7 @@ class Drawer(BaseDataset):
         
         if vanish_objs and self.show_vanishline:
             vanishlineY = vanish_objs[0].get('vanishLineY', None)
-            logging.info(f'vanishlineY:{vanishlineY}')
+            # logging.info(f'vanishlineY:{vanishlineY}')
             x2 = im.shape[1]
             cv2.line(im, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
             cv2.putText(im, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
@@ -753,8 +753,8 @@ class Drawer(BaseDataset):
         if self.show_adasobjs:
             self.ADAS_FCW = ADAS_objs[0].get('FCW',None)
             self.ADAS_LDW = ADAS_objs[0].get('LDW',None)
-            logging.info(f'ADAS_FCW:{self.ADAS_FCW}')
-            logging.info(f'ADAS_LDW:{self.ADAS_LDW}')
+            # logging.info(f'ADAS_FCW:{self.ADAS_FCW}')
+            # logging.info(f'ADAS_LDW:{self.ADAS_LDW}')
             if self.ADAS_FCW==True:
                 cv2.putText(im, 'Collision Warning', (150,50), cv2.FONT_HERSHEY_SIMPLEX,1.3, (0, 128, 255), 2, cv2.LINE_AA)
             if self.ADAS_LDW==True:

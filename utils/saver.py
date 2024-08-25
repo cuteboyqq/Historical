@@ -20,17 +20,32 @@ class ImageSaver:
         self.image_format = args.image_format
         logging.info(f"ImageSaver initialized with base_dir={base_dir} and image_format={self.image_format}")
 
+    # def _get_next_directory(self):
+    #     """Determine the next available directory."""
+    #     i = 1
+    #     while True:
+    #         dir_name = f'predict{i}'
+    #         path = os.path.join(self.base_dir, dir_name)
+    #         if not os.path.exists(path):
+    #             print(f"path : {path} is not exist, create it")
+    #             # self.is_created = True
+    #             return path
+    #         i += 1
+
     def _get_next_directory(self):
-        """Determine the next available directory."""
+        """Determine the next available directory or return an empty existing one."""
         i = 1
         while True:
             dir_name = f'predict{i}'
             path = os.path.join(self.base_dir, dir_name)
             if not os.path.exists(path):
-                print(f"path : {path} is not exist, create it")
-                # self.is_created = True
+                print(f"path: {path} does not exist, creating it.")
+                return path
+            elif os.path.exists(path) and not os.listdir(path):
+                print(f"path: {path} exists but is empty, using this directory.")
                 return path
             i += 1
+
 
     def _get_next_csv_directory(self):
         """Determine the next available directory."""
@@ -39,6 +54,10 @@ class ImageSaver:
             dir_name = f'predict_csv{i}'
             path = os.path.join(self.base_dir, dir_name)
             if not os.path.exists(path):
+                print(f"path: {path} does not exist, creating it.")
+                return path
+            elif os.path.exists(path) and not os.listdir(path):
+                print(f"path: {path} exists but is empty, using this directory.")
                 return path
             i += 1
 

@@ -79,7 +79,7 @@ class SOCKET:
         image_path = f'{self.im_dir}/{self.image_basename}{frame_index}.{self.image_format}'
         with open(image_path, 'wb') as file:
             file.write(image_data)
-        logging.info(f"💾 Image saved at {image_path}")
+        # logging.info(f"💾 Image saved at {image_path}")
 
 
     def receive_image_path_length(self, client_socket):
@@ -644,12 +644,12 @@ class SSH:
         try:
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            logging.info(f'hostname:{self.camera_host_name}')
-            logging.info(f'port:{self.camera_port}')
-            logging.info(f'username:{self.camera_user_name}')
-            logging.info(f'password:{self.camera_password}')
-            ssh.connect(self.camera_host_name, self.camera_port, self.camera_user_name, self.camera_password)
-            print(f"Connected to {self.camera_host_name}")
+            logging.info(f'hostname:{self.host_name}')
+            logging.info(f'port:{self.port}')
+            logging.info(f'username:{self.user_name}')
+            logging.info(f'password:{self.password}')
+            ssh.connect(self.host_name, self.port, self.user_name, self.password)
+            print(f"Connected to {self.host_name}")
 
             # Execute the command
             stdin, stdout, stderr = ssh.exec_command(command)
