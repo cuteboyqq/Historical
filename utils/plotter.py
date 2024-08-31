@@ -393,6 +393,7 @@ class Plotter(BaseDataset):
         
         # Save the plot as a file
         plt.savefig('distance_to_camera_plot.png')
+        plt.show()
         print("Plot saved as 'distance_to_camera_plot.png'")
 
 

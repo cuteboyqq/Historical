@@ -17,7 +17,15 @@ class Drawer(BaseDataset):
 
     def __init__(self, args):
         super().__init__(args)
-
+        self.DCA_color = (255,128,0)
+        self.DLA_color = (255,0,128)
+        self.DMA_color = (0,128,255)
+        self.DUA_color = (128,0,255)
+        self.adas_detection_thickness = args.adas_detection_thickness
+        self.show_adas_detection = args.show_adas_detection
+        self.adas_detection_show_label = args.adas_detection_show_label
+        self.visualize_mode = args.visualize_mode
+        self.device_mode = args.device_mode
     def process_json_log(self,json_log, img_buffer=None, device_image_path=None):
         """
         Processes a JSON log, performs various visualizations and actions based on its content, and handles exceptions.
@@ -71,6 +79,26 @@ class Drawer(BaseDataset):
             vanishline_objs = log_data["frame_ID"][frame_ID]["vanishLine"]
             ADAS_objs = log_data["frame_ID"][frame_ID]["ADAS"]
             lane_info = log_data["frame_ID"][frame_ID]["LaneInfo"]
+            # Alister add 2024-08-27
+            detect_DCA_objs = None
+            if "ADASDetectObj" in log_data["frame_ID"][frame_ID]:
+                if "DCA" in log_data["frame_ID"][frame_ID]["ADASDetectObj"]:
+                    detect_DCA_objs = log_data["frame_ID"][frame_ID]["ADASDetectObj"]["DCA"]
+
+            detect_DLA_objs = None
+            if "ADASDetectObj" in log_data["frame_ID"][frame_ID]:
+                if "DLA" in log_data["frame_ID"][frame_ID]["ADASDetectObj"]:
+                    detect_DLA_objs = log_data["frame_ID"][frame_ID]["ADASDetectObj"]["DLA"]
+
+            detect_DMA_objs = None
+            if "ADASDetectObj" in log_data["frame_ID"][frame_ID]:
+                if "DMA" in log_data["frame_ID"][frame_ID]["ADASDetectObj"]:
+                    detect_DMA_objs = log_data["frame_ID"][frame_ID]["ADASDetectObj"]["DMA"]
+
+            detect_DUA_objs = None
+            if "ADASDetectObj" in log_data["frame_ID"][frame_ID]:
+                if "DUA" in log_data["frame_ID"][frame_ID]["ADASDetectObj"]:
+                    detect_DUA_objs = log_data["frame_ID"][frame_ID]["ADASDetectObj"]["DUA"]
 
             detect_objs = None
             if "detectObj" in log_data["frame_ID"][frame_ID]:
@@ -95,6 +123,55 @@ class Drawer(BaseDataset):
                 image = cv2.resize(image, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
                
             cv2.putText(image, 'frame_ID:'+str(frame_ID), (10,15), cv2.FONT_HERSHEY_SIMPLEX,0.60, (0, 255, 255), 1, cv2.LINE_AA)
+
+
+            if self.show_adas_detection:
+                if detect_DCA_objs:
+                    for obj in detect_DCA_objs:
+                        x1, y1 = obj["ADASDetectObj.x1"], obj["ADASDetectObj.y1"]
+                        x2, y2 = obj["ADASDetectObj.x2"], obj["ADASDetectObj.y2"]
+                        confidence = obj["ADASDetectObj.confidence"]
+                        label = obj["ADASDetectObj.label"]
+                        
+                        cv2.rectangle(image, (x1, y1), (x2, y2), (255, 128, 0), self.adas_detection_thickness)
+                        if self.adas_detection_show_label:
+                            cv2.putText(image, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, self.DCA_color, 1)
+
+                if detect_DLA_objs:
+                    for obj in detect_DLA_objs:
+                        x1, y1 = obj["ADASDetectObj.x1"], obj["ADASDetectObj.y1"]
+                        x2, y2 = obj["ADASDetectObj.x2"], obj["ADASDetectObj.y2"]
+                        confidence = obj["ADASDetectObj.confidence"]
+                        label = obj["ADASDetectObj.label"]
+                        
+                        cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 128), self.adas_detection_thickness)
+                        if self.adas_detection_show_label:
+                            cv2.putText(image, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, self.DLA_color, 1)
+
+
+                if detect_DMA_objs:
+                    for obj in detect_DMA_objs:
+                        x1, y1 = obj["ADASDetectObj.x1"], obj["ADASDetectObj.y1"]
+                        x2, y2 = obj["ADASDetectObj.x2"], obj["ADASDetectObj.y2"]
+                        confidence = obj["ADASDetectObj.confidence"]
+                        label = obj["ADASDetectObj.label"]
+                        
+                        cv2.rectangle(image, (x1, y1), (x2, y2), (0, 128, 255), self.adas_detection_thickness)
+                        if self.adas_detection_show_label:
+                            cv2.putText(image, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, self.DMA_color, 1)
+
+
+                if detect_DUA_objs:
+                    for obj in detect_DUA_objs:
+                        x1, y1 = obj["ADASDetectObj.x1"], obj["ADASDetectObj.y1"]
+                        x2, y2 = obj["ADASDetectObj.x2"], obj["ADASDetectObj.y2"]
+                        confidence = obj["ADASDetectObj.confidence"]
+                        label = obj["ADASDetectObj.label"]
+                        
+                        cv2.rectangle(image, (x1, y1), (x2, y2), (128, 0, 255), self.adas_detection_thickness)
+                        if self.adas_detection_show_label:
+                            cv2.putText(image, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, self.DUA_color, 1)
+
 
             if self.show_adasobjs:
                 for obj in ADAS_objs:
@@ -184,11 +261,12 @@ class Drawer(BaseDataset):
                     distance_to_camera = obj['tailingObj.distanceToCamera']
                     tailingObj_id = obj['tailingObj.id']
                     tailingObj_label = obj['tailingObj.label']
+                    # ttc = obj['tailingObj.currTTC']
 
                     # cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
                     if self.show_distancetitle:
                         text = f"Distance:{round(distance_to_camera,self.tailingobjs_distance_decimal_length)}m" 
-                        xy = (int(self.model_w/3.0), int(self.model_h*11.0/12.0))
+                        xy = (int(self.model_w/4.0), int(self.model_h*11.0/12.0))
                         cv2.putText(image, text, xy, cv2.FONT_HERSHEY_SIMPLEX,1.0, (0,255,255), 2, cv2.LINE_AA)
 
                     im = image
@@ -323,24 +401,26 @@ class Drawer(BaseDataset):
                 x = int(self.model_w / 4.0)
                 y = int(self.model_h / 10.0)
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                color = (0,0,0)
-                cv2.putText(image, base_directory_name, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
+                color = (255,128,0)
+                cv2.putText(image, f"FileName:{base_directory_name}", (x, y), font, 0.50, color, 1, cv2.LINE_AA)
 
             if self.show_devicemode:
-                x = int(self.model_w * 2.0/ 5.0)
+                x = int(self.model_w * 2.0/ 6.0)
                 y = int(self.model_h / 20.0)
                 font = cv2.FONT_HERSHEY_SIMPLEX
-                color = (255,255,255)
-                mode = 'Unknown'
-                if self.mode in ['eval','evaluation']:
-                    mode = 'Online evaluation(Historical)'
-                elif self.mode == 'online':
-                    mode = 'Online'
-                elif self.mode == 'offline':
-                    mode = 'Offline'
+                color = (0,200,255)
+                # mode = 'Unknown'
+                # if self.mode in ['eval','evaluation']:
+                #     mode = 'Online evaluation(Historical)'
+                # elif self.mode == 'online' or self.mode == 'historical':
+                #     mode = 'Online'
+                # elif self.mode == 'offline':
+                #     mode = 'Offline'
                 # elif self.mode == 'sem-online':
                 #     mode = 'Visualize semi-online'
-                cv2.putText(image, 'Stream mode : ' + mode, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
+
+                
+                cv2.putText(image, f'Camera:{self.device_mode}, Visual:{self.visualize_mode}', (x, y), font, 0.60, color, 1, cv2.LINE_AA)
 
             if self.resize:
                 image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
@@ -359,7 +439,7 @@ class Drawer(BaseDataset):
                     base_directory_name = os.path.basename(os.path.dirname(device_image_path))
                     GT_dist = os.path.basename(os.path.dirname(os.path.dirname(device_image_path)))
                     data_folder = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(device_image_path))))
-                    save_file = "frame_" + str(frame_ID) + ".jpg"
+                    save_file = "frame_" + str(frame_ID) + "." + self.image_format
                     current_directory = os.getcwd()
                     save_dir = os.path.join(current_directory,"runs",data_folder,GT_dist,base_directory_name)
                     save_path = os.path.join(save_dir,save_file)
@@ -394,7 +474,8 @@ class Drawer(BaseDataset):
                         file.write(json_log_str + '\n')  # Writing JSON log to the file without escape characters
                     # print(f"JSON log saved to {txt_path}")
                 else:
-                    self.img_saver.save_json_log(log_data)
+                    #self.img_saver.save_json_log(log_data)
+                    self.img_saver.save_json_log_txt(log_data)
                 # # Save the JSON log to a CSV file
                 # with open(f'{self.save_jsonlogpath}', mode='a', newline='') as file:
                 #     writer = csv.writer(file)
@@ -485,21 +566,38 @@ class Drawer(BaseDataset):
                         for frame_id, frame_data in data['frame_ID'].items():
                             
                             self.frame_ids.append(int(frame_id))
-                            logging.info(f"frame_id:{frame_id}")
-                            logging.info(f"csv_file_path:{self.csv_file_path}")
+                            # logging.info(f"frame_id:{frame_id}")
+                            # logging.info(f"csv_file_path:{self.csv_file_path}")
 
                             # Get image path
                             im_file = self.image_basename + frame_id + "." + self.image_format
                             im_path = os.path.join(self.im_dir,im_file)
-                            logging.info(im_path)
+                            # logging.info(im_path)
                             im = cv2.imread(im_path)
 
                             cv2.putText(im, 'frame_ID:'+str(frame_id), (10,10), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
                             tailing_objs = frame_data.get('tailingObj', [])
-                            vanish_objs = frame_data.get('vanishLineY', [])
+                            vanish_objs = frame_data.get('vanishLine', [])
                             ADAS_objs = frame_data.get('ADAS', [])
                             detect_objs = frame_data.get('detectObj', {})
                             lane_info = frame_data.get("LaneInfo",[])
+
+                            if self.show_devicemode:
+                                x = int(self.model_w * 2.0/ 5.0)
+                                y = int(self.model_h / 20.0)
+                                font = cv2.FONT_HERSHEY_SIMPLEX
+                                color = (255,255,255)
+                                mode = 'Unknown'
+                                if self.mode in ['eval','evaluation']:
+                                    mode = 'Online evaluation(Historical)'
+                                elif self.mode == 'online':
+                                    mode = 'Online'
+                                elif self.mode == 'offline':
+                                    mode = 'Offline'
+                                # elif self.mode == 'sem-online':
+                                #     mode = 'Visualize semi-online'
+                                cv2.putText(im, 'Stream mode : ' + mode, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
+
 
                             #---- Draw tailing obj----------
                             if tailing_objs and self.show_tailingobjs:
@@ -527,7 +625,7 @@ class Drawer(BaseDataset):
                                 # 按下任意鍵則關閉所有視窗
                                 if self.resize:
                                     im = cv2.resize(im, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
-                                cv2.imshow("im",im)
+                                cv2.imshow("Offline visualization",im)
                                 if self.ADAS_FCW==True or self.ADAS_LDW==True:
                                     if self.sleep_zeroonadas:
                                         cv2.waitKey(0)
@@ -537,34 +635,15 @@ class Drawer(BaseDataset):
                                     cv2.waitKey(self.sleep)
                                 # cv2.destroyAllWindows()
                             if self.save_airesultimage:
-                                os.makedirs(self.save_imdir,exist_ok=True)
-                                im_file = self.image_basename + str(frame_id) + "." + self.image_format
-                                save_im_path = os.path.join(self.save_imdir,im_file)
-                                if not os.path.exists(save_im_path):
-                                    cv2.imwrite(save_im_path,im)
-                                else:
-                                    logging.info(f'image exists :{save_im_path}')
+                                self.img_saver.save_image(im,frame_ID=frame_id)
+
+                            if self.save_jsonlog:
+                                self.img_saver.save_json_log_txt(frame_data)
                                 
                     except json.JSONDecodeError as e:
                         logging.error(f"Error decoding JSON: {e}")
                     except Exception as e:
                         logging.error(f"Unexpected error: {e}")
-        
-        if self.show_distanceplot:
-            # Plotting the data
-            plt.figure(figsize=(200, 100))
-            plt.plot(self.frame_ids, self.distances, label=self.plot_label)
-
-            plt.xlabel('FrameID')
-            plt.ylabel('tailingObj.distanceToCamera')
-            plt.title('Distance to Camera over Frames')
-            plt.legend()
-            plt.grid(True)
-
-            plt.show()
-
-
-        return frame_ids, distances
     
 
     def draw_bounding_boxes(self,frame_ID, tailing_objs,detect_objs,vanish_objs,ADAS_objs,lane_info):
@@ -858,15 +937,15 @@ class Drawer(BaseDataset):
 
             if distance_to_camera>=10:
                 color = (0,255,255)
-                thickness = 3
+                thickness = 1
                 text_thickness = 0.40
             elif distance_to_camera>=7 and distance_to_camera<10:
                 color = (0,100,255)
-                thickness = 5
+                thickness = 2
                 text_thickness = 0.46
             elif distance_to_camera<7:
                 color = (0,25,255)
-                thickness = 7
+                thickness = 3
                 text_thickness = 0.50
 
             # Draw each side of the rectangle
@@ -885,14 +964,55 @@ class Drawer(BaseDataset):
         else:
             cv2.rectangle(im, (tailingObj_x1, tailingObj_y1), (tailingObj_x2, tailingObj_y2), color=(0,255,255), thickness=2)
 
+        if self.show_distancetitle:
+            text = f"Distance:{round(distance_to_camera,self.tailingobjs_distance_decimal_length)}m" 
+            xy = (int(self.model_w/3.0), int(self.model_h*11.0/12.0))
+            cv2.putText(im, text, xy, cv2.FONT_HERSHEY_SIMPLEX,1.0, (0,255,255), 2, cv2.LINE_AA)
+
 
         # if tailingObj_label=='VEHICLE':
             # Put text on the image
         # if not self.show_detectobjs:
-        cv2.rectangle(im,(tailingObj_x1, tailingObj_y1-10),(tailingObj_x2 , tailingObj_y1-10),(50,50,50), -1)
-        cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
+        if self.show_tailingobjs:
+            if not self.showtailobjBB_corner:
+                cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
+                cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
+            else:
+                # Get text size for label
+                text_label = f'{tailingObj_label},ID:{tailingObj_id}'
+                text_distance = f'Distance:{round(distance_to_camera,3)}m'
+                font = cv2.FONT_HERSHEY_SIMPLEX
+
+                text_size_label, _ = cv2.getTextSize(text_label, font, text_thickness, 1)
+                text_size_distance, _ = cv2.getTextSize(text_distance, font, text_thickness + 0.05, 1)
+
+                # Calculate the rectangle size
+                rect_x1 = tailingObj_x1
+                rect_y1 = tailingObj_y1 - 10 -  text_size_label[1]  # Adjust height to fit text
+                rect_x2 = tailingObj_x1 + text_size_label[0]
+                rect_y2 = tailingObj_y1 - 10  # Adjust height to fit text
+
+                # Draw the rectangle
+                cv2.rectangle(im, (rect_x1, rect_y1), (rect_x2, rect_y2), (0, 0, 0), -1)
+
+
+                # Calculate the rectangle size
+                rect_x1_d = tailingObj_x1
+                rect_y1_d = tailingObj_y1 - 25 - text_size_distance[1]  # Adjust height to fit text
+                rect_x2_d = tailingObj_x1 + text_size_distance[0]
+                rect_y2_d = tailingObj_y1 - 25    # Adjust height to fit text
+
+                # Draw the rectangle
+                cv2.rectangle(im, (rect_x1_d, rect_y1_d), (rect_x2_d, rect_y2_d), (0, 0, 0), -1)
+
+                # Draw the text
+                cv2.putText(im, text_label, (tailingObj_x1, tailingObj_y1 - 10), font, text_thickness, color, 1, cv2.LINE_AA)
+                cv2.putText(im, text_distance, (tailingObj_x1, tailingObj_y1 - 25), font, text_thickness + 0.05, color, 1, cv2.LINE_AA)
+
+        # cv2.rectangle(im,(tailingObj_x1, tailingObj_y1-10),(tailingObj_x2 , tailingObj_y1-10),(50,50,50), -1)
+        # cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
     
-        cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.1, color, 1, cv2.LINE_AA)
+        # cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.1, color, 1, cv2.LINE_AA)
 
         if distance_to_camera is not None:
             self.distances.append(distance_to_camera)
@@ -954,11 +1074,11 @@ class Drawer(BaseDataset):
                     cv2.putText(im, f'{label} {confidence:.2f}', (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, color, 1, cv2.LINE_AA)
 
     def draw_vanish_objs(self,vanish_objs,im):
-        vanishlineY = vanish_objs[0].get('vanishlineY', None)
-        logging.info(f'vanishlineY:{vanishlineY}')
+        vanishLineY = vanish_objs[0].get('vanishLineY', None)
+        # logging.info(f'vanishLineY:{vanishLineY}')
         x2 = im.shape[1]
-        cv2.line(im, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
-        cv2.putText(im, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
+        cv2.line(im, (0, vanishLineY), (x2, vanishLineY), (0, 255, 255), thickness=1)
+        cv2.putText(im, 'VanishLineY:' + str(round(vanishLineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
 
 
     def draw_ADAS_objs(self,ADAS_objs,im):

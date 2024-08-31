@@ -81,7 +81,7 @@ class Evaluation(BaseDataset):
         """
         date_command = "date"
         try:
-            date_output = self.Connect.execute_remote_command_with_progress_ver2(date_command)
+            date_output = self.Connect.SSH.execute_remote_command_with_progress_ver2(date_command)
             logging.info(f"Device date: {date_output}")
             return date_output
         except Exception as e:
@@ -95,7 +95,7 @@ class Evaluation(BaseDataset):
 
         try:
             # Execute the remote command
-            result = self.Connect.execute_remote_command_with_progress_ver2(check_command)
+            result = self.Connect.SSH.execute_remote_command_with_progress_ver2(check_command)
 
             # Check if result is not None
             if result is not None:
@@ -136,7 +136,7 @@ class Evaluation(BaseDataset):
             f"sed -i 's/^VisualizeMode = [0-2]*/VisualizeMode = {self.visualize_mode}/' {config_file_path}"
         )
         # logging.info(f"remote modify config : {commands}")
-        self.Connect.execute_remote_command_with_progress_ver2(commands)
+        self.Connect.SSH.execute_remote_command_with_progress_ver2(commands)
 
 
     def run_the_adas(self):
@@ -151,7 +151,7 @@ class Evaluation(BaseDataset):
                 "./run_script"
             )
             
-            output = self.Connect.execute_remote_command_with_progress_ver2(remote_command)
+            output = self.Connect.SSH.execute_remote_command_with_progress_ver2(remote_command)
             
             logging.info(f"🚀 Command output: {output}")
 

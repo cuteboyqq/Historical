@@ -18,19 +18,9 @@ class ImageSaver:
         self._create_directory(self.current_dir)
         self._create_directory(self.current_csv_dir)
         self.image_format = args.image_format
+        self.save_dir = None
         logging.info(f"ImageSaver initialized with base_dir={base_dir} and image_format={self.image_format}")
 
-    # def _get_next_directory(self):
-    #     """Determine the next available directory."""
-    #     i = 1
-    #     while True:
-    #         dir_name = f'predict{i}'
-    #         path = os.path.join(self.base_dir, dir_name)
-    #         if not os.path.exists(path):
-    #             print(f"path : {path} is not exist, create it")
-    #             # self.is_created = True
-    #             return path
-    #         i += 1
 
     def _get_next_directory(self):
         """Determine the next available directory or return an empty existing one."""
@@ -74,16 +64,23 @@ class ImageSaver:
         logging.info(f"Custom directory set to {self.custom_dir}")
 
 
-    def save_image(self, image, frame_ID):
+    def save_image(self, image, frame_ID, basename=None , save_dir = None, im_format=None):
         """Save the image to the current directory."""
         try:
             # Determine where to save the image
-            save_dirs = self.custom_dir if self.custom_dir is not None else self.current_dir
+            self.save_dirs = save_dir if save_dir is not None else self.current_dir
 
             # logging.error(f"self.custom_dir is {self.custom_dir}")
             # logging.error(f"self.current_dir is {self.current_dir}")
-
-            image_path = os.path.join(save_dirs, f'frame_{frame_ID}.{self.image_format}')
+            if basename is not None:
+                BaseName = basename
+            else:
+                BaseName = "frame_"
+            if im_format is None:
+                img_format = self.image_format
+            else:
+                img_format = im_format
+            image_path = os.path.join(self.save_dirs, f'{BaseName}{frame_ID}.{img_format}')
             success = cv2.imwrite(image_path, image)
             # if success:
             #     logging.info(f"Image saved to {image_path}")
@@ -92,6 +89,8 @@ class ImageSaver:
         except Exception as e:
             logging.error(f"Error saving image: {e}")
 
+  
+
     def save_json_log(self, json_log):
         """Save the JSON log to a CSV file."""
         csv_path = os.path.join(self.current_csv_dir, 'json_logs.csv')
@@ -99,6 +98,13 @@ class ImageSaver:
             writer = csv.writer(file)
             writer.writerow([json.dumps(json_log)])
         # print(f"JSON log saved to {csv_path}")
+
+    def save_json_log_txt(self, json_log):
+        """Save the JSON log to a TXT file."""
+        txt_path = os.path.join(self.current_csv_dir, 'json_logs.txt')
+        with open(txt_path, mode='a') as file:
+            file.write(json.dumps(json_log) + '\n')
+
 
     def save_video(self, output_filename='video.mp4', fps=7):
         """Encode the images in the current directory into a video file."""

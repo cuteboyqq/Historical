@@ -5,39 +5,56 @@ MODEL:
   INPUT_WIDTH: 576 # Model input image width
   INPUT_HEIGHT: 320 # Model input image height
 
-# Mode configuration
-MODE:
-  VISUALIZE_MODE: online  # Mode of run visualize mode (online / offline / semi-online / eval / analysis/ varify / None)
+# Mode configuration (Alister's code)
+TASK:
+  TASK_MODE: varify  # Mode of run visualize mode (online / offline / semi-online / visualize / eval / analysis/ varify / historical / None)
+
+# Visualize configuration (Andy's code)
+VISUALIZE:
+  RE_START_ADAS: false # Restart camera ADAS when run visualization
+  MODE: 'online' # Mode of run visualize historical mode (online / offline / semi-online )
+  DEVICE_MODE: 'live' # Device mode (historical / live)
+  
 
 # JSON log configuration
 JSONLOG:
   FROM: online # Where is the  JSON log from  ('online' / 'camera' / None)
 
-# Save settings
-SAVE:
-  RAW_IMAGES: false     # Flasg to save raw images
-  AI_RESULT_IMAGE: false  # Flag to save AI result images
-  RAW_VIDEO: false  # Flag to save raw video
-  VIDEO_FPS: 7 # FPS of the saved video
-  JSON_LOG: false  # Flag to save JSON log
-  EXTRACT_FRAME: false # Flag to save frames extracted from the video stream
+HISTORICAL:
+  SKIP_FRAME: 1
+  CAMERA:
+    DATASET_PATH: '/mnt/mmc/adas/debug/raw_images/EVT_2023_10_07_17_39_52_F'  
+    SCRIPT_PATH: '/customer/run_adas'  
+  LOCAL:
+    DATASET_PATH: '/home/ali/Projects/GitHub_Code/ali/adas_evaluation_tools/src/assets/videos/EVT_2023_10_07_17_39_52_F.mp4' 
 
 # Image configuration
 IMAGE:
   BASE_NAME: 'RawFrame_'  # Base name for image files
-  FORMAT: 'jpg'  # Format of the image files, jpg is for live mode save raw images, png is for historical mode save raw images
+  FORMAT: 'jpg'  # Format of the image files (set jpg for visualize online, set png for visualize offline)
+
+# Save settings
+SAVE:
+  ADAS_RESULT_IMAGE: false  # Flag to save ADAS result images
+  JSON_LOG: true  # Flag to save JSON log
+  RAW_IMAGES: false     # Flasg to save raw images
+  RAW_VIDEO: false  # Flag to save raw video
+  VIDEO_FPS: 7 # FPS of the saved video
+  EXTRACT_FRAME: false # Flag to save frames extracted from the video stream
+
+# Server configuration
+SERVER:
+  PORT: 1530 # Port number for the local server
+  TFTP_DIR: '/home/ali/Public/tftp'  # Directory on the server for TFTP file transfers
+  TFTP_IP: '192.168.1.10'  # IP address of the TFTP server
+  IP: '192.168.1.10'  # IP address of the TFTP server
+
 
 # Resize settings
 RESIZE:
   ENABLED: false  # Flag to enable or disable image resizing
-  WIDTH:  1600 # Width of the resized images
-  HEIGHT: 900  # Height of the resized images
-
-
-# Visualize configuration
-# VISUALIZE:
-#   MODE: 'online' # Mode of run visualize historical mode (online / offline / semi-online )
-#   DEVICE_MODE: 'live' # Device mode (historical / live)
+  WIDTH:  640 # Width of the resized images
+  HEIGHT: 384  # Height of the resized images
 
 # Camera configuration
 CAMERA:
@@ -49,18 +66,13 @@ CAMERA:
   CAMERA_CSV_FILE_DIR: '/logging/video-adas'  # Directory on the camera where CSV files are stored
   CAMERA_CONFIG_DIR: '/customer/adas/config' # Directory on the camera where config.txt files are stored
 
-# Server configuration
-SERVER:
-  PORT: 3580  # Port number for the local server
-  TFTP_DIR: '/home/ali/Public/tftp'  # Directory on the server for TFTP file transfers
-  TFTP_IP: '192.168.1.12'  # IP address of the TFTP server
-  IP: '192.168.1.12'  # IP address of the TFTP server
 
 # Local configuration
 LOCAL:
-  CSV_FILE: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/csv_file/2024-8-25-13-8.txt'  # Path to the local CSV file
-  RAW_IMG_DIR: '/home/ali/Projects/GitHub_Code/ali/Historical/assets/images/2024-8-25-13-8'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
-  SAVE_RAW_VIDEO_PATH: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/videos'  # Path to save the raw video file
+  CSV_FILE: 'assets/csv_file/REC20240402-134400-19.txt'  # Path to the local CSV file
+  RAW_IMG_DIR: 'assets/images/FAIQ_15_NightVision'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
+  SAVE_RAW_VIDEO_PATH: 'assets/videos/FAIQ_15_NightVision.mp4'  # Path to save the raw video file
+
 
 # Display settings
 DISPLAY:
@@ -75,6 +87,11 @@ DISPLAY:
   SHOW_DISTANCE_TITLE: true # Flag to display distance title
   SHOW_DETECT_OBJS_INFO: true # Flag to display detect obj label & confidence
   SHOW_DEVICE_MODE: true # Flag to display device live/historical mode
+  SHOW_ADAS_DETECTION: true # Flag to display ADAS detection including DCA/DLA/DMA/DUA
+
+ADAS_DETECTION:
+  THICKNESS: 2
+  SHOW_LABEL: true
 
 # Tailing object configuation
 TAILING_OBJ:
@@ -89,11 +106,12 @@ LANE_LINE:
   ALPHA: 0.35
   THICKNESS: 2
 
+
 # Wait settings
 WAIT:
-  VALUE: 1  # Wait time in milliseconds for image display
+  VALUE: 20  # Wait time in milliseconds for image display
   ZERO_ON_ADAS_EVENT: false  # Flag to set wait time to zero when ADAS event occurs
-  ON_ADAS_EVENT: 1  # Wait time in milliseconds when an ADAS event occurs
+  ON_ADAS_EVENT: 60  # Wait time in milliseconds when an ADAS event occurs
 
 # Plot settings
 PLOT:
@@ -102,22 +120,23 @@ PLOT:
   SAVE: true                    # Boolean flag to enable or disable saving the plot to a file. Set to 'true' to save the plot, 'false' to skip saving.
   SAVE_DIR: 'assets/plots'      # Directory path where the plot will be saved. Ensure this directory exists or the plot may not be saved correctly.
 
+
 # Test settings
-# TEST:
-#   VERSION:
-#     FW_VERSION: 1.0.14.1
-#     MCU_VERSION: 0.0.2.5
-#     ADAS_VERSION: 0.6.7.1
-#   CONFIG_PARAMS:
-#     CONFIG_PATH: assets/config/passenger_config.txt
-#   MONITOR:
-#     DURATION: 10  # Duration of the test in seconds
-#     INTERVAL: 0.5 # Interval of the test in seconds
-#   THRESHOLD:
-#     INFERENCE_TIME: 0.125   # Inference time threshold seconds
-#     BUFFER_SIZE_RATIO: 0.9  # Buffer size threshold
-#     CPU_USAGE: 60
-#     MEMORY_USAGE: 40
+TEST:
+  VERSION:
+    FW_VERSION: 1.0.14.1
+    MCU_VERSION: 0.0.2.5
+    ADAS_VERSION: 0.6.7.1
+  CONFIG_PARAMS:
+    CONFIG_PATH: assets/config/passenger_config.txt
+  MONITOR:
+    DURATION: 10  # Duration of the test in seconds
+    INTERVAL: 0.5 # Interval of the test in seconds
+  THRESHOLD:
+    INFERENCE_TIME: 0.125   # Inference time threshold seconds
+    BUFFER_SIZE_RATIO: 0.9  # Buffer size threshold
+    CPU_USAGE: 60
+    MEMORY_USAGE: 40
 
 # Evaluation settings
 EVALUATION:
@@ -139,16 +158,22 @@ ANALYSIS:
   JSON_LOG_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/csv_file/Golden_Data_20240805/static_csv'
 
 # Remote configuration
-# REMOTE:
-#   ADAS_START_SCRIPT_PATH: './customer/run_adas.sh'
-#   ADAS_STOP_SCRIPT_PATH: './customer/stop_adas.sh'
-#   REMOTE_ADAS_CONFIG_PATH: '/customer/adas/config/config.txt'
-#   BACKUP_ADAS_CONFIG_PATH: '/customer/adas/config/config_backup.txt'
-#   ADAS_RUN_DURATION: 10 # Duration of the ADAS run in seconds
+REMOTE:
+  ADAS_START_SCRIPT_PATH: './customer/run_adas.sh'
+  ADAS_STOP_SCRIPT_PATH: './customer/stop_adas.sh'
+  REMOTE_ADAS_CONFIG_PATH: '/customer/adas/config/config.txt'
+  BACKUP_ADAS_CONFIG_PATH: '/customer/adas/config/config_backup.txt'
+  ADAS_RUN_DURATION: 10 # Duration of the ADAS run in seconds
 
 VARIFY:
   CAMERA:
     CONFIG_PATH: '/customer/adas/config/config.txt'
-    RUN_HISTORICAL_DURATION: 60
+    RUN_HISTORICAL_DURATION: 30
   LOCAL:
-    SAVE_JSONLOG_DIR: '/home/ali/Projects/GitHub_Code/WNC/adas_evaluation_tools/src/assets/csv_file/varify'
+    SAVE_JSONLOG_DIR: '/home/ali/Projects/GitHub_Code/ali/adas_evaluation_tools/src/assets/csv_file/varify'
+
+
+
+    
+
+ 

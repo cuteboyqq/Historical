@@ -106,7 +106,7 @@ class BaseDataset:
 
 
         # Video extract frames parameters
-        self.skip_frame = 10
+        self.skip_frame = 1
         self.crop = True
         self.crop_top = 0.3
         self.crop_left = 0.1
@@ -343,17 +343,27 @@ class BaseDataset:
         return NotImplemented
     
 
-    def video_extract_frame(self,video_path,crop):
+    def video_extract_frame(self,video_path,crop,resize_w=None,resize_h=None, skipFrame=None):
         vidcap = cv2.VideoCapture(video_path)
+        video_dir= os.path.dirname(video_path)
+        file_name = (video_path.split(os.sep)[-1]).split(".")[0]
+        self.img_saver.save_dir = os.path.join(video_dir,file_name)
+        os.makedirs(self.img_saver.save_dir,exist_ok=True)
         success,image = vidcap.read()
         count = 0
-
+        frame_num = 0
         if crop is None:
             crop = self.crop
 
+        if skipFrame is not None:
+            skip_frame = skipFrame
+        else:
+            skip_frame = self.skip_frame
+
+
         while success:
-            if count% (self.skip_frame)==0:
-                filename_ = self.image_basename + str(count) + ".jpg"
+            if count% (skip_frame)==0:
+                filename_ = self.image_basename + str(count) + ".png"
                 # img_path = os.path.join(save_dir,filename_)               
                 # cv2.imwrite(img_path,image)
                 if crop:
@@ -368,11 +378,15 @@ class BaseDataset:
                     # Crop the image
                     image = image[top_crop:, left_crop:right_crop]
 
-                if self.resize:
+                if self.resize and resize_w is None and resize_h is None:
                     image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
-                if count >= 20000:
-                    self.img_saver.save_image(image,count)
+                else:
+                    image = cv2.resize(image, (resize_w, resize_h), interpolation=cv2.INTER_AREA)
+                # if count >= 20000:
+                self.img_saver.save_image(image,frame_num,basename=self.image_basename,save_dir=self.img_saver.save_dir,im_format='png')
+                frame_num += 1
                 logging.info('save frame %d',count)
+                logging.info(f"save frame num = {frame_num}")
             success,image = vidcap.read()
             count += 1
 
@@ -408,7 +422,7 @@ class BaseDataset:
         os.makedirs(video_dir, exist_ok=True)
         
         # Get list of image files, assuming they are named RawFrame_[index].png
-        images = [img for img in os.listdir(im_dir) if img.endswith(".png")]
+        images = [img for img in os.listdir(im_dir) if img.endswith(".jpg")]
         images.sort(key=lambda x: int(x.split('_')[1].split('.')[0]))  # Sort by index
 
         # Check if there are images in the folder

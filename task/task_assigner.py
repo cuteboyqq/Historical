@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import cv2
 from engine.BaseDataset import BaseDataset
+from utils.connection_handler import ConnectionHandler
 from utils.connection import Connection
 from task.evaluation import Evaluation
 from utils.analysis import Analysis
@@ -15,11 +16,14 @@ import logging
 import pandas as pd
 from utils.plotter import Plotter
 from utils.drawer import Drawer
+from engine.visualize_runner import VisualizeRunner
+from utils.display import DisplayUtils
+from utils.remote_uploader import RemoteUploader
 # # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-class Visualize(BaseDataset):
+class TaskAssigner(BaseDataset):
     def __init__(self, args):
         """
         Initializes the Historical dataset object.
@@ -68,6 +72,7 @@ class Visualize(BaseDataset):
         self.Evaluation = Evaluation(args)
         self.Varify = Varify(args)
         self.Historical = Historical(args)
+        self.RemoteUploader = RemoteUploader(args)
 
         # Analysis
         self.analysis_run = args.analysis_run
@@ -94,11 +99,13 @@ class Visualize(BaseDataset):
             f"rm {os.path.basename(self.Evaluation.evaluationdata_dir)}.tar"
         )
 
-    
-       
+        # Alister add Andy's code
+        connection_handler = ConnectionHandler(args)
+        self.visualize_runner = VisualizeRunner(connection_handler, args)
+
         super().display_parameters()
 
-    def visualize(self, mode=None, 
+    def task_assigner(self, mode=None, 
               jsonlog_from=None, 
               plot_distance=False, 
               gen_raw_video=False,
@@ -106,68 +113,6 @@ class Visualize(BaseDataset):
               extract_video_to_frames=None, 
               crop=False, 
               raw_images_dir=None):
-        """
-        Main function for visualizing AI results based on the specified mode and options.
-
-        This function controls the overall flow of visualization depending on the mode selected.
-        It can operate in offline, online, semi-online, evaluation, or verification modes, 
-        and includes various options for processing and visualizing AI results.
-
-        Args:
-            mode (str, optional): 
-                The operational mode to run the visualization in. Options include:
-                - "online": Run in online mode where data is processed in real-time.
-                - "semi-online": Similar to online but with partial data processing.
-                - "offline": Process pre-recorded data without real-time inputs.
-                - "eval" or "evaluation": Run in evaluation mode to evaluate performance.
-                - "varify": Run verification processes on the data.
-                - "analysis": Run detailed analysis on the data.
-            
-            jsonlog_from (str, optional): 
-                Specifies the source of the JSON logs when running in offline mode. Options include:
-                - "camera": Use JSON logs generated from camera data.
-                - "online": Use JSON logs generated during a previous online session.
-            
-            plot_distance (bool, optional): 
-                If True, plots distance values on each frame ID. This is useful for analyzing 
-                the spatial relationship between objects in the frame.
-
-            gen_raw_video (bool, optional): 
-                If True, generates a video from raw images stored in a specified directory. 
-                This can be used to create a video sequence from individual frames.
-
-            save_raw_image_dir (str, optional): 
-                Directory path where raw images should be saved. This is useful when extracting 
-                frames from a video and saving them for further processing or analysis.
-
-            extract_video_to_frames (str, optional): 
-                Path to a video file that should be processed to extract individual frames. 
-                If provided, the function will extract frames from the video and optionally crop them.
-
-            crop (bool, optional): 
-                If True, crops the extracted frames from the video based on predefined dimensions. 
-                This is useful when only a specific region of the frames is of interest.
-
-            raw_images_dir (str, optional): 
-                Directory containing raw images that should be used to generate a video clip. 
-                This is often used in conjunction with `gen_raw_video` to create a video from a set of frames.
-
-        Function Flow:
-            - If `mode` is "offline", the function processes JSON logs either from "camera" or "online" sources.
-            - If `mode` is "online" or "semi-online", the function starts a server to process incoming data.
-            - If `mode` is "eval" or "evaluation", the function runs an automated evaluation of a golden dataset.
-            - If `mode` is "varify", the function runs verification procedures to check historical match rates.
-            - If `extract_video_to_frames` is provided, the function extracts frames from the specified video.
-            - If `gen_raw_video` is set to True, the function generates a video from the raw images in `raw_images_dir`.
-            - If `plot_distance` is set to True, the function plots distance values on all frames of the golden dataset.
-            - If `self.analysis_run` is True and `mode` is "analysis", the function calculates static performance metrics.
-
-        Note:
-            The function leverages several helper methods such as `visualize_offline_jsonlog_from_camera`, 
-            `visualize_offline_jsonlog_from_online`, `start_server`, `auto_evaluate_golden_dataset`, 
-            `varify_historical_match_rate`, `video_extract_frame`, `convert_rawimages_to_videoclip`, 
-            and `calc_all_static_performance` to perform specific tasks.
-        """
         if mode == "offline":
             if jsonlog_from == "camera":
                 logging.info("🎥 Running offline mode with JSON log from camera...")
@@ -180,7 +125,9 @@ class Visualize(BaseDataset):
             logging.info("🔄 Running online or semi-online mode, waiting for client (Camera running historical mode)...")
             self.visualize_online_semi_online()
             # self.Connect.start_server(visual_mode=mode)
-    
+        elif mode == "visualize":
+            self.visualize_runner.run_visualize()
+
         elif mode == "eval" or mode == "evaluation":
             logging.info("🧪 Running evaluation mode...")
             self.auto_evaluate_golden_dataset()
@@ -213,12 +160,13 @@ class Visualize(BaseDataset):
 
     # Alister add 2024-08-28
     def auto_run_historical_mode(self):
-        self.Historical.preprocess_input_dataset()
+        
         DEVICE_HAVE_IMAGES = self.Evaluation.check_directory_exists(self.Historical.h_mode_camera_dataset_path)
         dataset_folder_name = os.path.basename(self.Historical.h_mode_camera_dataset_path)
         logging.info(f"📷 DEVICE_HAVE_IMAGES: {DEVICE_HAVE_IMAGES}")
 
         if not DEVICE_HAVE_IMAGES:
+            self.Historical.preprocess_input_dataset()
             tar_path = f'{self.tftpserver_dir}{os.sep}{dataset_folder_name}.tar'
 
             if not os.path.exists(tar_path):
@@ -228,8 +176,11 @@ class Visualize(BaseDataset):
                 self.Connect.SSH.execute_local_command(self.Historical.tar_dataset_and_put_to_TFTP_folder_local_commands)
             
             logging.info(f"✅ Tar file {dataset_folder_name}.tar exists in TFTP folder, moving to device {self.camera_rawimages_dir}")
+            # Local and remote file paths
+            local_tar_file = f"{self.tftpserver_dir}/{os.path.basename(self.Historical.h_mode_local_dataset_path_final)}.tar"
+            remote_tar_file = f"{self.Historical.camera_rawimages_dir}/{os.path.basename(self.Historical.h_mode_local_dataset_path_final)}.tar"
+            self.RemoteUploader.upload_file_with_progress(local_tar_file,remote_tar_file)
             logging.info(f"🌐 Start executing remote command: {self.Historical.transfer_dataset_to_LI80_camera_remote_commands}")
-        
             self.Connect.SSH.execute_remote_command_with_progress(self.Historical.transfer_dataset_to_LI80_camera_remote_commands)
 
         self.Historical.run_historical_mode()

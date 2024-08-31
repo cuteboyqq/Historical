@@ -4,12 +4,23 @@ import time
 import logging
 from utils.plotter import Plotter
 from utils.connection import Connection
+# from utils.connection_ver2 import ConnectionHandler
 from datetime import datetime
 import threading
 from tqdm import tqdm
 import paramiko
 import datetime
 import re
+import json
+import queue
+
+import matplotlib
+matplotlib.use('TkAgg')  # or 'Qt5Agg' or another GUI backend
+
+print(matplotlib.rcsetup.all_backends)
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from utils.plotter_dynamic import DynamicPlotter
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', encoding='utf-8')
@@ -53,6 +64,12 @@ class Varify(BaseDataset):
         self.ssh_client = paramiko.SSHClient()
         self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.ssh_client.connect(self.camera_host_name, port=self.camera_port, username=self.camera_user_name, password=self.camera_password)
+
+
+        self.plotter_dynamic = DynamicPlotter() 
+
+        self.data_queue = queue.Queue()
+        self.stop_event = threading.Event()
 
         self.display_parameters()
 
@@ -107,6 +124,25 @@ class Varify(BaseDataset):
         logging.info("🕒 Setting the date and time...")
         self.date_time = self.set_date_time()
 
+        is_in_use, pid, process_name = self.Connect.check_process_using_port(self.server_port)
+        logging.info(f"✅ Port :{self.server_port} is in use :{is_in_use}")
+        while is_in_use:
+            logging.info(f"⚠️ Port {self.server_port} is in use by process {process_name} with PID {pid}.")
+            # If in use, kill the process remotely via SSH
+            kill_result = self.Connect.kill_process_remotely(pid)
+            logging.info(f"🛑 Kill result: {kill_result}")
+            
+            # Increment port number to check the next one
+            # self.connect.port += 1
+            self.Connect.server_port = self.Connect.server_port + 1
+            self.server_port = self.server_port + 1
+
+            # Check the new port status
+            is_in_use, pid, process_name = self.Connect.check_process_using_port(self.server_port)
+
+        logging.info(f"✅ Port {self.server_port} is available.")
+
+
         logging.info("📡 Running device in live mode...")
         self.run_live_mode()
 
@@ -115,12 +151,32 @@ class Varify(BaseDataset):
         self.varify_raw_image_dir = os.path.join(self.camera_rawimages_dir, self.varify_raw_image_folder)
         logging.info(f"📂 Closest folder in camera is {self.varify_raw_image_dir}")
 
-        logging.info("🔌 Checking if the server port is available...")
-        if not self.check_port_availability(self.server_port):
-            logging.error(f"🚫 Port {self.server_port} is already in use. Please resolve the conflict.")
+        # logging.info("🔌 Checking if the server port is available...")
+        # if self.check_port_availability(self.server_port):
+        #     logging.error(f"🚫 Port {self.server_port} is already in use. Please resolve the conflict.")
+        #     self.Connect.server_port = self.Connect.server_port + 1
+        #     self.server_port = self.server_port + 1
+        #     logging.warning(f"⚠️ Port conflict resolved by incrementing to {self.server_port}")
+        # 🚀 Check if the server port is in use and get process details if so
+        is_in_use, pid, process_name = self.Connect.check_process_using_port(self.server_port)
+        logging.info(f"✅ Port :{self.server_port} is in use :{is_in_use}")
+        while is_in_use:
+            logging.info(f"⚠️ Port {self.server_port} is in use by process {process_name} with PID {pid}.")
+            # If in use, kill the process remotely via SSH
+            kill_result = self.Connect.kill_process_remotely(pid)
+            logging.info(f"🛑 Kill result: {kill_result}")
+            
+            # Increment port number to check the next one
+            # self.connect.port += 1
             self.Connect.server_port = self.Connect.server_port + 1
             self.server_port = self.server_port + 1
-            logging.warning(f"⚠️ Port conflict resolved by incrementing to {self.server_port}")
+
+            # Check the new port status
+            is_in_use, pid, process_name = self.Connect.check_process_using_port(self.server_port)
+
+        logging.info(f"✅ Port {self.server_port} is available.")
+
+
 
         logging.info("🕰️ Running device in historical mode...")
         self.run_historical_mode()
@@ -136,6 +192,114 @@ class Varify(BaseDataset):
         match_rate = self.Plot.calculate_match_rate(self.historical_mode_txt_file, self.live_mode_txt_file, tolerance=0.0)
         logging.info(f"✅ Match rate calculated: {match_rate}")
 
+    # def run_live_mode(self):
+    #     logging.info("🔧 Configuring live mode settings...")
+        
+    #     def start_server_thread(draw, folder_name, visual_mode):
+    #         logging.info(f"🚀 Starting server thread with folder name: {folder_name}")
+    #         self.Connect.start_server(draw_jsonlog=draw, save_folder=folder_name, visual_mode=visual_mode)
+    #         logging.info("📡 Server thread started successfully.")
+
+    #     def collect_data_thread(json_log_path):
+    #         # Collect data and put it in the queue
+    #         logging.info("📈 Collecting data for dynamic plotting...")
+    #         self.collect_data(json_log_path)
+        
+    #     def plot_dynamic():
+    #         plt.ion()  # Enable interactive mode
+    #         fig, ax = plt.subplots()
+    #         line, = ax.plot([], [], 'b-')
+
+    #         while not self.stop_event.is_set():
+    #             try:
+    #                 # Get data from queue
+    #                 frame_ids, distances = self.data_queue.get(timeout=1)
+    #                 line.set_xdata(frame_ids)
+    #                 line.set_ydata(distances)
+    #                 ax.relim()
+    #                 ax.autoscale_view()
+    #                 plt.draw()
+    #                 plt.pause(0.1)
+    #             except queue.Empty:
+    #                 continue
+
+    #     self.varify_device_input_mode = 0  # live mode
+    #     self.varify_enable_save_raw_images = 1  # enable save raw images
+    #     self.visualize_mode = 1  # semi-online
+
+    #     logging.info("📝 Modifying configuration file for live mode...")
+    #     self.modify_config_file()
+
+    #     logging.info("🧵 Starting the server in a separate thread...")
+    #     server_th = threading.Thread(target=start_server_thread, args=(False, str(self.date_time), "semi-online",))
+    #     server_th.start()
+
+    #     logging.info("🚗 Running the ADAS system in live mode...")
+    #     self.run_the_adas()
+
+    #     json_log_path = f"{self.curret_dir}/runs/{self.date_time}/{self.date_time}.txt"
+    #     data_th = threading.Thread(target=collect_data_thread, args=(json_log_path,))
+    #     data_th.start()
+
+    #     logging.info("📊 Starting dynamic plotting in the main thread...")
+    #     # plot_dynamic()  # Run in main thread
+    #     self.plotter_dynamic.run(json_log_path)
+
+    #     t = self.varify_run_historical_time
+    #     logging.info(f"⏳ Running live mode for {t} seconds with progress...")
+
+    #     for _ in tqdm(range(t), desc=f"⏳ Running live Mode and saving raw images", unit="s"):
+    #         time.sleep(1)
+
+    #     logging.info(f"🏁 Completed {t} seconds. Stopping the ADAS system...")
+    #     self.stop_run_adas()
+    #     logging.info("🏁 ADAS system stopped successfully!")
+
+    #     logging.info("🛑 Stopping the server and finishing the thread...")
+    #     self.Connect.stop_server.set()
+
+    #     # Ensure the server thread finishes before proceeding
+    #     server_th.join()
+    #     logging.info("✅ Server thread has stopped successfully.")
+
+    #     # Set the event to stop plotting
+    #     self.stop_event.set()
+
+    #     logging.info(f"📂 Moving files to {self.curret_dir}/assets/{str(self.date_time)}/{str(self.date_time)}.txt")
+    #     self.move_file(f"{self.curret_dir}/runs/{str(self.date_time)}")
+
+    #     self.live_mode_txt_file = f"{self.curret_dir}/runs/{str(self.date_time)}/{str(self.date_time)}.txt"
+    #     logging.info(f"💾 Live mode JSON log file saved at: {self.live_mode_txt_file}")
+
+    # def collect_data(self, json_log_path):
+    #     # Simulate data collection
+    #     """
+    #     Extracts frame ID and corresponding distance to the camera from a given JSON file,
+    #     and dynamically plots the values as they are collected.
+    #     """
+    #     frame_ids, distances = [], []
+    #     with open(json_log_path, 'r') as file:
+    #         for line in file:
+    #             try:
+    #                 data = json.loads(line.strip())
+    #                 # Extracting frame ID and its associated data
+    #                 for frame_id, frame_data in data["frame_ID"].items():
+    #                     # Accessing the 'tailingObj' data
+    #                     tailing_obj = frame_data.get("tailingObj", [{}])[0]
+    #                     distance = tailing_obj.get("tailingObj.distanceToCamera", None)
+    #                     if distance is not None:
+    #                         frame_ids.append(int(frame_id))
+    #                         distances.append(distance)
+    #                         self.data_queue.put((frame_ids, distances))
+    #                         time.sleep(0.5)  # Simulate some delay
+    #                         # # Update plot
+    #                         # self.update_plot()
+    #             except json.JSONDecodeError as e:
+    #                 print(f"Error parsing JSON: {e}")
+    #             except KeyError as e:
+    #                 print(f"Key error: {e}")
+
+
 
     def run_live_mode(self):
     
@@ -144,6 +308,9 @@ class Varify(BaseDataset):
         def start_server_thread(draw, folder_name,visual_mode):
             logging.info(f"🚀 Starting server thread with folder name: {folder_name}")
             self.Connect.start_server(draw_jsonlog=draw, save_folder=folder_name, visual_mode=visual_mode)
+
+        def start_plot_dynamic(json_log_path):
+            self.plotter_dynamic.run(json_log_path)
 
         self.varify_device_input_mode = 0  # live mode
         self.varify_enable_save_raw_images = 1  # enable save raw images
@@ -158,13 +325,23 @@ class Varify(BaseDataset):
 
         logging.info("🚗 Running the ADAS system in live mode...")
         self.run_the_adas()       
-
+       
+        json_log_path = f"{self.curret_dir}/runs/{self.date_time}/{self.date_time}.txt"
+        # Start dynamic plotting in a separate thread to prevent blocking
+        # plot_dynamic_th = threading.Thread(target=start_plot_dynamic, args=(json_log_path,))
+        # plot_dynamic_th.start()
         t = self.varify_run_historical_time
+        # self.plotter_dynamic.run(json_log_path,t)
+        # logging.info("🧵 Starting plotting dynamic in a separate thread...")
+        # plot_dynamic_th = threading.Thread(target=start_plot_dynamic, args=(json_log_path,))
+        # plot_dynamic_th.start()
+
         logging.info(f"⏳ Running live mode for {t} seconds with progress...")
 
         for _ in tqdm(range(t), desc=f"⏳ Running live Mode and saving raw images", unit="s"):
             time.sleep(1)
 
+        
         logging.info(f"🏁 Completed {t} seconds. Stopping the ADAS system...")
         self.stop_run_adas()
         logging.info("🏁 ADAS system stopped successfully!")
@@ -259,10 +436,6 @@ class Varify(BaseDataset):
         # Construct the SSH command to set the date and time on the remote camera
         command = f"date -s '{date_time_str}'"
         
-        # Set up SSH client
-        # ssh_client = paramiko.SSHClient()
-        # ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        # ssh_client.connect(self.camera_host_name, port=self.camera_port, username=self.camera_user_name, password=self.camera_password)
         
         # Execute the command on the remote system
         stdin, stdout, stderr = self.ssh_client.exec_command(command)
@@ -281,11 +454,7 @@ class Varify(BaseDataset):
     def find_closest_folder(self):
 
         remote_raw_images_dir = self.camera_rawimages_dir
-        # Set up SSH client
-        # ssh_client = paramiko.SSHClient()
-        # ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        # ssh_client.connect(self.camera_host_name, port=self.camera_port, username=self.camera_user_name, password=self.camera_password)
-
+       
         # Get the current time in the format used for folder names
         now = datetime.datetime.now()
         current_time_str = now.strftime("%Y-%m-%d-%H-%M")

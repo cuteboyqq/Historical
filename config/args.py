@@ -10,14 +10,23 @@ class Args:
         self.model_h = config['MODEL']['INPUT_HEIGHT']
 
         # Mode
-        self.mode = config['MODE']['VISUALIZE_MODE']
+        self.mode = config['TASK']['TASK_MODE']
 
         # Visualize configuration
-        # self.visualize_mode = config['VISUALIZE']['MODE']
-        # self.device_mode = config['VISUALIZE']['DEVICE_MODE']
+        self.re_start_adas  = config['VISUALIZE']['RE_START_ADAS']
+        self.visualize_mode = config['VISUALIZE']['MODE']
+        self.device_mode = config['VISUALIZE']['DEVICE_MODE']
 
         # JSON log
         self.jsonlog_from = config['JSONLOG']['FROM']
+
+        # Save settings
+        self.save_rawimages = config['SAVE']['RAW_IMAGES']
+        self.save_airesultimage = config['SAVE']['ADAS_RESULT_IMAGE']
+        self.save_rawvideo = config['SAVE']['RAW_VIDEO']
+        self.save_jsonlog = config['SAVE']['JSON_LOG']
+        self.save_extractframe = config['SAVE']['EXTRACT_FRAME']
+        self.video_fps = config['SAVE']['VIDEO_FPS']
 
         # Camera configuration
         self.camera_rawimages_dir = config['CAMERA']['CAMERA_RAW_IMAGE_DIR']
@@ -40,11 +49,11 @@ class Args:
         self.save_rawvideopath = config['LOCAL']['SAVE_RAW_VIDEO_PATH']
 
         # Remote configuration
-        # self.remote_adas_script_path = config['REMOTE']['ADAS_START_SCRIPT_PATH']
-        # self.remote_adas_stop_script_path = config['REMOTE']['ADAS_STOP_SCRIPT_PATH']
-        # self.remote_adas_config_path = config['REMOTE']['REMOTE_ADAS_CONFIG_PATH']
-        # self.backup_adas_config_path = config['REMOTE']['BACKUP_ADAS_CONFIG_PATH']
-        # self.adas_run_duration = config['REMOTE']['ADAS_RUN_DURATION']
+        self.remote_adas_script_path = config['REMOTE']['ADAS_START_SCRIPT_PATH']
+        self.remote_adas_stop_script_path = config['REMOTE']['ADAS_STOP_SCRIPT_PATH']
+        self.remote_adas_config_path = config['REMOTE']['REMOTE_ADAS_CONFIG_PATH']
+        self.backup_adas_config_path = config['REMOTE']['BACKUP_ADAS_CONFIG_PATH']
+        self.adas_run_duration = config['REMOTE']['ADAS_RUN_DURATION']
 
 
 
@@ -64,6 +73,11 @@ class Args:
         self.show_distancetitle = config['DISPLAY']['SHOW_DISTANCE_TITLE']
         self.show_detectobjinfo = config['DISPLAY']['SHOW_DETECT_OBJS_INFO']
         self.show_devicemode = config['DISPLAY']['SHOW_DEVICE_MODE']
+        self.show_adas_detection = config['DISPLAY']['SHOW_ADAS_DETECTION']
+
+        # ADAS Detection
+        self.adas_detection_thickness = config['ADAS_DETECTION']['THICKNESS']
+        self.adas_detection_show_label = config['ADAS_DETECTION']['SHOW_LABEL']
 
 
         # Lane line
@@ -82,14 +96,6 @@ class Args:
         self.resize = config['RESIZE']['ENABLED']
         self.resize_w = config['RESIZE']['WIDTH']
         self.resize_h = config['RESIZE']['HEIGHT']
-
-        # Save settings
-        self.save_rawimages = config['SAVE']['RAW_IMAGES']
-        self.save_airesultimage = config['SAVE']['AI_RESULT_IMAGE']
-        self.save_rawvideo = config['SAVE']['RAW_VIDEO']
-        self.save_jsonlog = config['SAVE']['JSON_LOG']
-        self.save_extractframe = config['SAVE']['EXTRACT_FRAME']
-        self.video_fps = config['SAVE']['VIDEO_FPS']
 
         # Wait settings
         self.sleep = config['WAIT']['VALUE']
@@ -121,22 +127,29 @@ class Args:
         self.analysis_jsonlog_dir = config['ANALYSIS']['JSON_LOG_DIR']
 
         # Test settings
-        # self.test_version_fw_version = config['TEST']['VERSION']['FW_VERSION']
-        # self.test_version_mcu_version = config['TEST']['VERSION']['MCU_VERSION']
-        # self.test_version_adas_version = config['TEST']['VERSION']['ADAS_VERSION']
-        # self.test_adas_config_path = config['TEST']['CONFIG_PARAMS']['CONFIG_PATH']
-        # self.test_check_duration = config['TEST']['MONITOR']['DURATION']
-        # self.test_check_interval = config['TEST']['MONITOR']['INTERVAL']
-        # self.test_threshold_inference_time = config['TEST']['THRESHOLD']['INFERENCE_TIME']
-        # self.test_threshold_buffer_size_ratio = config['TEST']['THRESHOLD']['BUFFER_SIZE_RATIO']
-        # self.test_cpu_threshold = config['TEST']['THRESHOLD']['CPU_USAGE']
-        # self.test_mem_threshold = config['TEST']['THRESHOLD']['MEMORY_USAGE']
-
+        self.test_version_fw_version = config['TEST']['VERSION']['FW_VERSION']
+        self.test_version_mcu_version = config['TEST']['VERSION']['MCU_VERSION']
+        self.test_version_adas_version = config['TEST']['VERSION']['ADAS_VERSION']
+        self.test_adas_config_path = config['TEST']['CONFIG_PARAMS']['CONFIG_PATH']
+        self.test_check_duration = config['TEST']['MONITOR']['DURATION']
+        self.test_check_interval = config['TEST']['MONITOR']['INTERVAL']
+        self.test_threshold_inference_time = config['TEST']['THRESHOLD']['INFERENCE_TIME']
+        self.test_threshold_buffer_size_ratio = config['TEST']['THRESHOLD']['BUFFER_SIZE_RATIO']
+        self.test_cpu_threshold = config['TEST']['THRESHOLD']['CPU_USAGE']
+        self.test_mem_threshold = config['TEST']['THRESHOLD']['MEMORY_USAGE']
 
         # Varify settings
         self.varify_camera_config_file_path = config['VARIFY']['CAMERA']['CONFIG_PATH']
         self.varify_run_historical_time = config['VARIFY']['CAMERA']['RUN_HISTORICAL_DURATION']
         self.varify_save_jsonlog_dir = config['VARIFY']['LOCAL']['SAVE_JSONLOG_DIR']
+
+
+        # Historical settings
+        self.h_mode_video_skip_frame = config['HISTORICAL']['SKIP_FRAME']
+        self.h_mode_camera_dataset_path = config['HISTORICAL']['CAMERA']['DATASET_PATH']
+        self.h_mode_camera_script_path = config['HISTORICAL']['CAMERA']['SCRIPT_PATH']
+        self.h_mode_local_dataset_path = config['HISTORICAL']['LOCAL']['DATASET_PATH']
+        
 
 
         # Check if the operating system is Windows
