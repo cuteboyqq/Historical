@@ -755,7 +755,6 @@ class Connection(BaseDataset):
         os.makedirs(f'{self.im_dir}', exist_ok=True)
 
         try:
-           
             while not self.stop_server.is_set():  # Check if the stop signal is set
                 try:
                     client_socket, addr = server_socket.accept()
@@ -772,11 +771,11 @@ class Connection(BaseDataset):
 
         except Exception as e:
             logging.error(f"❌ Error: {e} - Server encountered an issue.")
-        finally:
-            server_socket.close()
-            logging.info("🔒 Server socket closed.")
+        # finally:
+        #     #server_socket.close()
+        #     logging.info("🔒 Server socket closed.")
         
-        print("🏁 ADAS visualization stopped")
+        logging.info("🏁 ADAS visualization stopped")
 
 
     def check_device_input_mode(self):

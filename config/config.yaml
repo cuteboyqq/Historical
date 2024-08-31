@@ -7,7 +7,7 @@ MODEL:
 
 # Mode configuration (Alister's code)
 TASK:
-  TASK_MODE: varify  # Mode of run visualize mode (online / offline / semi-online / visualize / eval / analysis/ varify / historical / None)
+  TASK_MODE: visualize  # Mode of run visualize mode (online / offline / semi-online / visualize / eval / analysis/ varify / historical / None)
 
 # Visualize configuration (Andy's code)
 VISUALIZE:
@@ -44,7 +44,7 @@ SAVE:
 
 # Server configuration
 SERVER:
-  PORT: 1530 # Port number for the local server
+  PORT: 1650 # Port number for the local server
   TFTP_DIR: '/home/ali/Public/tftp'  # Directory on the server for TFTP file transfers
   TFTP_IP: '192.168.1.10'  # IP address of the TFTP server
   IP: '192.168.1.10'  # IP address of the TFTP server
@@ -168,7 +168,7 @@ REMOTE:
 VARIFY:
   CAMERA:
     CONFIG_PATH: '/customer/adas/config/config.txt'
-    RUN_HISTORICAL_DURATION: 30
+    RUN_HISTORICAL_DURATION: 80
   LOCAL:
     SAVE_JSONLOG_DIR: '/home/ali/Projects/GitHub_Code/ali/adas_evaluation_tools/src/assets/csv_file/varify'
 
