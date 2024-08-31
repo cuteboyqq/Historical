@@ -228,7 +228,7 @@ class Varify(BaseDataset):
 
         t = self.varify_run_historical_time
         logging.info(f"⏳ Running live mode for {t} seconds with progress...")
-        self.plotter_dynamic.run(json_log_path,t)
+        self.plotter_dynamic.run(json_log_path,t,mode='live')
         # logging.info("🧵 Starting plotting dynamic in a separate thread...")
         # plot_dynamic_th = threading.Thread(target=start_plot_dynamic, args=(json_log_path,))
         # plot_dynamic_th.start()
@@ -280,15 +280,16 @@ class Varify(BaseDataset):
         logging.info("🚗 Running the ADAS system in historical mode...")
         self.run_the_adas()
 
-        t = int(self.varify_run_historical_time * 1.4)
+        t = int(self.varify_run_historical_time * 1.3)
         logging.info(f"⏳ Running historical mode for {t} seconds with progress...")
 
         json_log_path = f"{self.curret_dir}/runs/debug_csv/raw_images/{self.varify_raw_image_folder}/{self.varify_raw_image_folder}.txt"
         logging.info(f"Historical mode json_log_path : {json_log_path}")
-        self.plotter_dynamic.run(json_log_path,t)
+        self.plotter_dynamic = DynamicPlotter()
+        self.plotter_dynamic.run(json_log_path,t,mode='historical')
 
 
-        # for _ in tqdm(range(t), desc="⏳ Running historical Mode...", unit="s"):
+        # for _ in tqdm(range(t), desc="⏳ Running historical Mode...", unit="s", ncols=80):
         #     time.sleep(1)
 
         logging.info(f"🏁 Completed {t} seconds in historical mode. Stopping the ADAS system...")

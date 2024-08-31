@@ -76,12 +76,12 @@ class DynamicPlotter:
         self.ax.autoscale_view()  # Rescale plot to fit new data
         plt.pause(0.1)  # Pause to update the plot; you can adjust the pause time as needed
 
-    def run(self, file_path, time_limit):
+    def run(self, file_path, time_limit, mode='live'):
         """
         Reads data from the file and updates the plot dynamically for a limited time.
         """
         logging.info("🏃‍♂️ Running DynamicPlotter...")
-        
+        self.ax.set_title(f" {mode} mode : Frame ID vs. Distance to Camera")
         # Start a timer to close the plot after the specified time limit
         def close_plot():
             logging.info("🛑 Time limit reached. Closing the plot window...")
@@ -102,13 +102,17 @@ class DynamicPlotter:
                 self.distances.clear()
                 finished = self.extract_distance_to_camera_txt(file_path, time_limit)
                 #logging.info("📊 Data extraction and plotting completed successfully.")
-
+                # self.update_plot()
+                # Save the plot to a file if extraction is finished
+                if finished:
+                    self.fig.savefig(f'distance_to_camera_plot_{mode}.png')
+                    logging.info(f"🖼️ Plot saved as 'distance_to_camera_plot_{mode}.png'.")
                 # Update progress bar
                 pbar.update(round(self.elapsed_time, 3) - pbar.n)  # Update progress bar by the time elapsed since last update
 
-        
-        plt.show()  # Show the plot window (will be closed by the timer if time_limit is reached)
-
+    
+        # Show the plot window (it will be closed by the timer if time_limit is reached)
+        plt.show()
         # Ensure the timer is canceled if the plotting completes early
         timer.cancel()
         logging.info("✅ Plot window closed. Run complete!")

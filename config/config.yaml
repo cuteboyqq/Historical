@@ -7,7 +7,7 @@ MODEL:
 
 # Mode configuration (Alister's code)
 TASK:
-  TASK_MODE: visualize  # Mode of run visualize mode (online / offline / semi-online / visualize / eval / analysis/ varify / historical / None)
+  TASK_MODE: varify  # Mode of run visualize mode (online / offline / semi-online / visualize / eval / analysis/ varify / historical / None)
 
 # Visualize configuration (Andy's code)
 VISUALIZE:
