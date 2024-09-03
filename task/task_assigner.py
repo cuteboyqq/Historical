@@ -17,6 +17,7 @@ import pandas as pd
 from utils.plotter import Plotter
 from utils.drawer import Drawer
 from engine.visualize_runner import VisualizeRunner
+from engine.test_runner import TestRunner
 from utils.display import DisplayUtils
 from utils.remote_uploader import RemoteUploader
 # # Configure logging
@@ -73,7 +74,7 @@ class TaskAssigner(BaseDataset):
         self.Varify = Varify(args)
         self.Historical = Historical(args)
         self.RemoteUploader = RemoteUploader(args)
-
+    
         # Analysis
         self.analysis_run = args.analysis_run
         if self.analysis_run:
@@ -100,8 +101,9 @@ class TaskAssigner(BaseDataset):
         )
 
         # Alister add Andy's code
-        connection_handler = ConnectionHandler(args)
-        self.visualize_runner = VisualizeRunner(connection_handler, args)
+        self.connection_handler = ConnectionHandler(args)
+        self.VisualizeRunner = VisualizeRunner(self.connection_handler, args)
+        # self.TestRunner = TestRunner(self.connection_handler,args)
 
         super().display_parameters()
 
@@ -125,8 +127,15 @@ class TaskAssigner(BaseDataset):
             logging.info("🔄 Running online or semi-online mode, waiting for client (Camera running historical mode)...")
             self.visualize_online_semi_online()
             # self.Connect.start_server(visual_mode=mode)
-        elif mode == "visualize":
-            self.visualize_runner.run_visualize()
+        elif mode == "visual":
+            self.VisualizeRunner.run_visualize()
+        
+        # elif mode == "test":
+        #     self.TestRunner.run_tests()
+        #     self.connection_handler.close_connection()
+        #     # Generate the test report
+        #     report = self.TestRunner.gen_test_report()
+        #     print(report)
 
         elif mode == "eval" or mode == "evaluation":
             logging.info("🧪 Running evaluation mode...")

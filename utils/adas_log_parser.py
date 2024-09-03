@@ -241,9 +241,10 @@ class AdasLogParser:
         if self.debug_objs is None:
             return None
 
-        # for obj in self.debug_objs:
-        #     print(obj)
+        for obj in self.debug_objs:
+           print (obj)
         self.inference_time = self.debug_objs[0]["inferenceTime"]
+        # self.inference_time = self.debug_objs[0]["inference"]
         return self.inference_time
 
     def get_buffer_size(self):

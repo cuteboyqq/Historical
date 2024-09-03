@@ -74,10 +74,12 @@ class Args:
         self.show_detectobjinfo = config['DISPLAY']['SHOW_DETECT_OBJS_INFO']
         self.show_devicemode = config['DISPLAY']['SHOW_DEVICE_MODE']
         self.show_adas_detection = config['DISPLAY']['SHOW_ADAS_DETECTION']
+        self.show_trackobjs = config['DISPLAY']['SHOW_TRACK_OBJS']
 
         # ADAS Detection
         self.adas_detection_thickness = config['ADAS_DETECTION']['THICKNESS']
         self.adas_detection_show_label = config['ADAS_DETECTION']['SHOW_LABEL']
+        self.adas_detection_alpha = config['ADAS_DETECTION']['ALPHA']
 
 
         # Lane line
@@ -149,7 +151,8 @@ class Args:
         self.h_mode_camera_dataset_path = config['HISTORICAL']['CAMERA']['DATASET_PATH']
         self.h_mode_camera_script_path = config['HISTORICAL']['CAMERA']['SCRIPT_PATH']
         self.h_mode_local_dataset_path = config['HISTORICAL']['LOCAL']['DATASET_PATH']
-        
+        self.h_mode_start_frame = config['HISTORICAL']['START_FRAME']
+        self.h_mode_end_frame = config['HISTORICAL']['END_FRAME']
 
 
         # Check if the operating system is Windows

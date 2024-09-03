@@ -21,8 +21,10 @@ class Drawer(BaseDataset):
         self.DLA_color = (255,0,128)
         self.DMA_color = (0,128,255)
         self.DUA_color = (128,0,255)
+        self.adas_detection_alpha = args.adas_detection_alpha
         self.adas_detection_thickness = args.adas_detection_thickness
         self.show_adas_detection = args.show_adas_detection
+        self.show_trackobjs = args.show_trackobjs
         self.adas_detection_show_label = args.adas_detection_show_label
         self.visualize_mode = args.visualize_mode
         self.device_mode = args.device_mode
@@ -111,6 +113,11 @@ class Drawer(BaseDataset):
                 if "HUMAN" in log_data["frame_ID"][frame_ID]["detectObj"]:
                     detect_human_objs = log_data["frame_ID"][frame_ID]["detectObj"]["HUMAN"]
 
+            detect_track_objs = None
+            if "trackObj" in log_data["frame_ID"][frame_ID]:
+                detect_track_objs = log_data["frame_ID"][frame_ID]["trackObj"]
+                    
+
 
             image_path = f"{self.im_dir}/{self.image_basename}{frame_ID}.{self.image_format}"
             # logging.info(image_path)
@@ -118,18 +125,30 @@ class Drawer(BaseDataset):
             if os.path.exists(image_path):
                 image = cv2.imread(image_path)
                 image = cv2.resize(image, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
+                image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
             else:
                 image = img_buffer
                 image = cv2.resize(image, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
-               
-            cv2.putText(image, 'frame_ID:'+str(frame_ID), (10,15), cv2.FONT_HERSHEY_SIMPLEX,0.60, (0, 255, 255), 1, cv2.LINE_AA)
+                image = cv2.resize(image, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
+
+            if self.resize:
+                scale_w = self.resize_w / self.model_w
+                scale_h = self.resize_h / self.model_h
+            else:
+                scale_w = 1
+                scale_h = 1
+
+
+            cv2.putText(image, 'frame_ID:'+str(frame_ID), (int(10*scale_w),int(15*scale_h)), cv2.FONT_HERSHEY_SIMPLEX,0.60*scale_h, (0, 255, 255), int(1*scale_h), cv2.LINE_AA)
+
+            
 
 
             if self.show_adas_detection:
                 if detect_DCA_objs:
                     for obj in detect_DCA_objs:
-                        x1, y1 = obj["ADASDetectObj.x1"], obj["ADASDetectObj.y1"]
-                        x2, y2 = obj["ADASDetectObj.x2"], obj["ADASDetectObj.y2"]
+                        x1, y1 = int(obj["ADASDetectObj.x1"]*scale_w), int(obj["ADASDetectObj.y1"]*scale_h)
+                        x2, y2 = int(obj["ADASDetectObj.x2"]*scale_w), int(obj["ADASDetectObj.y2"]*scale_h)
                         confidence = obj["ADASDetectObj.confidence"]
                         label = obj["ADASDetectObj.label"]
                         
@@ -139,8 +158,8 @@ class Drawer(BaseDataset):
 
                 if detect_DLA_objs:
                     for obj in detect_DLA_objs:
-                        x1, y1 = obj["ADASDetectObj.x1"], obj["ADASDetectObj.y1"]
-                        x2, y2 = obj["ADASDetectObj.x2"], obj["ADASDetectObj.y2"]
+                        x1, y1 = int(obj["ADASDetectObj.x1"]*scale_w), int(obj["ADASDetectObj.y1"]*scale_h)
+                        x2, y2 = int(obj["ADASDetectObj.x2"]*scale_w), int(obj["ADASDetectObj.y2"]*scale_h)
                         confidence = obj["ADASDetectObj.confidence"]
                         label = obj["ADASDetectObj.label"]
                         
@@ -151,8 +170,8 @@ class Drawer(BaseDataset):
 
                 if detect_DMA_objs:
                     for obj in detect_DMA_objs:
-                        x1, y1 = obj["ADASDetectObj.x1"], obj["ADASDetectObj.y1"]
-                        x2, y2 = obj["ADASDetectObj.x2"], obj["ADASDetectObj.y2"]
+                        x1, y1 = int(obj["ADASDetectObj.x1"]*scale_w), int(obj["ADASDetectObj.y1"]*scale_h)
+                        x2, y2 = int(obj["ADASDetectObj.x2"]*scale_w), int(obj["ADASDetectObj.y2"]*scale_h)
                         confidence = obj["ADASDetectObj.confidence"]
                         label = obj["ADASDetectObj.label"]
                         
@@ -163,8 +182,8 @@ class Drawer(BaseDataset):
 
                 if detect_DUA_objs:
                     for obj in detect_DUA_objs:
-                        x1, y1 = obj["ADASDetectObj.x1"], obj["ADASDetectObj.y1"]
-                        x2, y2 = obj["ADASDetectObj.x2"], obj["ADASDetectObj.y2"]
+                        x1, y1 = int(obj["ADASDetectObj.x1"]*scale_w), int(obj["ADASDetectObj.y1"]*scale_h)
+                        x2, y2 = int(obj["ADASDetectObj.x2"]*scale_w), int(obj["ADASDetectObj.y2"]*scale_h)
                         confidence = obj["ADASDetectObj.confidence"]
                         label = obj["ADASDetectObj.label"]
                         
@@ -186,29 +205,29 @@ class Drawer(BaseDataset):
 
             if self.show_vanishline:
                 for obj in vanishline_objs:
-                    vanishlineY = obj["vanishLineY"]
-                    x2 = image.shape[1]
+                    vanishlineY = int(obj["vanishLineY"] * scale_h)
+                    x2 = int(image.shape[1] * scale_w)
                     cv2.line(image, (0, vanishlineY), (x2, vanishlineY), (0, 255, 255), thickness=1)
-                    cv2.putText(image, 'VanishLineY:' + str(round(vanishlineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
+                    cv2.putText(image, 'VanishLineY:' + str(round(vanishlineY,3)), (int(10*scale_w),int(30*scale_h)), cv2.FONT_HERSHEY_SIMPLEX,0.45*scale_h, (0, 255, 255), int(1*scale_h), cv2.LINE_AA)
             
             if self.show_detectobjs and detect_human_objs:
                 for obj in detect_human_objs:
-                    x1, y1 = obj["detectObj.x1"], obj["detectObj.y1"]
-                    x2, y2 = obj["detectObj.x2"], obj["detectObj.y2"]
+                    x1, y1 = int(obj["detectObj.x1"]*scale_w), int(obj["detectObj.y1"]*scale_h)
+                    x2, y2 = int(obj["detectObj.x2"]*scale_w), int(obj["detectObj.y2"]*scale_h)
                     confidence = obj["detectObj.confidence"]
                     label = obj["detectObj.label"]
                     
-                    cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 255), 1)
+                    cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 255), 2)
                     if self.show_detectobjinfo:
                         cv2.putText(image, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 0, 255), 1)
                  
 
 
-            if self.show_detectobjs and detect_objs:
+            if self.show_detectobjs and detect_objs is not None:
                 if tailing_objs:
                     for obj in tailing_objs:
-                        tailingObj_x1, tailingObj_y1 = obj["tailingObj.x1"], obj["tailingObj.y1"]
-                        tailingObj_x2, tailingObj_y2 = obj["tailingObj.x2"], obj["tailingObj.y2"]
+                        tailingObj_x1, tailingObj_y1 = int(obj["tailingObj.x1"]*scale_w), int(obj["tailingObj.y1"]*scale_h)
+                        tailingObj_x2, tailingObj_y2 = int(obj["tailingObj.x2"]*scale_w), int(obj["tailingObj.y2"]*scale_h)
                         distance = obj["tailingObj.distanceToCamera"]
                         label = obj["tailingObj.label"]
                         distance_to_camera = obj['tailingObj.distanceToCamera']
@@ -217,17 +236,105 @@ class Drawer(BaseDataset):
 
 
                 for obj in detect_objs:
-                    x1, y1 = obj["detectObj.x1"], obj["detectObj.y1"]
-                    x2, y2 = obj["detectObj.x2"], obj["detectObj.y2"]
+                    x1, y1 = int(obj["detectObj.x1"]*scale_w), int(obj["detectObj.y1"]*scale_h)
+                    x2, y2 = int(obj["detectObj.x2"]*scale_w), int(obj["detectObj.y2"]*scale_h)
                     confidence = obj["detectObj.confidence"]
                     label = obj["detectObj.label"]
                     if tailingObj_x1!=x1 and tailingObj_y1!=y1:
-                        cv2.rectangle(image, (x1, y1), (x2, y2), (255, 200, 0), 1)
+                        cv2.rectangle(image, (x1, y1), (x2, y2), (255, 200, 0), 2)
                         if self.show_detectobjinfo:
                             cv2.putText(image, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (255, 200, 0), 1)
                     elif tailingObj_x1==x1 and tailingObj_y1==y1:
                         if self.show_detectobjinfo:
                             cv2.putText(image, f"Conf:{confidence:.2f}", (x1, y1 - 45), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 255), 1)
+
+            if detect_track_objs is not None and self.show_trackobjs:
+                for obj in detect_track_objs:
+                    trackObj_x1, trackObj_y1 = int(obj["trackObj.x1"]*scale_w), int(obj["trackObj.y1"]*scale_h)
+                    trackObj_x2, trackObj_y2 = int(obj["trackObj.x2"]*scale_w), int(obj["trackObj.y2"]*scale_h)
+                    distance = obj["trackObj.distanceToCamera"]
+                    id = obj["trackObj.id"]
+                    
+                    im = image
+                    color = (0,255,255)
+                    if self.showtailobjBB_corner:
+                        top_left = (trackObj_x1, trackObj_y1)
+                        bottom_right = (trackObj_x2, trackObj_y2)
+                        top_right = (trackObj_x2,trackObj_y1)
+                        bottom_left = (trackObj_x1,trackObj_y2) 
+                        BB_width = abs(trackObj_x2 - trackObj_x1)
+                        BB_height = abs(trackObj_y2 - trackObj_y1)
+                        divide_length = 5
+
+                        if distance>15:
+                            color = (0,255,255)
+                            thickness = 1
+                            text_thickness = 0.40
+
+                        if distance>=10 and distance<=15:
+                            color = (0,255,255)
+                            thickness = 2
+                            text_thickness = 0.40
+                        elif distance>=7 and distance<10:
+                            color = (0,100,255)
+                            thickness = 5
+                            text_thickness = 0.46
+                        elif distance<7:
+                            color = (0,25,255)
+                            thickness = 7
+                            text_thickness = 0.50
+                        # Draw corner of the rectangle
+                        cv2.line(im, top_left, (top_left[0]+int(BB_width/divide_length), top_left[1]), color, thickness)
+                        cv2.line(im, top_left, (top_left[0], top_left[1] + int(BB_height/divide_length)), color, thickness)
+
+                        cv2.line(im, bottom_right,(bottom_right[0] - int(BB_width/divide_length),bottom_right[1]), color, thickness)
+                        cv2.line(im, bottom_right,(bottom_right[0],bottom_right[1] - int(BB_height/divide_length) ), color, thickness)
+
+
+                        cv2.line(im, top_right, ((top_right[0]-int(BB_width/divide_length)), top_right[1]), color, thickness)
+                        cv2.line(im, top_right, (top_right[0], (top_right[1]+int(BB_height/divide_length))), color, thickness)
+
+                        cv2.line(im, bottom_left, ((bottom_left[0]+int(BB_width/divide_length)), bottom_left[1]), color, thickness)
+                        cv2.line(im, bottom_left, (bottom_left[0], (bottom_left[1]-int(BB_height/divide_length))), color, thickness)
+                    elif not self.showtailobjBB_corner:
+                        cv2.rectangle(im, (trackObj_x1, trackObj_y1), (trackObj_x2, trackObj_y2), color=(0,255,255), thickness=2)
+                        # cv2.putText(image, f"{label} ({distance:.2f}m)", (tailingObj_x1, tailingObj_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                    if True:
+                        if not self.showtailobjBB_corner:
+                            cv2.putText(im, f'ID:{id}', (trackObj_x1, trackObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
+                            cv2.putText(im, 'D:' + str(round(distance,3)) + 'm', (trackObj_x1, trackObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
+                        else:
+                            # Get text size for label
+                          
+                            text_label = f'{id}'
+                            text_distance = f'Dist:{round(distance,3)}m'
+                            font = cv2.FONT_HERSHEY_SIMPLEX
+
+                            text_size_label, _ = cv2.getTextSize(text_label, font, text_thickness, 1)
+                            text_size_distance, _ = cv2.getTextSize(text_distance, font, text_thickness + 0.05, 1)
+
+                            # Calculate the rectangle size
+                            rect_x1 = trackObj_x1
+                            rect_y1 = trackObj_y1 - 10 -  text_size_label[1]  # Adjust height to fit text
+                            rect_x2 = trackObj_x1 + text_size_label[0]
+                            rect_y2 = trackObj_y1 - 10  # Adjust height to fit text
+
+                            # Draw the rectangle
+                            cv2.rectangle(im, (rect_x1, rect_y1), (rect_x2, rect_y2), (0, 0, 0), -1)
+
+                            # # Calculate the rectangle size
+                            # rect_x1_d = trackObj_x1
+                            # rect_y1_d = trackObj_y1 - 25 - text_size_distance[1]  # Adjust height to fit text
+                            # rect_x2_d = trackObj_x1 + text_size_distance[0]
+                            # rect_y2_d = trackObj_y1 - 25    # Adjust height to fit text
+
+                            # # Draw the rectangle
+                            # cv2.rectangle(im, (rect_x1_d, rect_y1_d), (rect_x2_d, rect_y2_d), (100, 100, 100), -1)
+
+                            # Draw the text
+                            cv2.putText(im, text_label, (trackObj_x1, trackObj_y1 - 10), font, text_thickness, color, 1, cv2.LINE_AA)
+                            # cv2.putText(im, text_distance, (trackObj_x1, trackObj_y1 - 25), font, text_thickness + 0.05, color, 1, cv2.LINE_AA)
+
 
             text_thickness = 0.45
             if self.show_tailingobjs and tailing_objs:
@@ -254,8 +361,8 @@ class Drawer(BaseDataset):
 
 
                 for obj in tailing_objs:
-                    tailingObj_x1, tailingObj_y1 = obj["tailingObj.x1"], obj["tailingObj.y1"]
-                    tailingObj_x2, tailingObj_y2 = obj["tailingObj.x2"], obj["tailingObj.y2"]
+                    tailingObj_x1, tailingObj_y1 = int(obj["tailingObj.x1"]*scale_w), int(obj["tailingObj.y1"]*scale_h)
+                    tailingObj_x2, tailingObj_y2 = int(obj["tailingObj.x2"]*scale_w), int(obj["tailingObj.y2"]*scale_h)
                     distance = obj["tailingObj.distanceToCamera"]
                     label = obj["tailingObj.label"]
                     distance_to_camera = obj['tailingObj.distanceToCamera']
@@ -266,8 +373,8 @@ class Drawer(BaseDataset):
                     # cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
                     if self.show_distancetitle:
                         text = f"Distance:{round(distance_to_camera,self.tailingobjs_distance_decimal_length)}m" 
-                        xy = (int(self.model_w/4.0), int(self.model_h*11.0/12.0))
-                        cv2.putText(image, text, xy, cv2.FONT_HERSHEY_SIMPLEX,1.0, (0,255,255), 2, cv2.LINE_AA)
+                        xy = (int((self.model_w/4.0)*scale_w), int((self.model_h*11.0/12.0)*scale_h))
+                        cv2.putText(image, text, xy, cv2.FONT_HERSHEY_SIMPLEX,1.0*scale_h, (0,255,255), int(2*scale_h), cv2.LINE_AA)
 
                     im = image
                     color = (0,255,255)
@@ -315,22 +422,22 @@ class Drawer(BaseDataset):
                         # cv2.putText(image, f"{label} ({distance:.2f}m)", (tailingObj_x1, tailingObj_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
                     if self.show_tailingobjs:
                         if not self.showtailobjBB_corner:
-                            cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
-                            cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
+                            cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness*scale_h, color, int(1*scale_h), cv2.LINE_AA)
+                            cv2.putText(im, 'Distance:' + str(round(distance_to_camera,3)) + 'm', (tailingObj_x1, tailingObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness*scale_h+0.05, color, int(1*scale_h), cv2.LINE_AA)
                         else:
                             # Get text size for label
                             text_label = f'{tailingObj_label},ID:{tailingObj_id}'
                             text_distance = f'Distance:{round(distance_to_camera,3)}m'
                             font = cv2.FONT_HERSHEY_SIMPLEX
 
-                            text_size_label, _ = cv2.getTextSize(text_label, font, text_thickness, 1)
-                            text_size_distance, _ = cv2.getTextSize(text_distance, font, text_thickness + 0.05, 1)
+                            text_size_label, _ = cv2.getTextSize(text_label, font, text_thickness*scale_h, 1)
+                            text_size_distance, _ = cv2.getTextSize(text_distance, font, text_thickness*scale_h + 0.05, 1)
 
                             # Calculate the rectangle size
                             rect_x1 = tailingObj_x1
-                            rect_y1 = tailingObj_y1 - 10 -  text_size_label[1]  # Adjust height to fit text
-                            rect_x2 = tailingObj_x1 + text_size_label[0]
-                            rect_y2 = tailingObj_y1 - 10  # Adjust height to fit text
+                            rect_y1 = tailingObj_y1 - int(10*scale_h) -  int(text_size_label[1])  # Adjust height to fit text
+                            rect_x2 = tailingObj_x1 + int(text_size_label[0])
+                            rect_y2 = tailingObj_y1 - int(10*scale_h)  # Adjust height to fit text
 
                             # Draw the rectangle
                             cv2.rectangle(im, (rect_x1, rect_y1), (rect_x2, rect_y2), (0, 0, 0), -1)
@@ -338,16 +445,17 @@ class Drawer(BaseDataset):
 
                             # Calculate the rectangle size
                             rect_x1_d = tailingObj_x1
-                            rect_y1_d = tailingObj_y1 - 25 - text_size_distance[1]  # Adjust height to fit text
+                            rect_y1_d = tailingObj_y1 - int(25*scale_h) - text_size_distance[1]  # Adjust height to fit text
                             rect_x2_d = tailingObj_x1 + text_size_distance[0]
-                            rect_y2_d = tailingObj_y1 - 25    # Adjust height to fit text
+                            rect_y2_d = tailingObj_y1 - int(25*scale_h)    # Adjust height to fit text
 
                             # Draw the rectangle
                             cv2.rectangle(im, (rect_x1_d, rect_y1_d), (rect_x2_d, rect_y2_d), (0, 0, 0), -1)
 
                             # Draw the text
-                            cv2.putText(im, text_label, (tailingObj_x1, tailingObj_y1 - 10), font, text_thickness, color, 1, cv2.LINE_AA)
-                            cv2.putText(im, text_distance, (tailingObj_x1, tailingObj_y1 - 25), font, text_thickness + 0.05, color, 1, cv2.LINE_AA)
+                            cv2.putText(im, text_label, (tailingObj_x1, tailingObj_y1 - int(10*scale_h)), font, text_thickness*scale_h, color, int(1*scale_h), cv2.LINE_AA)
+                            cv2.putText(im, text_distance, (tailingObj_x1, tailingObj_y1 - int(25*scale_h)), font, text_thickness*scale_h + 0.05, color, int(1*scale_h), cv2.LINE_AA)
+
 
 
                             # cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
@@ -355,10 +463,10 @@ class Drawer(BaseDataset):
             
             # Draw lane lines if LaneInfo is present
             if lane_info and lane_info[0]["isDetectLine"]:
-                pLeftCarhood = (lane_info[0]["pLeftCarhood.x"], lane_info[0]["pLeftCarhood.y"])
-                pLeftFar = (lane_info[0]["pLeftFar.x"], lane_info[0]["pLeftFar.y"])
-                pRightCarhood = (lane_info[0]["pRightCarhood.x"], lane_info[0]["pRightCarhood.y"])
-                pRightFar = (lane_info[0]["pRightFar.x"], lane_info[0]["pRightFar.y"])
+                pLeftCarhood = (int(lane_info[0]["pLeftCarhood.x"]*scale_w), int(lane_info[0]["pLeftCarhood.y"]*scale_h))
+                pLeftFar = (int(lane_info[0]["pLeftFar.x"]*scale_w), int(lane_info[0]["pLeftFar.y"]*scale_h))
+                pRightCarhood = (int(lane_info[0]["pRightCarhood.x"]*scale_w), int(lane_info[0]["pRightCarhood.y"]*scale_h))
+                pRightFar = (int(lane_info[0]["pRightFar.x"]*scale_w), int(lane_info[0]["pRightFar.y"]*scale_h))
 
                 width_Cardhood = abs(pRightCarhood[0] - pLeftCarhood[0])
                 width_Far = abs(pRightFar[0] - pLeftFar[0])
@@ -489,16 +597,15 @@ class Drawer(BaseDataset):
             logging.error(f"❌ Error: {e} - An unexpected error occurred.")
 
 
-    
+
     def draw_AI_result_to_images(self):
         """
-        Processes a CSV file to extract and visualize AI results by overlaying information onto images.
+        Processes a CSV or TXT file to extract and visualize AI results by overlaying information onto images.
 
         Steps:
         1. Initialize empty lists for storing frame IDs and distances.
-        2. Open and read the CSV file specified by `self.csv_file_path`.
-        3. For each row in the CSV:
-        - Convert the row to a string and locate the JSON data.
+        2. Determine the file type and read the file specified by `self.file_path`.
+        3. For each row/line in the file:
         - Parse the JSON data to extract frame information.
         - For each frame ID:
             a. Construct the image file path using the frame ID.
@@ -514,137 +621,608 @@ class Drawer(BaseDataset):
         4. If enabled, plot distances to the camera over frame IDs using Matplotlib.
 
         Attributes:
-        - `self.frame_ids`: List of frame IDs extracted from the CSV.
-        - `self.distances`: List of distances corresponding to the tailing objects in each frame.
-        - `self.csv_file_path`: Path to the CSV file containing AI results.
-        - `self.image_basename`: Base name for image files.
-        - `self.image_format`: Format of the image files.
-        - `self.im_dir`: Directory where image files are located.
-        - `self.show_tailingobjs`: Flag to indicate whether to draw tailing objects.
-        - `self.show_detectobjs`: Flag to indicate whether to draw detected objects.
-        - `self.show_vanishline`: Flag to indicate whether to draw vanish lines.
-        - `self.show_adasobjs`: Flag to indicate whether to draw ADAS objects.
-        - `self.show_laneline`: Flag to indicate whether to draw lane lines.
-        - `self.show_airesultimage`: Flag to control whether to display the processed images.
-        - `self.resize`: Flag to indicate whether to resize images before display.
-        - `self.resize_w`, `self.resize_h`: Dimensions for resizing images.
-        - `self.sleep`, `self.sleep_onadas`, `self.sleep_zeroonadas`: Time to wait before closing the image window.
-        - `self.save_airesultimage`: Flag to control whether to save the processed images.
-        - `self.save_imdir`: Directory to save the processed images.
-        - `self.plot_label`: Label for the distance plot.
-        - `self.show_distanceplot`: Flag to control whether to display the distance plot.
-
-        Returns:
-        - `frame_ids`: List of frame IDs processed.
-        - `distances`: List of distances to the camera for the tailing objects.
+        - `self.file_path`: Path to the CSV or TXT file containing AI results.
         """
+
         frame_ids = []
         distances = []
 
-        with open(self.csv_file_path, 'r') as file:
-            reader = csv.reader(file, delimiter=',')
-            for row in reader:
-                # Debug print for each row
-                # print(f"Row: {row}")
-                # Join the row into a single string
-                row_str = ','.join(row)
+        # Determine the file type
+        file_extension = os.path.splitext(self.csv_file_path)[1].lower()
+
+        if file_extension == '.csv':
+            # Handle CSV file
+            with open(self.file_path, 'r') as file:
+                reader = csv.reader(file, delimiter=',')
+                for row in reader:
+                    # Join the row into a single string
+                    row_str = ','.join(row)
+                    
+                    # Find the position of 'json:'
+                    json_start = row_str.find('json:')
+                    if json_start != -1:
+                        json_data = row_str[json_start + 5:].strip()
+                        if json_data.startswith('"') and json_data.endswith('"'):
+                            json_data = json_data[1:-1]  # Remove enclosing double quotes
+                        
+                        # Replace any double quotes escaped with backslashes
+                        json_data = json_data.replace('\\"', '"')
+                        self.process_json_data(json_data)
+
+        elif file_extension == '.txt':
+            # Handle TXT file
+            with open(self.csv_file_path, 'r') as file:
+                for line in file:
+                    line = line.strip()  # Remove any leading/trailing whitespace
+                    if not line:
+                        continue  # Skip empty lines
+                    self.process_json_data(line)
+
+        else:
+            logging.error(f"Unsupported file format: {file_extension}")
+            return
+
+        # Optional: Plotting or any further processing can be added here
+
+    def process_json_data(self, json_data):
+        """
+        Parses and processes JSON data to draw AI results on images.
+
+        Args:
+        - json_data: A string containing the JSON data to be processed.
+        """
+        try:
+            if self.resize:
+                scale_w = self.resize_w / self.model_w
+                scale_h = self.resize_h / self.model_h
+            else:
+                scale_w = 1
+                scale_h = 1
+            # Parse JSON data
+            data = json.loads(json_data)
+
+
+            # Process each frame in the JSON data
+            for frame_id, frame_data in data['frame_ID'].items():
+                self.frame_ids.append(int(frame_id))
+
+                # Get image path
+                im_file = self.image_basename + frame_id + "." + self.image_format
+                im_path = os.path.join(self.im_dir, im_file)
+                im = cv2.imread(im_path)
+                im = cv2.resize(im, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
+                if self.resize:
+                    im = cv2.resize(im, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
+                cv2.putText(im, 'frame_ID:' + str(frame_id), (int(10 * scale_w), int(10 * scale_h)), cv2.FONT_HERSHEY_SIMPLEX, 0.45*scale_w, (0, 255, 255), int(1*scale_w), cv2.LINE_AA)
+                tailing_objs = frame_data.get('tailingObj', [])
+                vanish_objs = frame_data.get('vanishLine', [])
+                ADAS_objs = frame_data.get('ADAS', [])
+                detect_objs = frame_data.get('detectObj', {})
+                lane_info = frame_data.get("LaneInfo", [])
+                ADAS_detection_objs = frame_data.get("ADASDetectObj", [])
+                track_objs = frame_data.get("trackObj", [])
+
+                # Draw AI results if flags are set
+                if self.show_devicemode:
+                    x = int((self.model_w * 2.0 / 5.0) * scale_w)
+                    y = int((self.model_h / 20.0) * scale_h) 
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    color = (255, 255, 255)
+                    mode = 'Unknown'
+                    if self.mode in ['eval', 'evaluation']:
+                        mode = 'Online evaluation(Historical)'
+                    elif self.mode == 'online':
+                        mode = 'Online'
+                    elif self.mode == 'offline':
+                        mode = 'Offline'
+                    cv2.putText(im, 'Stream mode : ' + mode, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
+
+                if ADAS_detection_objs and self.show_adas_detection:
+                    self.draw_adas_detection_obj(ADAS_detection_objs, im)
+
+                # Draw detected objects
+                if detect_objs and self.show_detectobjs:
+                    self.draw_detect_objs(detect_objs, im)
+
+
+                if track_objs and self.show_trackobjs:
+                    self.draw_track_objs(track_objs, im)
+
+
+                # Draw tailing objects
+                if tailing_objs and self.show_tailingobjs:
+                    self.draw_tailing_obj(tailing_objs, im)
+                else:
+                    self.distances.append(float('nan'))  # Handle missing values
+
                 
-                # Find the position of 'json:'
-                json_start = row_str.find('json:')
-                if json_start != -1:
-                    json_data = row_str[json_start + 5:].strip()
-                    if json_data.startswith('"') and json_data.endswith('"'):
-                        json_data = json_data[1:-1]  # Remove enclosing double quotes
-                    
-                    # Replace any double quotes escaped with backslashes
-                    json_data = json_data.replace('\\"', '"')
-                    
-                    try:
-                        data = json.loads(json_data)
-                        # print(f"Parsed JSON: {data}")
+            
+                # Draw vanishing lines
+                if vanish_objs and self.show_vanishline:
+                    self.draw_vanish_objs(vanish_objs, im)
 
-                        for frame_id, frame_data in data['frame_ID'].items():
+                # Draw ADAS objects
+                if ADAS_objs and self.show_adasobjs:
+                    self.draw_ADAS_objs(ADAS_objs, im)
+
+                # Draw lane lines if LaneInfo is present
+                if lane_info and lane_info[0]["isDetectLine"] and self.show_laneline:
+                    self.draw_laneline_objs(lane_info, im)
+
+
+                # Display and/or save images if flags are set
+                if self.show_airesultimage:
+                    if self.resize:
+                        im = cv2.resize(im, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
+                    cv2.imshow("Offline visualization", im)
+                    if self.ADAS_FCW or self.ADAS_LDW:
+                        if self.sleep_zeroonadas:
+                            cv2.waitKey(0)
+                        else:
+                            cv2.waitKey(self.sleep_onadas)
+                    else:
+                        cv2.waitKey(self.sleep)
+
+                if self.save_airesultimage:
+                    self.img_saver.save_image(im, frame_ID=frame_id)
+
+                if self.save_jsonlog:
+                    self.img_saver.save_json_log_txt(frame_data)
+
+        except json.JSONDecodeError as e:
+            logging.error(f"Error decoding JSON: {e}")
+        except Exception as e:
+            logging.error(f"Unexpected error: {e}")
+
+    # def draw_AI_result_to_images(self):
+    #     """
+    #     Processes a .txt file to extract and visualize AI results by overlaying information onto images.
+
+    #     Steps:
+    #     1. Initialize empty lists for storing frame IDs and distances.
+    #     2. Open and read the .txt file specified by `self.txt_file_path`.
+    #     3. For each line in the .txt file:
+    #     - Parse the JSON data to extract frame information.
+    #     - For each frame ID:
+    #         a. Construct the image file path using the frame ID.
+    #         b. Read the image using OpenCV.
+    #         c. Overlay frame ID and other AI results onto the image:
+    #             - Tail objects (`tailingObj`)
+    #             - Detected objects (`detectObj`)
+    #             - Vanishing line objects (`vanishLineY`)
+    #             - ADAS objects (`ADAS`)
+    #             - Lane information (`LaneInfo`)
+    #         d. Optionally display the image with overlays and save the image to disk.
+    #     - Handle exceptions related to JSON decoding and other unexpected errors.
+    #     4. If enabled, plot distances to the camera over frame IDs using Matplotlib.
+
+    #     Attributes:
+    #     - `self.txt_file_path`: Path to the .txt file containing AI results.
+    #     """
+
+    #     frame_ids = []
+    #     distances = []
+
+    #     # Adjusted for reading .txt file with JSON content
+    #     with open(self.csv_file_path, 'r') as file:
+    #         for line in file:
+    #             line = line.strip()  # Remove any leading/trailing whitespace
+    #             if not line:
+    #                 continue  # Skip empty lines
+
+    #             try:
+    #                 # Parse JSON data
+    #                 data = json.loads(line)
+    #                 # logging.info(f"Parsed JSON: {data}")
+
+    #                 # Process each frame in the JSON data
+    #                 for frame_id, frame_data in data['frame_ID'].items():
+    #                     self.frame_ids.append(int(frame_id))
+    #                     # logging.info(f"frame_id:{frame_id}")
+    #                     # logging.info(f"txt_file_path:{self.txt_file_path}")
+
+    #                     # Get image path
+    #                     im_file = self.image_basename + frame_id + "." + self.image_format
+    #                     im_path = os.path.join(self.im_dir, im_file)
+    #                     # logging.info(im_path)
+    #                     im = cv2.imread(im_path)
+    #                     im = cv2.resize(im, (self.model_w, self.model_h), interpolation=cv2.INTER_AREA)
+    #                     cv2.putText(im, 'frame_ID:' + str(frame_id), (10, 10), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 255), 1, cv2.LINE_AA)
+    #                     tailing_objs = frame_data.get('tailingObj', [])
+    #                     vanish_objs = frame_data.get('vanishLine', [])
+    #                     ADAS_objs = frame_data.get('ADAS', [])
+    #                     detect_objs = frame_data.get('detectObj', {})
+    #                     lane_info = frame_data.get("LaneInfo", [])
+
+    #                     # Draw AI results if flags are set
+    #                     if self.show_devicemode:
+    #                         x = int(self.model_w * 2.0 / 5.0)
+    #                         y = int(self.model_h / 20.0)
+    #                         font = cv2.FONT_HERSHEY_SIMPLEX
+    #                         color = (255, 255, 255)
+    #                         mode = 'Unknown'
+    #                         if self.mode in ['eval', 'evaluation']:
+    #                             mode = 'Online evaluation(Historical)'
+    #                         elif self.mode == 'online':
+    #                             mode = 'Online'
+    #                         elif self.mode == 'offline':
+    #                             mode = 'Offline'
+    #                         cv2.putText(im, 'Stream mode : ' + mode, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
+
+    #                     # Draw tailing objects
+    #                     if tailing_objs and self.show_tailingobjs:
+    #                         self.draw_tailing_obj(tailing_objs, im)
+    #                     else:
+    #                         self.distances.append(float('nan'))  # Handle missing values
+
+    #                     # Draw detected objects
+    #                     if detect_objs and self.show_detectobjs:
+    #                         self.draw_detect_objs(detect_objs, im)
+
+    #                     # Draw vanishing lines
+    #                     if vanish_objs and self.show_vanishline:
+    #                         self.draw_vanish_objs(vanish_objs, im)
+
+    #                     # Draw ADAS objects
+    #                     if ADAS_objs and self.show_adasobjs:
+    #                         self.draw_ADAS_objs(ADAS_objs, im)
+
+    #                     # Draw lane lines if LaneInfo is present
+    #                     if lane_info and lane_info[0]["isDetectLine"] and self.show_laneline:
+    #                         self.draw_laneline_objs(lane_info, im)
+
+    #                     # Display and/or save images if flags are set
+    #                     if self.show_airesultimage:
+    #                         if self.resize:
+    #                             im = cv2.resize(im, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
+    #                         cv2.imshow("Offline visualization", im)
+    #                         if self.ADAS_FCW or self.ADAS_LDW:
+    #                             if self.sleep_zeroonadas:
+    #                                 cv2.waitKey(0)
+    #                             else:
+    #                                 cv2.waitKey(self.sleep_onadas)
+    #                         else:
+    #                             cv2.waitKey(self.sleep)
+
+    #                     if self.save_airesultimage:
+    #                         self.img_saver.save_image(im, frame_ID=frame_id)
+
+    #                     if self.save_jsonlog:
+    #                         self.img_saver.save_json_log_txt(frame_data)
+
+    #             except json.JSONDecodeError as e:
+    #                 logging.error(f"Error decoding JSON: {e}")
+    #             except Exception as e:
+    #                 logging.error(f"Unexpected error: {e}")
+
+    # def draw_AI_result_to_images(self):
+    #     """
+    #     Processes a CSV file to extract and visualize AI results by overlaying information onto images.
+
+    #     Steps:
+    #     1. Initialize empty lists for storing frame IDs and distances.
+    #     2. Open and read the CSV file specified by `self.csv_file_path`.
+    #     3. For each row in the CSV:
+    #     - Convert the row to a string and locate the JSON data.
+    #     - Parse the JSON data to extract frame information.
+    #     - For each frame ID:
+    #         a. Construct the image file path using the frame ID.
+    #         b. Read the image using OpenCV.
+    #         c. Overlay frame ID and other AI results onto the image:
+    #             - Tail objects (`tailingObj`)
+    #             - Detected objects (`detectObj`)
+    #             - Vanishing line objects (`vanishLineY`)
+    #             - ADAS objects (`ADAS`)
+    #             - Lane information (`LaneInfo`)
+    #         d. Optionally display the image with overlays and save the image to disk.
+    #     - Handle exceptions related to JSON decoding and other unexpected errors.
+    #     4. If enabled, plot distances to the camera over frame IDs using Matplotlib.
+
+    #     Attributes:
+    #     - `self.frame_ids`: List of frame IDs extracted from the CSV.
+    #     - `self.distances`: List of distances corresponding to the tailing objects in each frame.
+    #     - `self.csv_file_path`: Path to the CSV file containing AI results.
+    #     - `self.image_basename`: Base name for image files.
+    #     - `self.image_format`: Format of the image files.
+    #     - `self.im_dir`: Directory where image files are located.
+    #     - `self.show_tailingobjs`: Flag to indicate whether to draw tailing objects.
+    #     - `self.show_detectobjs`: Flag to indicate whether to draw detected objects.
+    #     - `self.show_vanishline`: Flag to indicate whether to draw vanish lines.
+    #     - `self.show_adasobjs`: Flag to indicate whether to draw ADAS objects.
+    #     - `self.show_laneline`: Flag to indicate whether to draw lane lines.
+    #     - `self.show_airesultimage`: Flag to control whether to display the processed images.
+    #     - `self.resize`: Flag to indicate whether to resize images before display.
+    #     - `self.resize_w`, `self.resize_h`: Dimensions for resizing images.
+    #     - `self.sleep`, `self.sleep_onadas`, `self.sleep_zeroonadas`: Time to wait before closing the image window.
+    #     - `self.save_airesultimage`: Flag to control whether to save the processed images.
+    #     - `self.save_imdir`: Directory to save the processed images.
+    #     - `self.plot_label`: Label for the distance plot.
+    #     - `self.show_distanceplot`: Flag to control whether to display the distance plot.
+
+    #     Returns:
+    #     - `frame_ids`: List of frame IDs processed.
+    #     - `distances`: List of distances to the camera for the tailing objects.
+    #     """
+    #     frame_ids = []
+    #     distances = []
+
+    #     with open(self.csv_file_path, 'r') as file:
+    #         reader = csv.reader(file, delimiter=',')
+    #         for row in reader:
+    #             # Debug print for each row
+    #             # print(f"Row: {row}")
+    #             # Join the row into a single string
+    #             row_str = ','.join(row)
+                
+    #             # Find the position of 'json:'
+    #             json_start = row_str.find('json:')
+    #             if json_start != -1:
+    #                 json_data = row_str[json_start + 5:].strip()
+    #                 if json_data.startswith('"') and json_data.endswith('"'):
+    #                     json_data = json_data[1:-1]  # Remove enclosing double quotes
+                    
+    #                 # Replace any double quotes escaped with backslashes
+    #                 json_data = json_data.replace('\\"', '"')
+                    
+    #                 try:
+    #                     data = json.loads(json_data)
+    #                     # print(f"Parsed JSON: {data}")
+
+    #                     for frame_id, frame_data in data['frame_ID'].items():
                             
-                            self.frame_ids.append(int(frame_id))
-                            # logging.info(f"frame_id:{frame_id}")
-                            # logging.info(f"csv_file_path:{self.csv_file_path}")
+    #                         self.frame_ids.append(int(frame_id))
+    #                         # logging.info(f"frame_id:{frame_id}")
+    #                         # logging.info(f"csv_file_path:{self.csv_file_path}")
 
-                            # Get image path
-                            im_file = self.image_basename + frame_id + "." + self.image_format
-                            im_path = os.path.join(self.im_dir,im_file)
-                            # logging.info(im_path)
-                            im = cv2.imread(im_path)
+    #                         # Get image path
+    #                         im_file = self.image_basename + frame_id + "." + self.image_format
+    #                         im_path = os.path.join(self.im_dir,im_file)
+    #                         # logging.info(im_path)
+    #                         im = cv2.imread(im_path)
 
-                            cv2.putText(im, 'frame_ID:'+str(frame_id), (10,10), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
-                            tailing_objs = frame_data.get('tailingObj', [])
-                            vanish_objs = frame_data.get('vanishLine', [])
-                            ADAS_objs = frame_data.get('ADAS', [])
-                            detect_objs = frame_data.get('detectObj', {})
-                            lane_info = frame_data.get("LaneInfo",[])
+    #                         cv2.putText(im, 'frame_ID:'+str(frame_id), (10,10), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
+    #                         tailing_objs = frame_data.get('tailingObj', [])
+    #                         vanish_objs = frame_data.get('vanishLine', [])
+    #                         ADAS_objs = frame_data.get('ADAS', [])
+    #                         detect_objs = frame_data.get('detectObj', {})
+    #                         lane_info = frame_data.get("LaneInfo",[])
 
-                            if self.show_devicemode:
-                                x = int(self.model_w * 2.0/ 5.0)
-                                y = int(self.model_h / 20.0)
-                                font = cv2.FONT_HERSHEY_SIMPLEX
-                                color = (255,255,255)
-                                mode = 'Unknown'
-                                if self.mode in ['eval','evaluation']:
-                                    mode = 'Online evaluation(Historical)'
-                                elif self.mode == 'online':
-                                    mode = 'Online'
-                                elif self.mode == 'offline':
-                                    mode = 'Offline'
-                                # elif self.mode == 'sem-online':
-                                #     mode = 'Visualize semi-online'
-                                cv2.putText(im, 'Stream mode : ' + mode, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
+    #                         if self.show_devicemode:
+    #                             x = int(self.model_w * 2.0/ 5.0)
+    #                             y = int(self.model_h / 20.0)
+    #                             font = cv2.FONT_HERSHEY_SIMPLEX
+    #                             color = (255,255,255)
+    #                             mode = 'Unknown'
+    #                             if self.mode in ['eval','evaluation']:
+    #                                 mode = 'Online evaluation(Historical)'
+    #                             elif self.mode == 'online':
+    #                                 mode = 'Online'
+    #                             elif self.mode == 'offline':
+    #                                 mode = 'Offline'
+    #                             # elif self.mode == 'sem-online':
+    #                             #     mode = 'Visualize semi-online'
+    #                             cv2.putText(im, 'Stream mode : ' + mode, (x, y), font, 0.50, color, 1, cv2.LINE_AA)
 
 
-                            #---- Draw tailing obj----------
-                            if tailing_objs and self.show_tailingobjs:
-                                self.draw_tailing_obj(tailing_objs,im)
-                            else:
-                                self.distances.append(float('nan'))  # Handle missing values
+    #                         #---- Draw tailing obj----------
+    #                         if tailing_objs and self.show_tailingobjs:
+    #                             self.draw_tailing_obj(tailing_objs,im)
+    #                         else:
+    #                             self.distances.append(float('nan'))  # Handle missing values
 
-                            # ------Draw detect objs---------
-                            if detect_objs and self.show_detectobjs:
-                                self.draw_detect_objs(detect_objs,im)                                                   
+    #                         # ------Draw detect objs---------
+    #                         if detect_objs and self.show_detectobjs:
+    #                             self.draw_detect_objs(detect_objs,im)                                                   
 
-                            # -------Draw vanish line--------
-                            if vanish_objs and self.show_vanishline:
-                                self.draw_vanish_objs(vanish_objs,im)
+    #                         # -------Draw vanish line--------
+    #                         if vanish_objs and self.show_vanishline:
+    #                             self.draw_vanish_objs(vanish_objs,im)
 
-                            # -------Draw ADAS objs-----------------
-                            if ADAS_objs and self.show_adasobjs:
-                                self.draw_ADAS_objs(ADAS_objs,im)
+    #                         # -------Draw ADAS objs-----------------
+    #                         if ADAS_objs and self.show_adasobjs:
+    #                             self.draw_ADAS_objs(ADAS_objs,im)
 
-                            # Draw lane lines if LaneInfo is present
-                            if lane_info and lane_info[0]["isDetectLine"] and self.show_laneline:
-                                self.draw_laneline_objs(lane_info,im)
+    #                         # Draw lane lines if LaneInfo is present
+    #                         if lane_info and lane_info[0]["isDetectLine"] and self.show_laneline:
+    #                             self.draw_laneline_objs(lane_info,im)
 
-                            if self.show_airesultimage:
-                                # 按下任意鍵則關閉所有視窗
-                                if self.resize:
-                                    im = cv2.resize(im, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
-                                cv2.imshow("Offline visualization",im)
-                                if self.ADAS_FCW==True or self.ADAS_LDW==True:
-                                    if self.sleep_zeroonadas:
-                                        cv2.waitKey(0)
-                                    else:
-                                        cv2.waitKey(self.sleep_onadas)
-                                else:
-                                    cv2.waitKey(self.sleep)
-                                # cv2.destroyAllWindows()
-                            if self.save_airesultimage:
-                                self.img_saver.save_image(im,frame_ID=frame_id)
+    #                         if self.show_airesultimage:
+    #                             # 按下任意鍵則關閉所有視窗
+    #                             if self.resize:
+    #                                 im = cv2.resize(im, (self.resize_w, self.resize_h), interpolation=cv2.INTER_AREA)
+    #                             cv2.imshow("Offline visualization",im)
+    #                             if self.ADAS_FCW==True or self.ADAS_LDW==True:
+    #                                 if self.sleep_zeroonadas:
+    #                                     cv2.waitKey(0)
+    #                                 else:
+    #                                     cv2.waitKey(self.sleep_onadas)
+    #                             else:
+    #                                 cv2.waitKey(self.sleep)
+    #                             # cv2.destroyAllWindows()
+    #                         if self.save_airesultimage:
+    #                             self.img_saver.save_image(im,frame_ID=frame_id)
 
-                            if self.save_jsonlog:
-                                self.img_saver.save_json_log_txt(frame_data)
+    #                         if self.save_jsonlog:
+    #                             self.img_saver.save_json_log_txt(frame_data)
                                 
-                    except json.JSONDecodeError as e:
-                        logging.error(f"Error decoding JSON: {e}")
-                    except Exception as e:
-                        logging.error(f"Unexpected error: {e}")
-    
+    #                 except json.JSONDecodeError as e:
+    #                     logging.error(f"Error decoding JSON: {e}")
+    #                 except Exception as e:
+    #                     logging.error(f"Unexpected error: {e}")
+    def draw_adas_detection_obj(self,ADAS_detection_objs,image):
+        detect_DCA_objs = None
+       
+        if "DCA" in ADAS_detection_objs:
+            detect_DCA_objs = ADAS_detection_objs["DCA"]
+
+        detect_DLA_objs = None
+        # if "ADASDetectObj" in log_data["frame_ID"][frame_ID]:
+        if "DLA" in ADAS_detection_objs:
+            detect_DLA_objs = ADAS_detection_objs["DLA"]
+
+        detect_DMA_objs = None
+        # if "ADASDetectObj" in log_data["frame_ID"][frame_ID]:
+        if "DMA" in ADAS_detection_objs:
+            detect_DMA_objs = ADAS_detection_objs["DMA"]
+
+        detect_DUA_objs = None
+        # if "ADASDetectObj" in log_data["frame_ID"][frame_ID]:
+        if "DUA" in ADAS_detection_objs:
+            detect_DUA_objs = ADAS_detection_objs["DUA"]
+
+        # Create an overlay for the filled polygon
+        overlay = image.copy()
+
+        if self.resize:
+            scale_w = self.resize_w / self.model_w
+            scale_h = self.resize_h / self.model_h
+        else:
+            scale_w = 1
+            scale_h = 1
+
+
+        if detect_DCA_objs:
+            for obj in detect_DCA_objs:
+                x1, y1 = int(obj["ADASDetectObj.x1"]*scale_w), int(obj["ADASDetectObj.y1"]*scale_h)
+                x2, y2 = int(obj["ADASDetectObj.x2"]*scale_w), int(obj["ADASDetectObj.y2"]*scale_h)
+                confidence = obj["ADASDetectObj.confidence"]
+                label = obj["ADASDetectObj.label"]
+                
+                cv2.rectangle(overlay, (x1, y1), (x2, y2), (255, 128, 0), self.adas_detection_thickness)
+                if self.adas_detection_show_label:
+                    cv2.putText(overlay, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, self.DCA_color, 1)
+
+        if detect_DLA_objs:
+            for obj in detect_DLA_objs:
+                x1, y1 = int(obj["ADASDetectObj.x1"]*scale_w), int(obj["ADASDetectObj.y1"]*scale_h)
+                x2, y2 = int(obj["ADASDetectObj.x2"]*scale_w), int(obj["ADASDetectObj.y2"]*scale_h)
+                confidence = obj["ADASDetectObj.confidence"]
+                label = obj["ADASDetectObj.label"]
+                
+                cv2.rectangle(overlay, (x1, y1), (x2, y2), (255, 0, 128), self.adas_detection_thickness)
+                if self.adas_detection_show_label:
+                    cv2.putText(overlay, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, self.DLA_color, 1)
+
+
+        if detect_DMA_objs:
+            for obj in detect_DMA_objs:
+                x1, y1 = int(obj["ADASDetectObj.x1"]*scale_w), int(obj["ADASDetectObj.y1"]*scale_h)
+                x2, y2 = int(obj["ADASDetectObj.x2"]*scale_w), int(obj["ADASDetectObj.y2"]*scale_h)
+                confidence = obj["ADASDetectObj.confidence"]
+                label = obj["ADASDetectObj.label"]
+                
+                cv2.rectangle(overlay, (x1, y1), (x2, y2), (0, 128, 255), self.adas_detection_thickness)
+                if self.adas_detection_show_label:
+                    cv2.putText(overlay, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, self.DMA_color, 1)
+
+
+        if detect_DUA_objs:
+            for obj in detect_DUA_objs:
+                x1, y1 = int(obj["ADASDetectObj.x1"]*scale_w), int(obj["ADASDetectObj.y1"]*scale_h)
+                x2, y2 = int(obj["ADASDetectObj.x2"]*scale_w), int(obj["ADASDetectObj.y2"]*scale_h)
+                confidence = obj["ADASDetectObj.confidence"]
+                label = obj["ADASDetectObj.label"]
+                
+                cv2.rectangle(overlay, (x1, y1), (x2, y2), (128, 0, 255), self.adas_detection_thickness)
+                if self.adas_detection_show_label:
+                    cv2.putText(overlay, f"{label} ({confidence:.2f})", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, self.DUA_color, 1)
+
+        # Blend the overlay with the original image
+        alpha = self.adas_detection_alpha  # Transparency factor
+        cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)
+
+    def draw_track_objs(self, track_objs, image):
+        if self.resize:
+            scale_w = self.resize_w / self.model_w
+            scale_h = self.resize_h / self.model_h
+        else:
+            scale_w = 1
+            scale_h = 1
+        for obj in track_objs:
+            trackObj_x1, trackObj_y1 = int(obj["trackObj.x1"]*scale_w), int(obj["trackObj.y1"]*scale_h)
+            trackObj_x2, trackObj_y2 = int(obj["trackObj.x2"]*scale_w), int(obj["trackObj.y2"]*scale_h)
+            distance = obj["trackObj.distanceToCamera"]
+            id = obj["trackObj.id"]
+            
+            im = image
+            color = (0,255,255)
+            if self.showtailobjBB_corner:
+                top_left = (trackObj_x1, trackObj_y1)
+                bottom_right = (trackObj_x2, trackObj_y2)
+                top_right = (trackObj_x2,trackObj_y1)
+                bottom_left = (trackObj_x1,trackObj_y2) 
+                BB_width = abs(trackObj_x2 - trackObj_x1)
+                BB_height = abs(trackObj_y2 - trackObj_y1)
+                divide_length = 5
+
+                if distance>15:
+                    color = (0,255,255)
+                    thickness = 1
+                    text_thickness = 0.30
+
+                if distance>=10 and distance<=15:
+                    color = (0,255,255)
+                    thickness = 2
+                    text_thickness = 0.30
+                elif distance>=7 and distance<10:
+                    color = (0,100,255)
+                    thickness = 5
+                    text_thickness = 0.40
+                elif distance<7:
+                    color = (0,25,255)
+                    thickness = 7
+                    text_thickness = 0.45
+                # Draw corner of the rectangle
+                cv2.line(im, top_left, (top_left[0]+int(BB_width/divide_length), top_left[1]), color, thickness)
+                cv2.line(im, top_left, (top_left[0], top_left[1] + int(BB_height/divide_length)), color, thickness)
+
+                cv2.line(im, bottom_right,(bottom_right[0] - int(BB_width/divide_length),bottom_right[1]), color, thickness)
+                cv2.line(im, bottom_right,(bottom_right[0],bottom_right[1] - int(BB_height/divide_length) ), color, thickness)
+
+
+                cv2.line(im, top_right, ((top_right[0]-int(BB_width/divide_length)), top_right[1]), color, thickness)
+                cv2.line(im, top_right, (top_right[0], (top_right[1]+int(BB_height/divide_length))), color, thickness)
+
+                cv2.line(im, bottom_left, ((bottom_left[0]+int(BB_width/divide_length)), bottom_left[1]), color, thickness)
+                cv2.line(im, bottom_left, (bottom_left[0], (bottom_left[1]-int(BB_height/divide_length))), color, thickness)
+            elif not self.showtailobjBB_corner:
+                cv2.rectangle(im, (trackObj_x1, trackObj_y1), (trackObj_x2, trackObj_y2), color=(0,255,255), thickness=2)
+                # cv2.putText(image, f"{label} ({distance:.2f}m)", (tailingObj_x1, tailingObj_y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+            if True:
+                if not self.showtailobjBB_corner:
+                    cv2.putText(im, f'Track ID:{id}', (trackObj_x1, trackObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
+                    cv2.putText(im, 'D:' + str(round(distance,3)) + 'm', (trackObj_x1, trackObj_y1-25), cv2.FONT_HERSHEY_SIMPLEX,text_thickness+0.05, color, 1, cv2.LINE_AA)
+                else:
+                    # Get text size for label
+                    
+                    text_label = f'ID:{id}'
+                    text_distance = f'Dist:{round(distance,3)}m'
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+
+                    text_size_label, _ = cv2.getTextSize(text_label, font, text_thickness, 1)
+                    text_size_distance, _ = cv2.getTextSize(text_distance, font, text_thickness + 0.05, 1)
+
+                    # Calculate the rectangle size
+                    rect_x1 = trackObj_x1
+                    rect_y1 = trackObj_y1 - int(10*scale_h) -  int(text_size_label[1])  # Adjust height to fit text
+                    rect_x2 = trackObj_x1 + text_size_label[0]
+                    rect_y2 = trackObj_y1 - int(10*scale_h)  # Adjust height to fit text
+
+                    # Draw the rectangle
+                    cv2.rectangle(im, (rect_x1, rect_y1), (rect_x2, rect_y2), (0, 0, 0), -1)
+
+                    # # Calculate the rectangle size
+                    # rect_x1_d = trackObj_x1
+                    # rect_y1_d = trackObj_y1 - 25 - text_size_distance[1]  # Adjust height to fit text
+                    # rect_x2_d = trackObj_x1 + text_size_distance[0]
+                    # rect_y2_d = trackObj_y1 - 25    # Adjust height to fit text
+
+                    # # Draw the rectangle
+                    # cv2.rectangle(im, (rect_x1_d, rect_y1_d), (rect_x2_d, rect_y2_d), (100, 100, 100), -1)
+
+                    # Draw the text
+                    cv2.putText(im, text_label, (trackObj_x1, trackObj_y1 - 10), font, text_thickness*scale_h, color, int(1*scale_h), cv2.LINE_AA)
+                    # cv2.putText(im, text_distance, (trackObj_x1, trackObj_y1 - 25), font, text_thickness + 0.05, color, 1, cv2.LINE_AA)
 
     def draw_bounding_boxes(self,frame_ID, tailing_objs,detect_objs,vanish_objs,ADAS_objs,lane_info):
         """
@@ -910,12 +1488,19 @@ class Drawer(BaseDataset):
         Returns:
         - None. The image `im` is modified in place with the bounding box and labels drawn on it.
         """
+        if self.resize:
+            scale_w = self.resize_w / self.model_w
+            scale_h = self.resize_h / self.model_h
+        else:
+            scale_w = 1
+            scale_h = 1
+
         distance_to_camera = tailing_objs[0].get('tailingObj.distanceToCamera', None)
         tailingObj_id = tailing_objs[0].get('tailingObj.id', None)
-        tailingObj_x1 = tailing_objs[0].get('tailingObj.x1', None)
-        tailingObj_y1 = tailing_objs[0].get('tailingObj.y1', None)
-        tailingObj_x2 = tailing_objs[0].get('tailingObj.x2', None)
-        tailingObj_y2 = tailing_objs[0].get('tailingObj.y2', None)
+        tailingObj_x1 = int(tailing_objs[0].get('tailingObj.x1', None) * scale_w)
+        tailingObj_y1 = int(tailing_objs[0].get('tailingObj.y1', None) * scale_h)
+        tailingObj_x2 = int(tailing_objs[0].get('tailingObj.x2', None) * scale_w)
+        tailingObj_y2 = int(tailing_objs[0].get('tailingObj.y2', None) * scale_h)
         
         tailingObj_label = tailing_objs[0].get('tailingObj.label', None)
 
@@ -932,21 +1517,21 @@ class Drawer(BaseDataset):
             BB_width = abs(tailingObj_x2 - tailingObj_x1)
             BB_height = abs(tailingObj_y2 - tailingObj_y1)
             divide_length = 5
-            thickness = 3
+            thickness = int(3*scale_h)
             color = (0,255,255)
 
             if distance_to_camera>=10:
                 color = (0,255,255)
-                thickness = 1
-                text_thickness = 0.40
+                thickness = int(1*scale_h)
+                text_thickness = 0.40*scale_h
             elif distance_to_camera>=7 and distance_to_camera<10:
                 color = (0,100,255)
-                thickness = 2
-                text_thickness = 0.46
+                thickness = int(2*scale_h)
+                text_thickness = 0.46*scale_h
             elif distance_to_camera<7:
                 color = (0,25,255)
-                thickness = 3
-                text_thickness = 0.50
+                thickness = int(3*scale_h)
+                text_thickness = 0.50*scale_h
 
             # Draw each side of the rectangle
             cv2.line(im, top_left, (top_left[0]+int(BB_width/divide_length), top_left[1]), color, thickness)
@@ -966,8 +1551,9 @@ class Drawer(BaseDataset):
 
         if self.show_distancetitle:
             text = f"Distance:{round(distance_to_camera,self.tailingobjs_distance_decimal_length)}m" 
-            xy = (int(self.model_w/3.0), int(self.model_h*11.0/12.0))
-            cv2.putText(im, text, xy, cv2.FONT_HERSHEY_SIMPLEX,1.0, (0,255,255), 2, cv2.LINE_AA)
+            xy = (int( (self.model_w/3.0) * scale_w ), int( (self.model_h*11.0/12.0) * scale_h) )
+            
+            cv2.putText(im, text, xy, cv2.FONT_HERSHEY_SIMPLEX,(1.0*scale_h), (0,255,255), int(2*scale_h), cv2.LINE_AA)
 
 
         # if tailingObj_label=='VEHICLE':
@@ -983,14 +1569,14 @@ class Drawer(BaseDataset):
                 text_distance = f'Distance:{round(distance_to_camera,3)}m'
                 font = cv2.FONT_HERSHEY_SIMPLEX
 
-                text_size_label, _ = cv2.getTextSize(text_label, font, text_thickness, 1)
-                text_size_distance, _ = cv2.getTextSize(text_distance, font, text_thickness + 0.05, 1)
+                text_size_label, _ = cv2.getTextSize(text_label, font, text_thickness, int(1*scale_h))
+                text_size_distance, _ = cv2.getTextSize(text_distance, font, text_thickness + 0.05, int(1*scale_h))
 
                 # Calculate the rectangle size
                 rect_x1 = tailingObj_x1
-                rect_y1 = tailingObj_y1 - 10 -  text_size_label[1]  # Adjust height to fit text
-                rect_x2 = tailingObj_x1 + text_size_label[0]
-                rect_y2 = tailingObj_y1 - 10  # Adjust height to fit text
+                rect_y1 = tailingObj_y1 - int(10*scale_h) -  int(text_size_label[1])  # Adjust height to fit text
+                rect_x2 = tailingObj_x1 + int(text_size_label[0])
+                rect_y2 = tailingObj_y1 - int(10*scale_h)  # Adjust height to fit text
 
                 # Draw the rectangle
                 cv2.rectangle(im, (rect_x1, rect_y1), (rect_x2, rect_y2), (0, 0, 0), -1)
@@ -998,16 +1584,16 @@ class Drawer(BaseDataset):
 
                 # Calculate the rectangle size
                 rect_x1_d = tailingObj_x1
-                rect_y1_d = tailingObj_y1 - 25 - text_size_distance[1]  # Adjust height to fit text
+                rect_y1_d = tailingObj_y1 - int(25*scale_h) - text_size_distance[1]  # Adjust height to fit text
                 rect_x2_d = tailingObj_x1 + text_size_distance[0]
-                rect_y2_d = tailingObj_y1 - 25    # Adjust height to fit text
+                rect_y2_d = tailingObj_y1 - int(25*scale_h)    # Adjust height to fit text
 
                 # Draw the rectangle
                 cv2.rectangle(im, (rect_x1_d, rect_y1_d), (rect_x2_d, rect_y2_d), (0, 0, 0), -1)
 
                 # Draw the text
-                cv2.putText(im, text_label, (tailingObj_x1, tailingObj_y1 - 10), font, text_thickness, color, 1, cv2.LINE_AA)
-                cv2.putText(im, text_distance, (tailingObj_x1, tailingObj_y1 - 25), font, text_thickness + 0.05, color, 1, cv2.LINE_AA)
+                cv2.putText(im, text_label, (tailingObj_x1, tailingObj_y1 - int(10*scale_h)), font, text_thickness, color, int(1*scale_h), cv2.LINE_AA)
+                cv2.putText(im, text_distance, (tailingObj_x1, tailingObj_y1 - int(25*scale_h)), font, text_thickness + 0.05, color, int(1*scale_h), cv2.LINE_AA)
 
         # cv2.rectangle(im,(tailingObj_x1, tailingObj_y1-10),(tailingObj_x2 , tailingObj_y1-10),(50,50,50), -1)
         # cv2.putText(im, f'{tailingObj_label} ID:{tailingObj_id}', (tailingObj_x1, tailingObj_y1-10), cv2.FONT_HERSHEY_SIMPLEX, text_thickness, color, 1, cv2.LINE_AA)
@@ -1051,14 +1637,22 @@ class Drawer(BaseDataset):
         Returns:
         - None. The image `im` is modified in place with the bounding boxes and labels drawn on it.
         """
+        if self.resize:
+            scale_w = self.resize_w / self.model_w
+            scale_h = self.resize_h / self.model_h
+        else:
+            scale_w = 1
+            scale_h = 1
+
+
         # Draw detectObj bounding boxes
         for obj_type, obj_list in detect_objs.items():
             for obj in obj_list:
                 label = obj.get(f'detectObj.label', '')
-                x1 = obj.get(f'detectObj.x1', 0)
-                y1 = obj.get(f'detectObj.y1', 0)
-                x2 = obj.get(f'detectObj.x2', 0)
-                y2 = obj.get(f'detectObj.y2', 0)
+                x1 = int(obj.get(f'detectObj.x1', 0) * scale_w)
+                y1 = int(obj.get(f'detectObj.y1', 0) * scale_h)
+                x2 = int(obj.get(f'detectObj.x2', 0) * scale_w)
+                y2 = int(obj.get(f'detectObj.y2', 0) * scale_h)
                 confidence = obj.get(f'detectObj.confidence', 0.0)
                 
                 if self.show_tailingobjs and self.tailingObj_x1==x1 and self.tailingObj_y1==y1:
@@ -1067,18 +1661,24 @@ class Drawer(BaseDataset):
                 else:
                     # Draw bounding box
                     if label == "VEHICLE":
-                        color=(255,150,0)
+                        color=(255,200,0)
                     elif label=="HUMAN":
                         color=(0,128,255)
-                    cv2.rectangle(im, (x1, y1), (x2, y2), color=color, thickness=1)
-                    cv2.putText(im, f'{label} {confidence:.2f}', (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, color, 1, cv2.LINE_AA)
+                    cv2.rectangle(im, (x1, y1), (x2, y2), color=color, thickness=int(1*scale_h))
+                    cv2.putText(im, f'{label} {confidence:.2f}', (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.15*scale_h, color, int(1), cv2.LINE_AA)
 
     def draw_vanish_objs(self,vanish_objs,im):
-        vanishLineY = vanish_objs[0].get('vanishLineY', None)
+        if self.resize:
+            scale_w = self.resize_w / self.model_w
+            scale_h = self.resize_h / self.model_h
+        else:
+            scale_w = 1
+            scale_h = 1
+        vanishLineY = int(vanish_objs[0].get('vanishLineY', None) * scale_h)
         # logging.info(f'vanishLineY:{vanishLineY}')
-        x2 = im.shape[1]
+        x2 = int(im.shape[1] * scale_w)
         cv2.line(im, (0, vanishLineY), (x2, vanishLineY), (0, 255, 255), thickness=1)
-        cv2.putText(im, 'VanishLineY:' + str(round(vanishLineY,3)), (10,30), cv2.FONT_HERSHEY_SIMPLEX,0.45, (0, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(im, 'VanishLineY:' + str(round(vanishLineY,3)), (int(10*scale_w),int(30*scale_h)), cv2.FONT_HERSHEY_SIMPLEX,0.45*scale_h, (0, 255, 255), int(1*scale_h), cv2.LINE_AA)
 
 
     def draw_ADAS_objs(self,ADAS_objs,im):
@@ -1119,10 +1719,17 @@ class Drawer(BaseDataset):
         Returns:
         - None. The image `im` is modified in place with the lane lines drawn on it.
         """
-        pLeftCarhood = (lane_info[0]["pLeftCarhood.x"], lane_info[0]["pLeftCarhood.y"])
-        pLeftFar = (lane_info[0]["pLeftFar.x"], lane_info[0]["pLeftFar.y"])
-        pRightCarhood = (lane_info[0]["pRightCarhood.x"], lane_info[0]["pRightCarhood.y"])
-        pRightFar = (lane_info[0]["pRightFar.x"], lane_info[0]["pRightFar.y"])
+        if self.resize:
+            scale_w = self.resize_w / self.model_w
+            scale_h = self.resize_h / self.model_h
+        else:
+            scale_w = 1
+            scale_h = 1
+
+        pLeftCarhood = (int(lane_info[0]["pLeftCarhood.x"]*scale_w), int(lane_info[0]["pLeftCarhood.y"]*scale_h))
+        pLeftFar = (int(lane_info[0]["pLeftFar.x"]*scale_w), int(lane_info[0]["pLeftFar.y"]*scale_h))
+        pRightCarhood = (int(lane_info[0]["pRightCarhood.x"]*scale_w), int(lane_info[0]["pRightCarhood.y"]*scale_h))
+        pRightFar = (int(lane_info[0]["pRightFar.x"]*scale_w), int(lane_info[0]["pRightFar.y"]*scale_h))
 
         width_Cardhood = abs(pRightCarhood[0] - pLeftCarhood[0])
         width_Far = abs(pRightFar[0] - pLeftFar[0])
@@ -1143,6 +1750,10 @@ class Drawer(BaseDataset):
         # Create an overlay for the filled polygon
         overlay = im.copy()
         cv2.fillPoly(overlay, [points_mainlane], color=(0, 255, 0))  # Green filled polygon
+        # Draw left lane line
+        cv2.line(overlay, pLeftCarhood, pLeftFar, (255, 0, 0), self.laneline_thickness)  # Blue line
+        # Draw right lane line
+        cv2.line(overlay, pRightCarhood, pRightFar, (0, 0, 255), self.laneline_thickness)  # Red line
 
         # Blend the overlay with the original image
         alpha = self.alpha  # Transparency factor
@@ -1156,7 +1767,4 @@ class Drawer(BaseDataset):
         # pmiddleCarhood_mainlane = (int((pLeftCarhood[0]+pRightCarhood[0])/2.0),int((pLeftCarhood[1]+pRightCarhood[1])/2.0))
         # cv2.line(image, pmiddleFar_mainlane, pmiddleCarhood_mainlane, (0, 255, 255), 1)  # Blue line
 
-        # Draw left lane line
-        cv2.line(im, pLeftCarhood, pLeftFar, (255, 0, 0), self.laneline_thickness)  # Blue line
-        # Draw right lane line
-        cv2.line(im, pRightCarhood, pRightFar, (0, 0, 255), self.laneline_thickness)  # Red line
+        

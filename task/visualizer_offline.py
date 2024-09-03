@@ -43,6 +43,7 @@ class VisualizerOffline(Visualizer):
         Returns:
             bool: True if the image directory exists, False otherwise.
         """
+        print(f"self.img_dir:{self.img_dir}")
         if os.path.exists(self.img_dir):
             return True
         else:
@@ -54,6 +55,7 @@ class VisualizerOffline(Visualizer):
         Returns:
             bool: True if the CSV log file exists, False otherwise.
         """
+        print(f"self.csv_file_pat:{self.csv_file_path}")
         if os.path.exists(self.csv_file_path):
             return True
         else:

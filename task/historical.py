@@ -17,8 +17,8 @@ class Historical(BaseDataset):
         self.input_mode = 2
         self.video_path = "/new/path/to/video/file"
         self.raw_image_dir = None
-        self.start_frame = 0
-        self.end_frame = 99999
+        self.start_frame = args.h_mode_start_frame
+        self.end_frame = args.h_mode_end_frame
         self.server_port = args.server_port
         self.server_ip = args.tftp_ip
         self.visualize_mode = 0

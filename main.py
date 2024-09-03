@@ -28,7 +28,7 @@ if __name__=="__main__":
 
     # Optionally generate and save raw video if specified in config
     if args.save_rawvideo:
-        task.task_assigner(gen_raw_video=True, raw_images_dir="assets/images/FAIQ_15_NightVision")  # Directory for saving raw videos (None for default)
+        task.task_assigner(gen_raw_video=True, raw_images_dir="assets/images/InternalUse_Ver3-1920x1080")  # Directory for saving raw videos (None for default)
 
     # Optionally extract frames from a video and optionally crop them if specified in config
     if args.save_extractframe:

@@ -21,6 +21,7 @@ class AdasRunner():
         self.img_format = config.image_format
         self.remote_role = "Device"
         self.connect = connection_handler
+        self.h_mode_start_frame = config.h_mode_start_frame
 
     def run_adas(self):
         """Execute the ADAS startup process on the remote device.
@@ -155,7 +156,7 @@ class AdasRunner():
             if server_port:
                 _server_port = server_port
 
-            _start_frame = "0"
+            _start_frame = self.h_mode_start_frame
             _end_frame = "99999"
 
             config_file_path = self.remote_config_path

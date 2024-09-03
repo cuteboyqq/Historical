@@ -7,7 +7,7 @@ MODEL:
 
 # Mode configuration (Alister's code)
 TASK:
-  TASK_MODE: varify  # Mode of run visualize mode (online / offline / semi-online / visualize / eval / analysis/ varify / historical / None)
+  TASK_MODE: visual  # Mode of run visualize mode (online / offline / semi-online / visual / eval / analysis/ varify / historical / None)
 
 # Visualize configuration (Andy's code)
 VISUALIZE:
@@ -22,11 +22,13 @@ JSONLOG:
 
 HISTORICAL:
   SKIP_FRAME: 1
+  START_FRAME: 3000
+  END_FRAME: 99999
   CAMERA:
-    DATASET_PATH: '/mnt/mmc/adas/debug/raw_images/EVT_2023_10_07_17_39_52_F'  
+    DATASET_PATH: '/mnt/mmc/adas/debug/raw_images/2024-8-5-12-58'  
     SCRIPT_PATH: '/customer/run_adas'  
   LOCAL:
-    DATASET_PATH: '/home/ali/Projects/GitHub_Code/ali/adas_evaluation_tools/src/assets/videos/EVT_2023_10_07_17_39_52_F.mp4' 
+    DATASET_PATH: '/home/ali/Projects/GitHub_Code/ali/adas_evaluation_tools/src/assets/videos/2024-8-5-12-58.mp4' 
 
 # Image configuration
 IMAGE:
@@ -36,7 +38,7 @@ IMAGE:
 # Save settings
 SAVE:
   ADAS_RESULT_IMAGE: false  # Flag to save ADAS result images
-  JSON_LOG: true  # Flag to save JSON log
+  JSON_LOG: false  # Flag to save JSON log
   RAW_IMAGES: false     # Flasg to save raw images
   RAW_VIDEO: false  # Flag to save raw video
   VIDEO_FPS: 7 # FPS of the saved video
@@ -44,7 +46,7 @@ SAVE:
 
 # Server configuration
 SERVER:
-  PORT: 1650 # Port number for the local server
+  PORT: 1669 # Port number for the local server
   TFTP_DIR: '/home/ali/Public/tftp'  # Directory on the server for TFTP file transfers
   TFTP_IP: '192.168.1.10'  # IP address of the TFTP server
   IP: '192.168.1.10'  # IP address of the TFTP server
@@ -52,9 +54,9 @@ SERVER:
 
 # Resize settings
 RESIZE:
-  ENABLED: false  # Flag to enable or disable image resizing
-  WIDTH:  640 # Width of the resized images
-  HEIGHT: 384  # Height of the resized images
+  ENABLED: true  # Flag to enable or disable image resizing
+  WIDTH:  960 # Width of the resized images
+  HEIGHT: 540  # Height of the resized images
 
 # Camera configuration
 CAMERA:
@@ -69,9 +71,9 @@ CAMERA:
 
 # Local configuration
 LOCAL:
-  CSV_FILE: 'assets/csv_file/REC20240402-134400-19.txt'  # Path to the local CSV file
-  RAW_IMG_DIR: 'assets/images/FAIQ_15_NightVision'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
-  SAVE_RAW_VIDEO_PATH: 'assets/videos/FAIQ_15_NightVision.mp4'  # Path to save the raw video file
+  CSV_FILE: 'assets/csv_file/2024-8-5-12-58/2024-8-5-12-58.txt'  # Path to the local CSV file
+  RAW_IMG_DIR: 'assets/images/InternalUse_Ver3-1280x720'  # Directory on the local machine for storing raw images or input raw images for offline visualize historical mode
+  SAVE_RAW_VIDEO_PATH: 'assets/videos/InternalUse_Ver3-1280x720.mp4'  # Path to save the raw video file
 
 
 # Display settings
@@ -88,9 +90,11 @@ DISPLAY:
   SHOW_DETECT_OBJS_INFO: true # Flag to display detect obj label & confidence
   SHOW_DEVICE_MODE: true # Flag to display device live/historical mode
   SHOW_ADAS_DETECTION: true # Flag to display ADAS detection including DCA/DLA/DMA/DUA
+  SHOW_TRACK_OBJS: true # Flag to display track objects
 
 ADAS_DETECTION:
   THICKNESS: 2
+  ALPHA: 1.0
   SHOW_LABEL: true
 
 # Tailing object configuation
@@ -104,7 +108,7 @@ TAILING_OBJ:
 
 LANE_LINE:
   ALPHA: 0.35
-  THICKNESS: 2
+  THICKNESS: 3
 
 
 # Wait settings
@@ -126,7 +130,7 @@ TEST:
   VERSION:
     FW_VERSION: 1.0.14.1
     MCU_VERSION: 0.0.2.5
-    ADAS_VERSION: 0.6.7.1
+    ADAS_VERSION: 0.6.7
   CONFIG_PARAMS:
     CONFIG_PATH: assets/config/passenger_config.txt
   MONITOR:
@@ -159,7 +163,7 @@ ANALYSIS:
 
 # Remote configuration
 REMOTE:
-  ADAS_START_SCRIPT_PATH: './customer/run_adas.sh'
+  ADAS_START_SCRIPT_PATH: './customer/run_adas'
   ADAS_STOP_SCRIPT_PATH: './customer/stop_adas.sh'
   REMOTE_ADAS_CONFIG_PATH: '/customer/adas/config/config.txt'
   BACKUP_ADAS_CONFIG_PATH: '/customer/adas/config/config_backup.txt'
@@ -168,7 +172,7 @@ REMOTE:
 VARIFY:
   CAMERA:
     CONFIG_PATH: '/customer/adas/config/config.txt'
-    RUN_HISTORICAL_DURATION: 80
+    RUN_HISTORICAL_DURATION: 60
   LOCAL:
     SAVE_JSONLOG_DIR: '/home/ali/Projects/GitHub_Code/ali/adas_evaluation_tools/src/assets/csv_file/varify'
 

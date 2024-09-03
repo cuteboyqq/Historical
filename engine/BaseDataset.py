@@ -422,7 +422,7 @@ class BaseDataset:
         os.makedirs(video_dir, exist_ok=True)
         
         # Get list of image files, assuming they are named RawFrame_[index].png
-        images = [img for img in os.listdir(im_dir) if img.endswith(".jpg")]
+        images = [img for img in os.listdir(im_dir) if img.endswith(".png")]
         images.sort(key=lambda x: int(x.split('_')[1].split('.')[0]))  # Sort by index
 
         # Check if there are images in the folder

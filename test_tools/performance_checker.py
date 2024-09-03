@@ -174,6 +174,7 @@ class PerformanceChecker:
         Returns:
             float: The average inference time
         """
+        print(f"self.performance_result_dict_list = {self.performance_result_dict_list}")
         total_inference_time = sum([result_dict["inference_time"] for result_dict in self.performance_result_dict_list])
         return total_inference_time / len(self.performance_result_dict_list)
 

@@ -74,7 +74,7 @@ class TestRunner:
         ]
 
         for name, checker_class in checker_list:
-            print(f"name = {name}, checker_class = {checker_class}")
+            # print(f"name = {name}, checker_class = {checker_class}")
             setattr(self, f"{name.lower()}_checker", checker_class(self.remote_ssh, self.config))
             print(f"✅ {name.capitalize():13} Checker \t \033[32mInitialized\033[0m")
         print('\n')
@@ -109,7 +109,7 @@ class TestRunner:
             ("Version", self.version_checker.check_versions),
             ("Configuration", self.config_checker.check_config),
             ("Performance", self.performance_checker.check_performance),
-            # ("Detection", self.detection_checker.check_detection),
+            ("Detection", self.detection_checker.check_detection),
             ("Resource", self.resource_checker.check_resource)
         ]
 
@@ -232,37 +232,37 @@ class TestRunner:
 
         return "\n".join(report)
 
-# if __name__ == "__main__":
-#     import yaml
-#     from config.args import Args
+if __name__ == "__main__":
+    import yaml
+    from config.args import Args
 
-#     # Load the YAML configuration file and return its content as a dictionary
-#     def load_config(config_file):
-#         with open(config_file, 'r') as file:
-#             config = yaml.safe_load(file)
-#         return config
+    # Load the YAML configuration file and return its content as a dictionary
+    def load_config(config_file):
+        with open(config_file, 'r') as file:
+            config = yaml.safe_load(file)
+        return config
 
-#     # Load configuration settings from the specified YAML file
-#     config_yaml = load_config('config/config.yaml')
+    # Load configuration settings from the specified YAML file
+    config_yaml = load_config('config/config.yaml')
 
-#     # Initialize Args object with the loaded configuration
-#     config = Args(config_yaml)
+    # Initialize Args object with the loaded configuration
+    config = Args(config_yaml)
 
-#     # Initialize ConnectionHandler
-#     connection_handler = ConnectionHandler(config)
+    # Initialize ConnectionHandler
+    connection_handler = ConnectionHandler(config)
 
-#     # Check if the connection is setup successfully
-#     if connection_handler.is_setup_success():
+    # Check if the connection is setup successfully
+    if connection_handler.is_setup_success():
 
-#         # Initialize TestRunner
-#         runner = TestRunner(connection_handler, config)
+        # Initialize TestRunner
+        runner = TestRunner(connection_handler, config)
 
-#         # Run the tests
-#         runner.run_tests()
+        # Run the tests
+        runner.run_tests()
 
-#         #
-#         connection_handler.close_connection()
+        #
+        connection_handler.close_connection()
 
-#         # Generate the test report
-#         report = runner.gen_test_report()
-#         print(report)
+        # Generate the test report
+        report = runner.gen_test_report()
+        print(report)
